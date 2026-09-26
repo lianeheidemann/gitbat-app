@@ -22,8 +22,9 @@ class CollageAreasPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Arraste as alças entre as fotos para mudar o tamanho de cada área. '
-          'Trocar o layout ou o número de fotos volta tudo ao tamanho padrão.',
+          'Toque numa foto para mostrar as alças dela e arraste para mudar o '
+          'tamanho. Arrastar dentro da foto move a imagem. Trocar o layout ou '
+          'o número de fotos volta tudo ao tamanho padrão.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),
@@ -40,16 +41,18 @@ class CollageAreasPanel extends StatelessWidget {
   }
 }
 
-/// Alça de um divisor da aba "Áreas": uma pílula branca com setas para os
-/// dois lados em que ela arrasta (esquerda/direita num divisor vertical,
-/// cima/baixo num horizontal), por cima de uma linha fina ao longo do
-/// divisor para mostrar até onde ele vai.
+/// Alça de um divisor na borda da foto selecionada da aba "Áreas": uma
+/// pílula branca pequena com setas para os dois lados em que ela arrasta
+/// (esquerda/direita num divisor vertical, cima/baixo num horizontal). A área
+/// de toque ([touchLong] × [touchShort]) é maior que o desenho, para caber o
+/// dedo sem a alça cobrir a foto.
 class CollageDividerHandle extends StatelessWidget {
   const CollageDividerHandle({
     super.key,
     required this.divider,
     required this.onDragStart,
     required this.onDrag,
+    required this.onDragEnd,
   });
 
   final CollageDivider divider;
@@ -57,39 +60,42 @@ class CollageDividerHandle extends StatelessWidget {
 
   /// Deslocamento no eixo do divisor (x num vertical, y num horizontal).
   final ValueChanged<double> onDrag;
+  final VoidCallback onDragEnd;
 
-  static const _long = 44.0;
-  static const _short = 28.0;
+  static const touchLong = 48.0;
+  static const touchShort = 36.0;
+  static const _long = 30.0;
+  static const _short = 18.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final vertical = divider.vertical;
-    final line = Container(
-      width: vertical ? 2 : divider.length,
-      height: vertical ? divider.length : 2,
-      color: theme.colorScheme.primary.withValues(alpha: 0.7),
-    );
-    final pill = Container(
-      width: vertical ? _short : _long,
-      height: vertical ? _long : _short,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(_short / 2),
-        boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 6)],
-      ),
-      child: Icon(
-        vertical ? Icons.swap_horiz_rounded : Icons.swap_vert_rounded,
-        size: 20,
-        color: theme.colorScheme.primary,
-      ),
-    );
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onPanStart: (_) => onDragStart(),
       onPanUpdate: (details) =>
           onDrag(vertical ? details.delta.dx : details.delta.dy),
-      child: Stack(alignment: Alignment.center, children: [line, pill]),
+      onPanEnd: (_) => onDragEnd(),
+      onPanCancel: onDragEnd,
+      child: Center(
+        child: Container(
+          width: vertical ? _short : _long,
+          height: vertical ? _long : _short,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(_short / 2),
+            boxShadow: const [
+              BoxShadow(color: Color(0x55000000), blurRadius: 4),
+            ],
+          ),
+          child: Icon(
+            vertical ? Icons.swap_horiz_rounded : Icons.swap_vert_rounded,
+            size: 14,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ),
     );
   }
 }

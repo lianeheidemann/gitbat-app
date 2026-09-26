@@ -76,4 +76,46 @@ void main() {
     expect(resized.withEqualSizes().hasCustomSizes, isFalse);
     expect(_rects(resized.withEqualSizes())[0].height, 200);
   });
+
+  test('alças da foto selecionada ficam no meio das bordas dela', () {
+    const grid = CollageLayout(kind: CollageLayoutKind.grid2x2);
+    final corner = grid.handlesAround(
+      0,
+      _size,
+      outerMarginRatio: 0,
+      innerMarginRatio: 0,
+    );
+    expect(corner.length, 2);
+    expect(
+      corner.firstWhere((h) => h.divider.vertical).center,
+      const Offset(200, 100),
+    );
+    expect(
+      corner.firstWhere((h) => !h.divider.vertical).center,
+      const Offset(100, 200),
+    );
+
+    const column = CollageLayout(kind: CollageLayoutKind.column, rows: 3);
+    final middle = column.handlesAround(
+      1,
+      _size,
+      outerMarginRatio: 0,
+      innerMarginRatio: 0,
+    );
+    expect(middle.map((h) => h.divider.vertical), [false, false]);
+    expect(middle.map((h) => h.divider.index), [0, 1]);
+  });
+
+  test('destaque: quais fotos cada divisor redimensiona', () {
+    const grid = CollageLayout(kind: CollageLayoutKind.grid2x2);
+    final dividers = _dividers(grid);
+    expect(grid.cellsTouching(dividers.firstWhere((d) => d.vertical)), [
+      0,
+      1,
+      2,
+      3,
+    ]);
+    final rightH = dividers.firstWhere((d) => !d.vertical && d.column == 1);
+    expect(grid.cellsTouching(rightH), [1, 3]);
+  });
 }

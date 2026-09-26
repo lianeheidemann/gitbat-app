@@ -218,16 +218,13 @@ class _CollageCellViewState extends State<CollageCellView> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // O placeholder cinza só aparece em células vazias ou
-                      // em modo "cover" (onde a foto sempre preenche 100% da
-                      // célula, então é inofensivo tê-lo por baixo). Em modo
-                      // "contain" com foto, ele TEM que sumir: a sobra ao
-                      // redor da foto precisa mostrar o fundo real da
-                      // montagem (pintado por baixo, no mesmo Stack de
-                      // `_preview()`), não um cinza que a exportação não
-                      // reproduz.
-                      if (!cell.hasPhoto ||
-                          cell.fitMode == CollageCellFitMode.cover)
+                      // O placeholder cinza só aparece em célula vazia. Com
+                      // foto ele nunca vai por baixo, nem em "cover": uma
+                      // foto com transparência (SVG ou PNG recortado) tem
+                      // que mostrar o fundo real da montagem pelos buracos,
+                      // como a exportação faz — antes o cinza só sumia ao
+                      // trocar para "contain" com o duplo toque.
+                      if (!cell.hasPhoto)
                         ColoredBox(
                           color: theme.colorScheme.surfaceContainerHigh,
                         ),

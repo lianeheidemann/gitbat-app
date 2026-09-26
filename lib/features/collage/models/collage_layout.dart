@@ -215,6 +215,88 @@ class CollageLayout {
     return dividers;
   }
 
+  /// Alças da célula [cellIndex] (em ordem de leitura) na aba "Áreas": um
+  /// divisor para cada borda que ela divide com uma vizinha, com a alça no
+  /// meio daquela borda (no meio da margem entre as duas fotos) — não no
+  /// meio do divisor inteiro, que num vertical vai de cima a baixo.
+  List<CollageEdgeHandle> handlesAround(
+    int cellIndex,
+    Size canvasSize, {
+    required double outerMarginRatio,
+    required double innerMarginRatio,
+  }) {
+    final cols = _effectiveColumns;
+    final rowsN = _effectiveRows;
+    if (cellIndex < 0 || cellIndex >= cols * rowsN) return const [];
+    final rects = cellRectsFor(
+      canvasSize,
+      outerMarginRatio: outerMarginRatio,
+      innerMarginRatio: innerMarginRatio,
+    );
+    final dividers = dividersFor(
+      canvasSize,
+      outerMarginRatio: outerMarginRatio,
+      innerMarginRatio: innerMarginRatio,
+    );
+    final r = cellIndex ~/ cols;
+    final c = cellIndex % cols;
+    final cell = rects[cellIndex];
+    CollageDivider vertical(int index) =>
+        dividers.firstWhere((d) => d.vertical && d.index == index);
+    CollageDivider horizontal(int index) => dividers.firstWhere(
+      (d) => !d.vertical && d.column == c && d.index == index,
+    );
+
+    return [
+      if (c > 0)
+        CollageEdgeHandle(
+          vertical(c - 1),
+          Offset((rects[cellIndex - 1].right + cell.left) / 2, cell.center.dy),
+        ),
+      if (c < cols - 1)
+        CollageEdgeHandle(
+          vertical(c),
+          Offset((cell.right + rects[cellIndex + 1].left) / 2, cell.center.dy),
+        ),
+      if (r > 0)
+        CollageEdgeHandle(
+          horizontal(r - 1),
+          Offset(
+            cell.center.dx,
+            (rects[cellIndex - cols].bottom + cell.top) / 2,
+          ),
+        ),
+      if (r < rowsN - 1)
+        CollageEdgeHandle(
+          horizontal(r),
+          Offset(
+            cell.center.dx,
+            (cell.bottom + rects[cellIndex + cols].top) / 2,
+          ),
+        ),
+    ];
+  }
+
+  /// Células (em ordem de leitura) que [divider] redimensiona — as colunas
+  /// inteiras dos dois lados num vertical, as duas fotos da coluna num
+  /// horizontal. É o que fica em destaque enquanto a alça é arrastada.
+  List<int> cellsTouching(CollageDivider divider) {
+    final cols = _effectiveColumns;
+    final rowsN = _effectiveRows;
+    if (divider.vertical) {
+      return [
+        for (var r = 0; r < rowsN; r++) ...[
+          r * cols + divider.index,
+          r * cols + divider.index + 1,
+        ],
+      ];
+    }
+    return [
+      divider.index * cols + divider.column,
+      (divider.index + 1) * cols + divider.column,
+    ];
+  }
+
   /// [divider] arrastado [delta] pixels (para a direita num vertical, para
   /// baixo num horizontal) num canvas de [canvasSize]. Só as duas áreas que
   /// ele separa mudam, e nenhuma fica menor que [minWeight].
@@ -320,3 +402,24 @@ class CollageDivider {
   /// Comprimento do divisor (altura num vertical, largura num horizontal).
   final double length;
 }
+
+/// Uma alça da aba "Áreas" presa à borda de uma célula — ver
+/// [CollageLayout.handlesAround].
+class CollageEdgeHandle {
+  const CollageEdgeHandle(this.divider, this.center);
+
+  final CollageDivider divider;
+
+  /// Onde a alça fica: no meio da borda da célula, no espaço de
+  /// [CollageLayout.cellRectsFor].
+  final Offset center;
+}
+
+/// Dois divisores são o mesmo quando separam as mesmas áreas — o objeto é
+/// recriado a cada quadro, então a tela compara por aqui.
+bool sameDivider(CollageDivider? a, CollageDivider? b) =>
+    a != null &&
+    b != null &&
+    a.vertical == b.vertical &&
+    a.column == b.column &&
+    a.index == b.index;

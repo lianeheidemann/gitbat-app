@@ -1058,8 +1058,18 @@ void main() {
 
     await tester.tap(find.text('Áreas'));
     await tester.pumpAndSettle();
+    // Sem foto selecionada, nenhuma alça.
+    expect(find.byType(CollageDividerHandle), findsNothing);
+
+    // Tocar numa foto mostra as alças dela (duas fotos: uma alça só).
+    await tester.tap(find.byType(CollageCellView).first);
+    await tester.pumpAndSettle();
     final handle = find.byType(CollageDividerHandle);
     expect(handle, findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('collageAreaHighlight_0')),
+      findsOneWidget,
+    );
 
     final vertical = tester
         .widget<CollageDividerHandle>(handle)
@@ -1090,5 +1100,53 @@ void main() {
     await tester.tap(find.text('Tamanhos iguais'));
     await tester.pumpAndSettle();
     expect(cellSizes(), before);
+  });
+
+  testWidgets('aba "Áreas": arrastar dentro da foto move a imagem', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+
+    CollageCellSettings first() => tester
+        .widgetList<CollageCellView>(find.byType(CollageCellView))
+        .first
+        .cell;
+    final before = first();
+    await tester.drag(find.byType(CollageCellView).first, const Offset(30, 20));
+    await tester.pumpAndSettle();
+    final after = first();
+    expect(
+      (after.offsetX, after.offsetY) != (before.offsetX, before.offsetY),
+      isTrue,
+      reason: 'a foto continua podendo ser movida nesta aba',
+    );
+  });
+
+  testWidgets('foto na célula não ganha fundo cinza por baixo', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    final placeholder = find.descendant(
+      of: find.byType(CollageCellView).first,
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is ColoredBox &&
+            w.color ==
+                Theme.of(
+                  tester.element(find.byType(CollageCellView).first),
+                ).colorScheme.surfaceContainerHigh,
+      ),
+    );
+    expect(placeholder, findsNothing);
   });
 }

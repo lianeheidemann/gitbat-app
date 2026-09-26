@@ -7,7 +7,7 @@ import '../../app/preview_background_controller.dart';
 /// independentes do tema claro/escuro, para representar sempre a mesma
 /// coisa não importa o tema do app.
 class CheckerboardBackground extends StatelessWidget {
-  const CheckerboardBackground({super.key, this.cellSize = 12});
+  const CheckerboardBackground({super.key, this.cellSize = 6});
 
   final double cellSize;
 

@@ -148,10 +148,14 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
   borders per photo or for the whole montage
 - Background — transparent, solid color or an imported image, set
   separately for the montage and for the photos inside it
-- **Áreas** tab: drag the handles between photos to resize each area.
-  A horizontal handle only moves the two photos of its column; a vertical
-  one moves the two columns it separates. Changing the layout or the photo
+- **Áreas** tab: tap a photo to show its small resize handles on each side
+  it shares with a neighbor, and drag them; the photos being resized are
+  outlined while dragging. A top/bottom handle only moves the two photos of
+  that column; a side handle moves the two columns it separates. Dragging
+  inside a photo still moves the picture. Changing the layout or the photo
   count resets every area to the default size
+- Photos with transparency (SVG or cut-out PNG) always show the collage
+  background through them in the preview, just like the export
 - Per-photo replace, crop, rotate and flip from the cell menu; color
   adjustment for one photo or for all of them at once
 - Stickers (bundled or your own, organized in folders) and text with
