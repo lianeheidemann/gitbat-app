@@ -11,6 +11,7 @@ import 'package:video_to_gif/core/models/collage_color_adjustment.dart';
 import 'package:video_to_gif/core/models/photo_info.dart';
 import 'package:video_to_gif/core/services/bundled_sticker_store.dart';
 import 'package:video_to_gif/features/collage/collage_page.dart';
+import 'package:video_to_gif/features/collage/widgets/panels/areas_panel.dart';
 import 'package:video_to_gif/features/collage/widgets/collage_cell_view.dart';
 import 'package:video_to_gif/core/ui/collage_overlay_view.dart';
 import 'package:video_to_gif/core/ui/color_adjust_controls.dart';
@@ -1036,5 +1037,58 @@ void main() {
         expect(find.byType(SvgPicture), findsNothing);
       }
     }
+  });
+
+  testWidgets('aba "Áreas": arrastar a alça muda o tamanho das fotos', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+
+    List<Size> cellSizes() => tester
+        .widgetList<CollageCellView>(find.byType(CollageCellView))
+        .map((view) => view.cellSize)
+        .toList();
+    final before = cellSizes();
+    expect(find.byType(CollageDividerHandle), findsNothing);
+
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+    final handle = find.byType(CollageDividerHandle);
+    expect(handle, findsOneWidget);
+
+    final vertical = tester
+        .widget<CollageDividerHandle>(handle)
+        .divider
+        .vertical;
+    await tester.drag(
+      handle,
+      vertical ? const Offset(80, 0) : const Offset(0, 80),
+    );
+    await tester.pumpAndSettle();
+    final after = cellSizes();
+    if (vertical) {
+      expect(after[0].width, greaterThan(before[0].width));
+      expect(after[1].width, lessThan(before[1].width));
+    } else {
+      expect(after[0].height, greaterThan(before[0].height));
+      expect(after[1].height, lessThan(before[1].height));
+    }
+
+    // Desfazer volta o arrasto inteiro de uma vez.
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(cellSizes(), before);
+
+    await tester.tap(find.byTooltip('Refazer'));
+    await tester.pumpAndSettle();
+    expect(cellSizes(), after);
+    await tester.tap(find.text('Tamanhos iguais'));
+    await tester.pumpAndSettle();
+    expect(cellSizes(), before);
   });
 }

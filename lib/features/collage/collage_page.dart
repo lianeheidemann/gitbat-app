@@ -44,6 +44,7 @@ import 'widgets/panels/stickers_panel.dart';
 import 'widgets/panels/text_panel.dart';
 import '../../core/ui/text_input_dialog.dart';
 import 'widgets/panels/layout_panel.dart';
+import 'widgets/panels/areas_panel.dart';
 import '../../core/ui/preview_settings_panel.dart';
 
 /// Geometria do sticker/texto selecionado, na medida necessária para
@@ -88,6 +89,7 @@ class _SelectedOverlayGeometry {
 /// lista rolável de cards expansíveis.
 enum _CollageTab {
   layout,
+  areas,
   aspect,
   margin,
   border,
@@ -416,7 +418,9 @@ class _CollagePageState extends State<CollagePage> {
         child: Column(
           children: [
             Expanded(
-              child: PreviewAreaBackground(child: Center(child: _preview())),
+              child: PreviewAreaBackground(
+                child: Center(child: MediaCheckerboard(child: _preview())),
+              ),
             ),
             ?toolbar,
             collapsibleEditorPanel(child: _activeTabPanel()),
@@ -509,6 +513,12 @@ class _CollagePageState extends State<CollagePage> {
       layout: _settings.layout,
       onSelectKind: _selectLayoutKind,
       onApplyLayout: _applyLayout,
+    ),
+    _CollageTab.areas => CollageAreasPanel(
+      layout: _settings.layout,
+      onReset: () => _update(
+        _settings.copyWith(layout: _settings.layout.withEqualSizes()),
+      ),
     ),
     _CollageTab.aspect => CollageAspectPanel(
       settings: _settings,
@@ -655,6 +665,7 @@ class _CollagePageState extends State<CollagePage> {
 
   IconData _tabIcon(_CollageTab tab) => switch (tab) {
     _CollageTab.layout => Icons.grid_view_outlined,
+    _CollageTab.areas => Icons.view_quilt_outlined,
     _CollageTab.aspect => Icons.aspect_ratio_rounded,
     _CollageTab.margin => Icons.space_dashboard_outlined,
     _CollageTab.border => Icons.crop_din_rounded,
@@ -667,6 +678,7 @@ class _CollagePageState extends State<CollagePage> {
 
   String _tabLabel(_CollageTab tab) => switch (tab) {
     _CollageTab.layout => 'Layout',
+    _CollageTab.areas => 'Áreas',
     _CollageTab.aspect => 'Proporção',
     _CollageTab.margin => 'Margem',
     _CollageTab.border => 'Borda',
@@ -722,9 +734,12 @@ class _CollagePageState extends State<CollagePage> {
                               // ser movido por vez, o mesmo motivo que
                               // CollageOverlayView.interactive já aplica ao
                               // contrário nesses dois casos.
+                              // Em "Áreas" também: o arrasto é das alças
+                              // entre as fotos, não do enquadramento.
                               interactive:
                                   _activeTab != _CollageTab.stickers &&
-                                  _activeTab != _CollageTab.text,
+                                  _activeTab != _CollageTab.text &&
+                                  _activeTab != _CollageTab.areas,
                               onGestureStart: _pushUndoCheckpoint,
                               onChanged: (cell) => _update(
                                 _settings.replacingCell(i, cell),
@@ -744,6 +759,7 @@ class _CollagePageState extends State<CollagePage> {
                 ),
               ),
               ..._overlayWidgets(size),
+              if (_activeTab == _CollageTab.areas) ..._dividerHandles(geometry),
               // Sempre depois (por cima) das sobreposições, sem ligar para
               // o zIndex de quem está selecionado — ver o porquê no doc de
               // `CollageOverlayView`.
@@ -753,6 +769,60 @@ class _CollagePageState extends State<CollagePage> {
         },
       ),
     );
+  }
+
+  /// Alças da aba "Áreas", uma por divisor, no mesmo espaço das células
+  /// (dentro da borda). O arrasto vira [CollageLayout.resizedBy] contra o
+  /// tamanho real da área de conteúdo da prévia; a exportação só vê os
+  /// pesos, que são proporcionais.
+  List<Widget> _dividerHandles(CollageGeometry geometry) {
+    final thickness = geometry.borderThickness;
+    final contentSize = Size(
+      (geometry.canvasSize.width - thickness * 2).clamp(0.0, double.infinity),
+      (geometry.canvasSize.height - thickness * 2).clamp(0.0, double.infinity),
+    );
+    final layout = _settings.layout;
+    final dividers = layout.dividersFor(
+      contentSize,
+      outerMarginRatio: _settings.outerMarginRatio,
+      innerMarginRatio: _settings.innerMarginRatio,
+    );
+    const touch = 44.0;
+    return [
+      for (final divider in dividers)
+        Positioned(
+          key: ValueKey(
+            'collageDivider_${divider.vertical ? 'v' : 'h'}'
+            '_${divider.column}_${divider.index}',
+          ),
+          left:
+              thickness +
+              divider.center.dx -
+              (divider.vertical ? touch / 2 : divider.length / 2),
+          top:
+              thickness +
+              divider.center.dy -
+              (divider.vertical ? divider.length / 2 : touch / 2),
+          width: divider.vertical ? touch : divider.length,
+          height: divider.vertical ? divider.length : touch,
+          child: CollageDividerHandle(
+            divider: divider,
+            onDragStart: _pushUndoCheckpoint,
+            onDrag: (delta) => _update(
+              _settings.copyWith(
+                layout: _settings.layout.resizedBy(
+                  divider,
+                  delta,
+                  contentSize,
+                  outerMarginRatio: _settings.outerMarginRatio,
+                  innerMarginRatio: _settings.innerMarginRatio,
+                ),
+              ),
+              pushUndo: false,
+            ),
+          ),
+        ),
+    ];
   }
 
   Widget _backgroundPreview() {

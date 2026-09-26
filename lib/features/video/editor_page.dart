@@ -630,7 +630,10 @@ class _EditorPageState extends State<EditorPage> {
   /// área de recorte, e por ser irmã (não filha do `Stack`/`AspectRatio` do
   /// preview) ela também nunca fica atrás de uma moldura de imagem nem é
   /// reduzida para caber na janela dela.
-  Widget _timelined(Widget preview) {
+  Widget _timelined(Widget video) {
+    // O xadrez de transparência fica só atrás do vídeo (com a moldura), não
+    // da linha do tempo nem da área em volta.
+    final preview = MediaCheckerboard(child: video);
     final player = _player;
     if (player == null || !player.value.isInitialized) return preview;
 

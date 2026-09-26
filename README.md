@@ -61,6 +61,10 @@ on their real size.
 
 ### Shared across the app
 
+The preview area is a solid dark color on every editor; the transparency
+checkerboard (when turned on in settings) is dark too and only shows behind
+the photo, video, SVG or collage itself.
+
 The three editors share one shell: a bottom tab bar where each tab opens its
 own panel over the preview, save/share/convert actions, and undo/redo. Every
 panel scrolls within a height cap, and collapsing it never drops the current
@@ -144,6 +148,10 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
   borders per photo or for the whole montage
 - Background — transparent, solid color or an imported image, set
   separately for the montage and for the photos inside it
+- **Áreas** tab: drag the handles between photos to resize each area.
+  A horizontal handle only moves the two photos of its column; a vertical
+  one moves the two columns it separates. Changing the layout or the photo
+  count resets every area to the default size
 - Per-photo replace, crop, rotate and flip from the cell menu; color
   adjustment for one photo or for all of them at once
 - Stickers (bundled or your own, organized in folders) and text with

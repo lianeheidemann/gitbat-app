@@ -25,11 +25,18 @@ class _CheckerboardPainter extends CustomPainter {
 
   final double cellSize;
 
-  static const _light = Color(0xFFE0E0E0);
-  static const _dark = Color(0xFFB4B4B4);
+  // Tons escuros: o xadrez claro de antes brigava com a interface escura e
+  // chamava mais atenção do que a própria foto.
+  static const _light = Color(0xFF4A4A4F);
+  static const _dark = Color(0xFF323236);
 
   @override
   void paint(Canvas canvas, Size size) {
+    // A última linha/coluna de quadradinhos quase nunca fecha certinho no
+    // tamanho da área (o `ceil` abaixo arredonda para cima), e o
+    // `CustomPaint` não recorta sozinho: sem isto o xadrez vazava até uma
+    // casa inteira para fora, por cima da tira da alça do rodapé recolhido.
+    canvas.clipRect(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, Paint()..color = _light);
 
     final darkPaint = Paint()..color = _dark;
@@ -52,10 +59,13 @@ class _CheckerboardPainter extends CustomPainter {
       oldDelegate.cellSize != cellSize;
 }
 
-/// Envolve [child] com o fundo quadriculado por baixo, quando a preferência
-/// global [previewCheckerboardNotifier] está ligada — usado atrás da prévia
-/// nas três telas de edição (vídeo, foto e montagem), para a tela de prévia
-/// inteira (não só as áreas que cada conteúdo marca como transparentes).
+/// Cor sólida da área de prévia em volta da mídia — nas quatro telas de
+/// edição, a região que não é da foto/vídeo/SVG/montagem nunca é xadrez.
+const previewAreaColor = Color(0xFF26272B);
+
+/// Fundo da área de prévia inteira: sempre a cor sólida [previewAreaColor].
+/// O xadrez (quando ligado nas configurações) fica só atrás da própria
+/// mídia — ver [MediaCheckerboard].
 class PreviewAreaBackground extends StatelessWidget {
   const PreviewAreaBackground({super.key, required this.child});
 
@@ -63,12 +73,32 @@ class PreviewAreaBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ColoredBox(color: previewAreaColor, child: child);
+  }
+}
+
+/// Xadrez de transparência só atrás de [child] (a prévia da foto, do vídeo,
+/// do SVG ou da montagem), do tamanho exato dele — quando a preferência
+/// global [previewCheckerboardNotifier] está ligada. Fica por fora do
+/// `RepaintBoundary` do conta-gotas nas telas que o têm, para o xadrez não
+/// entrar na cor amostrada.
+class MediaCheckerboard extends StatelessWidget {
+  const MediaCheckerboard({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: previewCheckerboardNotifier,
-      builder: (context, enabled, _) => Stack(
-        fit: StackFit.expand,
-        children: [if (enabled) const CheckerboardBackground(), child],
-      ),
+      builder: (context, enabled, _) => enabled
+          ? Stack(
+              children: [
+                const Positioned.fill(child: CheckerboardBackground()),
+                child,
+              ],
+            )
+          : child,
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'dart:ui' show Rect, Size;
+import 'dart:ui' show Offset, Rect, Size;
 
 /// Como as células de uma montagem estão organizadas: modelos prontos (linha,
 /// coluna, grades fixas) ou uma grade livre com número de linhas/colunas
@@ -22,12 +22,64 @@ enum CollageLayoutKind {
 /// [CollageLayoutKind.column] (usa [rows]) e [CollageLayoutKind.freeGrid]
 /// (usa os dois) — as grades fixas (2x2/2x3/3x3) já têm sua contagem
 /// implícita no próprio nome.
+///
+/// O tamanho de cada área pode ser mudado na aba "Áreas", arrastando os
+/// divisores entre as fotos. A grade é dividida primeiro em colunas
+/// ([columnWeights]) e depois cada coluna nas suas linhas ([rowWeights],
+/// uma lista por coluna) — assim um divisor horizontal mexe só nas duas
+/// fotos daquela coluna, e um vertical nas duas colunas que ele separa.
+/// `null` é tudo igual, o padrão. Qualquer troca de arranjo ou de contagem
+/// ([copyWith]) volta os tamanhos para o padrão.
 class CollageLayout {
-  const CollageLayout({required this.kind, this.columns = 1, this.rows = 1});
+  const CollageLayout({
+    required this.kind,
+    this.columns = 1,
+    this.rows = 1,
+    this.columnWeights,
+    this.rowWeights,
+  });
 
   final CollageLayoutKind kind;
   final int columns;
   final int rows;
+
+  /// Largura relativa de cada coluna (uma por coluna). `null` = iguais.
+  final List<double>? columnWeights;
+
+  /// Altura relativa de cada linha, **por coluna**: `rowWeights![c][r]`.
+  /// `null` = iguais.
+  final List<List<double>>? rowWeights;
+
+  /// Menor peso de uma área ao arrastar um divisor — 25% do tamanho padrão,
+  /// para nenhuma foto sumir de vez.
+  static const minWeight = 0.25;
+
+  /// `true` quando algum tamanho foi mudado na aba "Áreas".
+  bool get hasCustomSizes => columnWeights != null || rowWeights != null;
+
+  /// Os mesmos arranjo e contagem, com todas as áreas do mesmo tamanho.
+  CollageLayout withEqualSizes() =>
+      CollageLayout(kind: kind, columns: columns, rows: rows);
+
+  /// Pesos válidos de [count] áreas (somando [count]): os guardados, se
+  /// baterem com a contagem atual, senão todos 1.
+  static List<double> _weightsOr(List<double>? weights, int count) {
+    if (weights == null || weights.length != count) {
+      return List.filled(count, 1.0);
+    }
+    final sum = weights.fold<double>(0, (a, b) => a + b);
+    if (sum <= 0) return List.filled(count, 1.0);
+    return [for (final w in weights) w * count / sum];
+  }
+
+  List<double> _columnWeights() => _weightsOr(columnWeights, _effectiveColumns);
+
+  List<double> _rowWeightsOf(int column) => _weightsOr(
+    rowWeights != null && column < rowWeights!.length
+        ? rowWeights![column]
+        : null,
+    _effectiveRows,
+  );
 
   /// Quantas colunas a grade realmente tem, resolvendo os nomes fixos.
   int get _effectiveColumns => switch (kind) {
@@ -78,26 +130,143 @@ class CollageLayout {
           0.0,
           canvasSize.height,
         );
-    final cellWidth = availableWidth / cols;
-    final cellHeight = availableHeight / rowsN;
+    final colW = _columnWeights();
+    final lefts = <double>[];
+    final widths = <double>[];
+    var x = outerMargin;
+    for (var c = 0; c < cols; c++) {
+      final w = availableWidth * colW[c] / cols;
+      lefts.add(x);
+      widths.add(w);
+      x += w + innerMargin;
+    }
 
-    final rects = <Rect>[];
-    for (var r = 0; r < rowsN; r++) {
-      for (var c = 0; c < cols; c++) {
-        final left = outerMargin + c * (cellWidth + innerMargin);
-        final top = outerMargin + r * (cellHeight + innerMargin);
-        rects.add(Rect.fromLTWH(left, top, cellWidth, cellHeight));
+    // Células em ordem de leitura (linha por linha), como sempre foi — cada
+    // coluna calcula as alturas das suas linhas com os próprios pesos.
+    final rects = List<Rect>.filled(rowsN * cols, Rect.zero);
+    for (var c = 0; c < cols; c++) {
+      final rowW = _rowWeightsOf(c);
+      var y = outerMargin;
+      for (var r = 0; r < rowsN; r++) {
+        final h = availableHeight * rowW[r] / rowsN;
+        rects[r * cols + c] = Rect.fromLTWH(lefts[c], y, widths[c], h);
+        y += h + innerMargin;
       }
     }
     return rects;
   }
 
+  /// Troca arranjo/contagem. Sempre volta os tamanhos das áreas para o
+  /// padrão: pesos de uma grade não servem para outra.
   CollageLayout copyWith({CollageLayoutKind? kind, int? columns, int? rows}) =>
       CollageLayout(
         kind: kind ?? this.kind,
         columns: columns ?? this.columns,
         rows: rows ?? this.rows,
       );
+
+  /// Os divisores arrastáveis da aba "Áreas" num canvas de [canvasSize],
+  /// com as mesmas margens de [cellRectsFor]: um vertical entre cada par de
+  /// colunas (da altura toda) e um horizontal entre cada par de linhas
+  /// dentro de cada coluna.
+  List<CollageDivider> dividersFor(
+    Size canvasSize, {
+    required double outerMarginRatio,
+    required double innerMarginRatio,
+  }) {
+    final rects = cellRectsFor(
+      canvasSize,
+      outerMarginRatio: outerMarginRatio,
+      innerMarginRatio: innerMarginRatio,
+    );
+    final cols = _effectiveColumns;
+    final rowsN = _effectiveRows;
+    final dividers = <CollageDivider>[];
+    for (var c = 0; c < cols - 1; c++) {
+      final left = rects[c];
+      final right = rects[c + 1];
+      final top = rects[c].top;
+      final bottom = rects[(rowsN - 1) * cols + c].bottom;
+      dividers.add(
+        CollageDivider(
+          vertical: true,
+          column: c,
+          index: c,
+          center: Offset((left.right + right.left) / 2, (top + bottom) / 2),
+          length: bottom - top,
+        ),
+      );
+    }
+    for (var c = 0; c < cols; c++) {
+      for (var r = 0; r < rowsN - 1; r++) {
+        final above = rects[r * cols + c];
+        final below = rects[(r + 1) * cols + c];
+        dividers.add(
+          CollageDivider(
+            vertical: false,
+            column: c,
+            index: r,
+            center: Offset(above.center.dx, (above.bottom + below.top) / 2),
+            length: above.width,
+          ),
+        );
+      }
+    }
+    return dividers;
+  }
+
+  /// [divider] arrastado [delta] pixels (para a direita num vertical, para
+  /// baixo num horizontal) num canvas de [canvasSize]. Só as duas áreas que
+  /// ele separa mudam, e nenhuma fica menor que [minWeight].
+  CollageLayout resizedBy(
+    CollageDivider divider,
+    double delta,
+    Size canvasSize, {
+    required double outerMarginRatio,
+    required double innerMarginRatio,
+  }) {
+    final cols = _effectiveColumns;
+    final rowsN = _effectiveRows;
+    final outerMargin = canvasSize.shortestSide * outerMarginRatio;
+    final innerMargin = canvasSize.shortestSide * innerMarginRatio;
+
+    List<double> shifted(List<double> weights, int i, double available) {
+      if (available <= 0 || i < 0 || i + 1 >= weights.length) return weights;
+      final dw = delta / available * weights.length;
+      final total = weights[i] + weights[i + 1];
+      final a = (weights[i] + dw).clamp(minWeight, total - minWeight);
+      return [...weights]
+        ..[i] = a
+        ..[i + 1] = total - a;
+    }
+
+    if (divider.vertical) {
+      final available =
+          canvasSize.width - outerMargin * 2 - innerMargin * (cols - 1);
+      return CollageLayout(
+        kind: kind,
+        columns: columns,
+        rows: rows,
+        columnWeights: shifted(_columnWeights(), divider.index, available),
+        rowWeights: rowWeights,
+      );
+    }
+    final available =
+        canvasSize.height - outerMargin * 2 - innerMargin * (rowsN - 1);
+    final perColumn = [for (var c = 0; c < cols; c++) _rowWeightsOf(c)];
+    perColumn[divider.column] = shifted(
+      perColumn[divider.column],
+      divider.index,
+      available,
+    );
+    return CollageLayout(
+      kind: kind,
+      columns: columns,
+      rows: rows,
+      columnWeights: columnWeights,
+      rowWeights: perColumn,
+    );
+  }
 
   /// [count] fotos lado a lado, uma única linha.
   factory CollageLayout.row(int count) =>
@@ -122,4 +291,32 @@ class CollageLayout {
   /// trocar para um desses dois layouts.
   static const minRowColumnCount = 2;
   static const maxRowColumnCount = 8;
+}
+
+/// Um divisor arrastável da aba "Áreas" — ver [CollageLayout.dividersFor].
+class CollageDivider {
+  const CollageDivider({
+    required this.vertical,
+    required this.column,
+    required this.index,
+    required this.center,
+    required this.length,
+  });
+
+  /// `true` entre duas colunas (arrasta na horizontal); `false` entre duas
+  /// linhas de uma coluna (arrasta na vertical).
+  final bool vertical;
+
+  /// Coluna do divisor horizontal (num vertical, a da esquerda).
+  final int column;
+
+  /// Qual par ele separa: colunas `index`/`index + 1` num vertical, linhas
+  /// `index`/`index + 1` da [column] num horizontal.
+  final int index;
+
+  /// Centro do divisor, no espaço de [CollageLayout.cellRectsFor].
+  final Offset center;
+
+  /// Comprimento do divisor (altura num vertical, largura num horizontal).
+  final double length;
 }
