@@ -91,6 +91,9 @@ both use, so what you see is what gets encoded.
   automatically-detected transparent window
 - Content fit — auto, fill, fit or expand with zoom
 - Rotate and mirror the finished result, on both screens
+- **Fit to content** crop on the single photo: one tap trims only the fully
+  transparent margins around a PNG, snapping the crop to the visible pixels
+  (it can still be refined with the handles afterwards)
 - Transparent (real alpha on WebP/PNG) or solid-color background
 
 ### Magic eraser (single photo)

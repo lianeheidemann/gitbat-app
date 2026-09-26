@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/aspect_preset.dart';
 import '../../core/models/color_adjustments.dart';
+import '../../core/models/crop_rect.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/models/image_frame.dart';
 import '../../core/models/photo_info.dart';
@@ -15,6 +16,7 @@ import 'models/eraser_mask.dart';
 import '../../core/services/imported_frame_store.dart';
 import '../../core/services/output_service.dart';
 import 'services/magic_eraser.dart';
+import 'services/opaque_bounds.dart';
 import 'services/photo_frame_compositor.dart';
 import '../../core/ui/app_bar_title.dart';
 import '../../core/ui/checkerboard_background.dart';
@@ -52,6 +54,12 @@ const _selectableContentFitModes = [
 /// como razão), só marca "livre" — cada alça mexe só no seu lado/canto, sem
 /// travar largura/altura entre si.
 const _customAspectPreset = AspectPreset('Personalizado', -1);
+
+/// "Ajustar ao conteúdo": também não é uma proporção (o -2 nunca vira razão).
+/// Tocar nele encosta o recorte nos pixels visíveis, cortando só a margem
+/// totalmente transparente (ver `opaque_bounds.dart`); depois disso o recorte
+/// fica livre como em "Personalizado", para a pessoa refinar se quiser.
+const _trimAspectPreset = AspectPreset('Ajustar ao conteúdo', -2);
 
 /// Tela dedicada a aplicar uma moldura (procedural ou de imagem) a uma foto
 /// estática. Reaproveita o mesmo modelo ([FrameSettings], [ImageFrameAsset])
@@ -159,6 +167,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   bool _saving = false;
   bool _sharing = false;
   bool _erasing = false;
+  bool _trimming = false;
 
   @override
   void initState() {
@@ -550,7 +559,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               crop: _frame.crop,
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
-              freeform: _aspect == _customAspectPreset,
+              freeform: _isFreeformAspect,
             ),
           ],
         ),
@@ -719,7 +728,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   Widget _cropSection() {
     final crop = _frame.crop;
     final visiblePresets = <AspectPreset>[
-      ...AspectPreset.presets,
+      AspectPreset.presets.first,
+      _trimAspectPreset,
+      ...AspectPreset.presets.skip(1),
       _customAspectPreset,
     ];
 
@@ -736,7 +747,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         ),
         if (crop != null) ...[
           const SizedBox(height: 18),
-          if (_aspect == _customAspectPreset) ...[
+          if (_isFreeformAspect) ...[
             CropSizeSummary(crop: crop),
             const SizedBox(height: 12),
             CropSizeInputs(
@@ -767,6 +778,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// remove o recorte ("Original") ou centraliza um recorte na proporção
   /// fixa selecionada.
   void _selectAspectPreset(AspectPreset preset) {
+    if (preset == _trimAspectPreset) {
+      unawaited(_trimTransparentEdges());
+      return;
+    }
     setState(() {
       _aspect = preset;
 
@@ -786,9 +801,47 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     });
   }
 
-  /// Proporção travada pelo preset atual, ou `null` em "Personalizado".
-  double? get _lockedRatio =>
-      _aspect == _customAspectPreset ? null : _aspect.ratio;
+  /// Recorte sem proporção travada: "Personalizado" e "Ajustar ao conteúdo".
+  bool get _isFreeformAspect =>
+      _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
+
+  /// Proporção travada pelo preset atual, ou `null` num recorte livre.
+  double? get _lockedRatio => _isFreeformAspect ? null : _aspect.ratio;
+
+  /// Encosta o recorte nos pixels visíveis da foto atual — já com o que a
+  /// borracha apagou, porque lê `_photo` e não a foto que abriu a tela.
+  Future<void> _trimTransparentEdges() async {
+    if (_trimming) return;
+    setState(() => _trimming = true);
+    final path = _photo.path;
+    CropRect? bounds;
+    try {
+      bounds = await detectOpaqueBounds(path);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _trimming = false);
+      _message('Não foi possível ler a imagem.');
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _trimming = false);
+    // A foto pode ter mudado (desfazer/borracha) enquanto a varredura rodava.
+    if (path != _photo.path) return;
+
+    if (bounds == null) {
+      _message('A imagem está toda transparente.');
+      return;
+    }
+    if (bounds.x == 0 &&
+        bounds.y == 0 &&
+        bounds.width == _photo.width &&
+        bounds.height == _photo.height) {
+      _message('A imagem não tem bordas transparentes para remover.');
+      return;
+    }
+    _aspect = _trimAspectPreset;
+    _updateFrame(_frame.copyWith(crop: bounds));
+  }
 
   void _applyCropWidth(String value) {
     final parsed = int.tryParse(value.trim());
@@ -825,6 +878,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   void _resetCurrentCrop() {
+    if (_aspect == _trimAspectPreset) {
+      unawaited(_trimTransparentEdges());
+      return;
+    }
     if (_aspect == _customAspectPreset) {
       _updateFrame(_frame.copyWith(crop: _crop.defaultCustomCrop()));
       return;
