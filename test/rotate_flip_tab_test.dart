@@ -11,7 +11,8 @@ import 'package:video_to_gif/features/video/editor_page.dart';
 
 // A aba "Girar" nasceu na tela de SVG e passou a valer também em "Editar
 // GIF" e "Editar imagem". Nestas duas ela é um passo de saída: gira o
-// resultado, não o espaço de trabalho. O que estes testes fixam é o par
+// resultado (ou, com moldura de imagem, só o conteúdo dentro dela — ver
+// `frame_rotation_test.dart`), não o espaço de trabalho. O que estes testes fixam é o par
 // que faz isso ser verdade na tela — o botão muda o estado, e a prévia
 // mostra o resultado já girado — mais a exceção deliberada: com as alças de
 // recorte à mostra a prévia fica na orientação original, senão arrastar uma

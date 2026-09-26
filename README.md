@@ -69,12 +69,22 @@ exposure, contrast, highlights, shadows, saturation, hue and temperature —
 driven by a single color matrix that the live preview and the FFmpeg export
 both use, so what you see is what gets encoded.
 
+Every crop screen (photo, video, SVG and the collage photo crop) has a
+**window size** slider — 1% to 100% of the largest window of the same shape
+that fits, keeping the shape and the center — and a **Centralizar** button
+that moves the window to the middle without resizing it. Every text tab
+(photo, video, SVG and collage) has a **font size** slider from 1 to 80,
+where 1 is 1% of the image's shorter side; the resize handle keeps working
+alongside it. In the SVG editor, text is saved as real `<text>` elements —
+the file stays a vector, and the text stays editable in any SVG tool.
+
 ### Video → GIF / WebP
 
 - Preview with a timeline, duration trim and crop (presets or custom)
-- Rotate in 90° steps and mirror horizontally or vertically — applied to
-  the finished result, so crop, frame and the size estimate keep working in
-  the original orientation
+- Rotate in 90° steps and mirror horizontally or vertically — an output
+  step, so crop, frame and the size estimate keep working in the original
+  orientation (with an image frame, only the video inside it turns; see
+  below)
 - Speed 0.25x–4x, resolution as a percentage of the original (with pixel
   preview), frame rate 5–24 fps, loop or play once
 - Output as GIF (256-color palette, two-pass conversion) or animated WebP
@@ -86,11 +96,21 @@ both use, so what you see is what gets encoded.
 
 ### Frames (video and single photo)
 
-- Procedural border — thin, medium or thick, with color and corner rounding
-- Image frame — bundled phone mockups, or your own with an
-  automatically-detected transparent window
-- Content fit — auto, fill, fit or expand with zoom
-- Rotate and mirror the finished result, on both screens
+Both editors split frames into two tabs: **Borda** (border) and **Moldura**
+(frame).
+
+- **Borda** — procedural border: thin, medium or thick, with color and
+  corner rounding in 1% steps
+- **Moldura** — image frame: bundled phone mockups, or your own with an
+  automatically-detected transparent window. A **90°** button, the last
+  option of the tab, turns the frame together with its content (the mockup
+  lies down, content and all)
+- Content fit — auto (fills when the proportions are close, otherwise fits
+  the whole picture with black bars), fill, or expand with zoom and a
+  **background color of your choice** inside the frame window
+- **Girar** (rotate/mirror) on both screens: without an image frame it
+  turns the finished result; with one, the frame stays upright and only the
+  photo/video inside its window turns
 - **Fit to content** crop on the single photo: one tap trims only the fully
   transparent margins around a PNG, snapping the crop to the visible pixels
   (it can still be refined with the handles afterwards)

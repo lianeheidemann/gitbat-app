@@ -43,8 +43,10 @@ String buildConversionVideoFilter(
   return parts.join(',');
 }
 
-/// Filtros que giram e espelham o resultado, na ordem girar → espelhar (a
-/// mesma de [applyOutputTransform] na prévia).
+/// Filtros que giram e espelham, na ordem girar → espelhar (a mesma de
+/// [applyOutputTransform] na prévia) — usados tanto no fim do grafo
+/// ([FrameSettings.finalTransform]) quanto, com moldura de imagem, só no
+/// vídeo antes do encaixe na janela ([FrameSettings.contentTransform]).
 ///
 /// `transpose=1` é um quarto de volta no sentido horário e `transpose=2` no
 /// anti-horário; meia volta é o horário duas vezes. Lista vazia quando não
@@ -329,10 +331,21 @@ String imageFramedGraph(
   bool needsAreaMask = false,
   required String output,
 }) {
-  final contentFilter = buildConversionVideoFilter(settings, video);
   final frame = settings.frame;
+  // O giro da aba "Girar", com moldura de imagem, vale só para o vídeo
+  // dentro da janela: entra logo depois da cadeia do conteúdo, antes do
+  // encaixe — e o encaixe passa a olhar as dimensões já giradas. O giro da
+  // moldura inteira ([FrameSettings.finalTransform]) fica para o fim do
+  // grafo, em quem chama (ver [transformedTail]/[transformedInto]).
+  final contentFilter = [
+    buildConversionVideoFilter(settings, video),
+    ...outputTransformFilters(frame.contentTransform),
+  ].join(',');
 
-  final (contentWidth, contentHeight) = settings.contentDimensions(video);
+  final (scaledWidth, scaledHeight) = settings.contentDimensions(video);
+  final (contentWidth, contentHeight) = frame.contentTransform.swapsAxes
+      ? (scaledHeight, scaledWidth)
+      : (scaledWidth, scaledHeight);
   final (areaX, areaY, areaWidth, areaHeight) = settings
       .imageFrameContentAreaPx(video);
   final (canvasWidth, canvasHeight) = settings.imageFrameCanvasDimensions(
@@ -349,9 +362,10 @@ String imageFramedGraph(
   );
 
   if (fit == ContentFitMode.expand) {
-    // O fundo permanece preto. O zoom atua somente no vídeo nítido central:
-    // abaixo de 100% revela mais da área preta; acima de 100% aproxima e o
-    // overlay recorta o excedente.
+    // O fundo é a cor escolhida em "Expandir sem cortar"
+    // ([FrameSettings.expandBackgroundColor], preto por padrão). O zoom atua
+    // somente no vídeo nítido central: abaixo de 100% revela mais do fundo;
+    // acima de 100% aproxima e o overlay recorta o excedente.
     final widthScale = areaWidth / contentWidth;
     final heightScale = areaHeight / contentHeight;
     final fitScale = widthScale < heightScale ? widthScale : heightScale;
@@ -364,7 +378,8 @@ String imageFramedGraph(
     parts.add('[content]split=2[bg][fg]');
     parts.add(
       '[bg]scale=$areaWidth:$areaHeight:flags=lanczos,'
-      'drawbox=x=0:y=0:w=iw:h=ih:color=black:t=fill[bg2]',
+      'drawbox=x=0:y=0:w=iw:h=ih:'
+      'color=${ffmpegColor(frame.expandBackgroundColor)}:t=fill[bg2]',
     );
     parts.add('[fg]scale=$zoomedWidth:$zoomedHeight:flags=lanczos[fg2]');
     parts.add('[bg2][fg2]overlay=(W-w)/2:(H-h)/2[fitted]');

@@ -6,12 +6,13 @@ import 'package:video_to_gif/core/models/frame_settings.dart';
 import 'package:video_to_gif/core/models/video_info.dart';
 import 'package:video_to_gif/features/video/editor_page.dart';
 
-// As molduras moram em duas abas do rodapé — "Moldura" (as procedurais) e
-// "Imagem" (as artes prontas) — e só uma família pode estar ativa por vez.
-// Cada fileira tem a sua própria miniatura "Sem moldura" e mostra sempre
-// exatamente uma opção marcada: é assim que se vê que escolher de um lado
-// desativou o outro. Estes testes garantem que as duas fileiras existem nas
-// suas abas e que essa exclusão mútua vale nos dois sentidos.
+// As molduras moram em duas abas do rodapé — "Borda" (as procedurais) e
+// "Moldura" (as artes prontas) — e só uma família pode estar ativa por vez.
+// Cada fileira tem a sua própria miniatura "Sem borda"/"Sem moldura" e
+// mostra sempre exatamente uma opção marcada: é assim que se vê que
+// escolher de um lado desativou o outro. Estes testes garantem que as duas
+// fileiras existem nas suas abas e que essa exclusão mútua vale nos dois
+// sentidos.
 const _video = VideoInfo(
   path: '/tmp/video-inexistente-para-teste.mp4',
   fileName: 'video.mp4',
@@ -84,7 +85,7 @@ void main() {
   testWidgets('cada família de moldura aparece na sua aba, sem erro', (
     tester,
   ) async {
-    await _openTab(tester, 'Moldura');
+    await _openTab(tester, 'Borda');
     expect(tester.takeException(), isNull);
     for (final key in [
       'frameStyleThumb_none',
@@ -95,11 +96,11 @@ void main() {
       expect(
         find.byKey(ValueKey(key)),
         findsOneWidget,
-        reason: '$key deveria estar na aba "Moldura"',
+        reason: '$key deveria estar na aba "Borda"',
       );
     }
 
-    await _switchTab(tester, 'Imagem');
+    await _switchTab(tester, 'Moldura');
     expect(tester.takeException(), isNull);
     for (final key in [
       'imageFrameThumb_none',
@@ -113,61 +114,62 @@ void main() {
       expect(
         find.byKey(ValueKey(key)),
         findsOneWidget,
-        reason: '$key deveria estar na aba "Imagem"',
+        reason: '$key deveria estar na aba "Moldura"',
       );
     }
   });
 
-  testWidgets('escolher numa aba volta a outra para "Sem moldura"', (
-    tester,
-  ) async {
-    await _openTab(tester, 'Imagem');
-    expect(
-      _checkIn('imageFrameThumb_none'),
-      findsOneWidget,
-      reason: 'sem nada escolhido, a fileira começa em "Sem moldura"',
-    );
+  testWidgets(
+    'escolher numa aba volta a outra para "Sem borda"/"Sem moldura"',
+    (tester) async {
+      await _openTab(tester, 'Moldura');
+      expect(
+        _checkIn('imageFrameThumb_none'),
+        findsOneWidget,
+        reason: 'sem nada escolhido, a fileira começa em "Sem moldura"',
+      );
 
-    await tester.tap(
-      find.byKey(const ValueKey('imageFrameThumb_bundled_titanio')),
-    );
-    await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('imageFrameThumb_bundled_titanio')),
+      );
+      await tester.pump();
 
-    expect(
-      _checkIn('imageFrameThumb_bundled_titanio'),
-      findsOneWidget,
-      reason: 'a moldura de imagem escolhida fica marcada',
-    );
-    expect(
-      _checkIn('imageFrameThumb_none'),
-      findsNothing,
-      reason: '"Sem moldura" da fileira de imagem sai de marcada',
-    );
-    expect(
-      find.text('Titânio'),
-      findsWidgets,
-      reason: 'o cabeçalho do painel deve refletir a moldura ativa',
-    );
+      expect(
+        _checkIn('imageFrameThumb_bundled_titanio'),
+        findsOneWidget,
+        reason: 'a moldura de imagem escolhida fica marcada',
+      );
+      expect(
+        _checkIn('imageFrameThumb_none'),
+        findsNothing,
+        reason: '"Sem moldura" da fileira de imagem sai de marcada',
+      );
+      expect(
+        find.text('Titânio'),
+        findsWidgets,
+        reason: 'o cabeçalho do painel deve refletir a moldura ativa',
+      );
 
-    await _switchTab(tester, 'Moldura');
-    expect(
-      _checkIn('frameStyleThumb_none'),
-      findsOneWidget,
-      reason: 'a família procedural continua em "Sem moldura"',
-    );
+      await _switchTab(tester, 'Borda');
+      expect(
+        _checkIn('frameStyleThumb_none'),
+        findsOneWidget,
+        reason: 'a família procedural continua em "Sem borda"',
+      );
 
-    await tester.tap(find.byKey(const ValueKey('frameStyleThumb_medium')));
-    await tester.pump();
-    expect(_checkIn('frameStyleThumb_medium'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('frameStyleThumb_medium')));
+      await tester.pump();
+      expect(_checkIn('frameStyleThumb_medium'), findsOneWidget);
 
-    await _switchTab(tester, 'Imagem');
-    expect(
-      _checkIn('imageFrameThumb_bundled_titanio'),
-      findsNothing,
-      reason: 'a moldura de imagem é desativada',
-    );
-    expect(_checkIn('imageFrameThumb_none'), findsOneWidget);
-  });
+      await _switchTab(tester, 'Moldura');
+      expect(
+        _checkIn('imageFrameThumb_bundled_titanio'),
+        findsNothing,
+        reason: 'a moldura de imagem é desativada',
+      );
+      expect(_checkIn('imageFrameThumb_none'), findsOneWidget);
+    },
+  );
 
   testWidgets('escolher uma moldura não fecha nem troca a aba aberta', (
     tester,
@@ -175,7 +177,7 @@ void main() {
     // Antes as seções viviam numa lista rolável junto com a prévia, e mudar
     // de moldura mexia na rolagem (havia toda uma compensação para isso).
     // Com o painel fixo no rodapé, a fileira simplesmente continua no lugar.
-    await _openTab(tester, 'Imagem');
+    await _openTab(tester, 'Moldura');
     final imageFrame = find.byKey(
       const ValueKey('imageFrameThumb_bundled_titanio'),
     );
@@ -193,7 +195,7 @@ void main() {
   testWidgets('painel de ajuste só aparece com moldura de imagem ativa', (
     tester,
   ) async {
-    await _openTab(tester, 'Imagem');
+    await _openTab(tester, 'Moldura');
 
     expect(find.text('Ajuste do conteúdo'), findsNothing);
     expect(find.text('Resolução da moldura'), findsNothing);
@@ -216,7 +218,7 @@ void main() {
   testWidgets(
     'zoom aparece somente em Expandir sem cortar e vai de 10% a 300%',
     (tester) async {
-      await _openTab(tester, 'Imagem');
+      await _openTab(tester, 'Moldura');
       await tester.tap(
         find.byKey(const ValueKey('imageFrameThumb_bundled_titanio')),
       );
@@ -281,7 +283,7 @@ void main() {
   testWidgets('resolução da moldura aparece como card próprio do painel', (
     tester,
   ) async {
-    await _openTab(tester, 'Imagem');
+    await _openTab(tester, 'Moldura');
     await tester.tap(
       find.byKey(const ValueKey('imageFrameThumb_bundled_titanio')),
     );
@@ -333,7 +335,7 @@ void main() {
   testWidgets('desfazer e refazer voltam e refazem a escolha de moldura', (
     tester,
   ) async {
-    await _openTab(tester, 'Moldura');
+    await _openTab(tester, 'Borda');
 
     // Sem nenhuma mudança ainda, os dois botões nascem desligados.
     // O `Tooltip` fica DENTRO do `IconButton` (é ele que o cria), então o
@@ -358,7 +360,7 @@ void main() {
     expect(
       _checkIn('frameStyleThumb_none'),
       findsOneWidget,
-      reason: 'desfazer volta para "Sem moldura"',
+      reason: 'desfazer volta para "Sem borda"',
     );
 
     await tester.tap(find.byTooltip('Refazer'));
@@ -368,5 +370,82 @@ void main() {
       findsOneWidget,
       reason: 'refazer traz a moldura de volta',
     );
+  });
+
+  testWidgets('botão "90°" gira a moldura de imagem e aparece no resumo', (
+    tester,
+  ) async {
+    await _openTab(tester, 'Moldura');
+    expect(find.byKey(const ValueKey('frameRotateButton')), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('imageFrameThumb_bundled_titanio')),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // O painel cresce aos poucos com as opções da moldura escolhida; só
+    // depois dá para trazer o botão para dentro da área visível dele.
+    await tester.pump(const Duration(milliseconds: 600));
+    final button = find.byKey(const ValueKey('frameRotateButton'));
+    await tester.ensureVisible(button);
+    await tester.pump(const Duration(milliseconds: 300));
+    // É a última opção do painel, depois da resolução, e sem texto ao lado.
+    expect(
+      tester.getTopLeft(button).dy,
+      greaterThan(tester.getTopLeft(find.text('Resolução da moldura')).dy),
+    );
+    expect(
+      find.descendant(of: button, matching: find.byType(Text)),
+      findsOneWidget,
+    );
+    await tester.tap(button);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Titânio · 90°'), findsOneWidget);
+
+    // Quatro toques dão a volta completa.
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(button);
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    expect(find.text('Titânio · 90°'), findsNothing);
+    expect(find.text('Titânio'), findsWidgets);
+  });
+
+  testWidgets('arredondamento dos cantos anda de 1 em 1%', (tester) async {
+    await _openTab(tester, 'Borda');
+    await tester.tap(find.byKey(const ValueKey('frameStyleThumb_medium')));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final label = find.text('Arredondamento dos cantos');
+    await tester.ensureVisible(label);
+    await tester.pump();
+    final slider = tester.widget<Slider>(
+      find
+          .descendant(
+            of: find.ancestor(of: label, matching: find.byType(Column)).first,
+            matching: find.byType(Slider),
+          )
+          .first,
+    );
+    expect(slider.divisions, 100);
+  });
+
+  testWidgets('ícones das abas: quadrado vazio na Borda, celular na Moldura', (
+    tester,
+  ) async {
+    await _openTab(tester, 'Borda');
+    Finder tabIcon(String label, IconData icon) => find.descendant(
+      of: find
+          .ancestor(of: find.text(label).last, matching: find.byType(Column))
+          .first,
+      matching: find.byIcon(icon),
+    );
+    expect(
+      tabIcon('Borda', Icons.check_box_outline_blank_rounded),
+      findsOneWidget,
+    );
+    expect(tabIcon('Moldura', Icons.smartphone_rounded), findsOneWidget);
+    // O quadro com a "montanha" saiu da Moldura (continua só em "Formato").
+    expect(tabIcon('Moldura', Icons.image_outlined), findsNothing);
   });
 }

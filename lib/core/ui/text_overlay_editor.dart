@@ -474,6 +474,16 @@ class TextOverlayPanel extends StatelessWidget {
                   apply: (item, color) => item.copyWith(color: color),
                 ),
               ),
+              TextFontSizeRow(
+                item: selected,
+                onChangeStart: () => onGestureStart?.call(),
+                onChanged: (points) => onChanged(
+                  texts.replacingText(
+                    selected.id,
+                    selected.withFontSizePoints(points),
+                  ),
+                ),
+              ),
               PanelSwitchRow(
                 label: 'Fundo do texto',
                 value: selected.hasBackground,

@@ -1,12 +1,17 @@
 import 'dart:math' as math;
 import 'dart:ui' show Canvas, Size;
 
-/// Giro e espelhamento aplicados **no fim**, ao resultado já pronto.
+/// Giro e espelhamento da aba "Girar" (e, só com o giro, do botão "90°" da
+/// aba "Moldura").
 ///
 /// Diferente da tela de SVG, onde girar gira o espaço de trabalho inteiro e o
-/// recorte passa a ser medido já girado, aqui a transformação é o último
-/// passo antes de exportar: recorte, moldura, proporções prontas e estimativa
-/// de tamanho continuam trabalhando na orientação original da mídia.
+/// recorte passa a ser medido já girado, aqui a transformação é um passo de
+/// saída: recorte, moldura, proporções prontas e estimativa de tamanho
+/// continuam trabalhando na orientação original da mídia. Sem moldura de
+/// imagem ela vale para o resultado já pronto; com moldura de imagem, a da
+/// aba "Girar" vale só para o conteúdo dentro da janela e a do botão "90°"
+/// para o resultado inteiro — ver `FrameSettings.contentTransform` e
+/// `FrameSettings.finalTransform`.
 ///
 /// A ordem é girar e depois espelhar — a mesma que a prévia do SVG usa
 /// (`RotatedBox` por dentro, `Transform` de espelho por fora), para as telas

@@ -81,6 +81,43 @@ class CropController {
     return CropRect(x: x, y: y, width: safeWidth, height: safeHeight);
   }
 
+  /// Maior janela com o formato de [crop] (largura ÷ altura) que cabe na
+  /// fonte — o 100% do controle "Tamanho da janela".
+  (double, double) _maxSizeFor(CropRect crop) {
+    final aspect = crop.aspectRatio;
+    var width = sourceWidth.toDouble();
+    var height = width / aspect;
+    if (height > sourceHeight) {
+      height = sourceHeight.toDouble();
+      width = height * aspect;
+    }
+    return (width, height);
+  }
+
+  /// Tamanho de [crop] em relação à maior janela do mesmo formato que cabe
+  /// na fonte, em % (1 a 100) — o valor do controle "Tamanho da janela".
+  int sizePercentOf(CropRect crop) {
+    final (maxWidth, _) = _maxSizeFor(crop);
+    return (crop.width / maxWidth * 100).round().clamp(1, 100);
+  }
+
+  /// [crop] redimensionada para [percent]% da maior janela do mesmo formato
+  /// que cabe na fonte — o controle "Tamanho da janela". Mantém o formato e
+  /// o centro (encostando nas bordas quando precisar).
+  CropRect scaledTo(int percent, {required CropRect crop}) {
+    final (maxWidth, maxHeight) = _maxSizeFor(crop);
+    final factor = percent.clamp(1, 100) / 100;
+    return centeredOn(
+      (maxWidth * factor).round(),
+      (maxHeight * factor).round(),
+      around: crop,
+    );
+  }
+
+  /// A mesma janela ([crop], com o mesmo tamanho) movida para o centro da
+  /// fonte — o botão "Centralizar".
+  CropRect centered(CropRect crop) => centeredOn(crop.width, crop.height);
+
   /// Recorte inicial do preset "Personalizado": 80% da fonte, centralizado.
   CropRect defaultCustomCrop() {
     final width = (sourceWidth * 0.8).round().clamp(minSide, sourceWidth);

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../models/frame_settings.dart';
 import '../panel_rows.dart';
 
-/// Espessura da borda da moldura procedural, em pixels na resolução de
-/// referência.
+/// Espessura da borda (moldura procedural, aba "Borda"), em pixels na
+/// resolução de referência.
 class FrameThicknessRow extends StatelessWidget {
   const FrameThicknessRow({
     super.key,
@@ -34,9 +34,10 @@ class FrameThicknessRow extends StatelessWidget {
 }
 
 /// Arredondamento dos cantos: no mínimo o canto é reto; no máximo
-/// ([FrameSettings.maxCornerRatio]) a moldura fica completamente arredondada.
+/// ([FrameSettings.maxCornerRatio]) a borda fica completamente arredondada.
 /// O valor aparece como porcentagem desse máximo, não em pixels — o
-/// arredondamento é proporcional ao canvas, não absoluto.
+/// arredondamento é proporcional ao canvas, não absoluto — e anda de 1 em
+/// 1%.
 class CornerRadiusRow extends StatelessWidget {
   const CornerRadiusRow({
     super.key,
@@ -59,7 +60,8 @@ class CornerRadiusRow extends StatelessWidget {
       value: ratio,
       min: 0,
       max: max,
-      divisions: 25,
+      // Um passo por ponto percentual (0% a 100% do máximo).
+      divisions: 100,
       onChangeStart: onChangeStart,
       onChanged: (v) => onChanged(frame.copyWith(cornerRatio: v)),
     );

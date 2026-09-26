@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/collage_text.dart';
+
 /// Linha de slider dos painéis de edição: rótulo à esquerda, valor em
 /// destaque à direita e o slider embaixo.
 ///
@@ -138,6 +140,43 @@ class PanelColorRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Controle "Tamanho da fonte" (1 a 80) do texto selecionado — o mesmo nas
+/// abas de texto de "Editar imagem", "Editar GIF" e da Montagem. A unidade
+/// é `CollageTextItem.fontSizePoints`: 1 ponto = 1% do menor lado da
+/// imagem, já contando o quanto a alça esticou o texto.
+class TextFontSizeRow extends StatelessWidget {
+  const TextFontSizeRow({
+    super.key,
+    required this.item,
+    required this.onChangeStart,
+    required this.onChanged,
+  });
+
+  final CollageTextItem item;
+  final VoidCallback onChangeStart;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final points = item.fontSizePoints;
+    return PanelSliderRow(
+      sliderKey: const ValueKey('textFontSizeSlider'),
+      label: 'Tamanho da fonte',
+      valueLabel: '$points',
+      value: points.toDouble(),
+      min: CollageTextItem.minFontSizePoints.toDouble(),
+      max: CollageTextItem.maxFontSizePoints.toDouble(),
+      divisions:
+          CollageTextItem.maxFontSizePoints - CollageTextItem.minFontSizePoints,
+      onChangeStart: onChangeStart,
+      onChanged: (v) {
+        final next = v.round();
+        if (next != points) onChanged(next);
+      },
     );
   }
 }

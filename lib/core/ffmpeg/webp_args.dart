@@ -51,7 +51,7 @@ List<String> buildWebpArgs({
   // O `-map [out]` de [webpEncodeArgs] fixa o rótulo final, então quem muda
   // de nome quando há giro é o rótulo que o grafo produz — ver
   // [transformedInto].
-  final (composed, tail) = transformedInto(settings.outputTransform, 'out');
+  final (composed, tail) = transformedInto(settings.finalTransform, 'out');
 
   if (settings.frame.style == FrameStyle.none) {
     final filter = buildConversionVideoFilter(settings, video);
@@ -139,7 +139,7 @@ List<String> buildWebpImageFramedArgs({
   int? frameLimit,
 }) {
   final transparent = settings.frame.transparentBackground;
-  final (composed, tail) = transformedInto(settings.outputTransform, 'out');
+  final (composed, tail) = transformedInto(settings.finalTransform, 'out');
   final graph = imageFramedGraph(
     settings,
     video,

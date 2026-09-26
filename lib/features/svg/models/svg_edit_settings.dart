@@ -1,5 +1,6 @@
 import 'dart:ui' show Color, ColorFilter;
 
+import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
 import '../../../core/models/default_colors.dart';
@@ -35,6 +36,7 @@ class SvgEditSettings {
     this.filterType = SvgFilterType.none,
     this.adjustments = ColorAdjustments.neutral,
     this.opacity = 1.0,
+    this.texts = const [],
   });
 
   /// `null` = o SVG inteiro, no tamanho nativo (`SvgInfo.width`/`height`).
@@ -67,6 +69,13 @@ class SvgEditSettings {
 
   /// 0 a 1.
   final double opacity;
+
+  /// Caixas de texto da aba "Texto" — o mesmo modelo e a mesma interação de
+  /// "Editar imagem"/"Editar GIF" (`TextOverlayStack`/`TextOverlayPanel`),
+  /// com o centro normalizado ao resultado final (já recortado e girado).
+  /// Saem no SVG como `<text>` de verdade, por cima de tudo e fora do filtro
+  /// e da opacidade (ver `svg_xml_editor.dart`'s `applyTextsSvg`).
+  final List<CollageTextItem> texts;
 
   /// Filtro equivalente ao [filterType] para a prévia (widget), com os
   /// mesmos coeficientes usados na exportação (`svg_xml_editor.dart`'s
@@ -103,6 +112,7 @@ class SvgEditSettings {
     SvgFilterType? filterType,
     ColorAdjustments? adjustments,
     double? opacity,
+    List<CollageTextItem>? texts,
   }) {
     return SvgEditSettings(
       crop: clearCrop ? null : (crop ?? this.crop),
@@ -115,6 +125,7 @@ class SvgEditSettings {
       filterType: filterType ?? this.filterType,
       adjustments: adjustments ?? this.adjustments,
       opacity: opacity ?? this.opacity,
+      texts: texts ?? this.texts,
     );
   }
 }

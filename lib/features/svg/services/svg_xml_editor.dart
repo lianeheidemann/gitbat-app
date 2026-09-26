@@ -1,7 +1,9 @@
-import 'dart:ui' show Color;
+import 'dart:math' as math;
 
+import 'package:flutter/painting.dart';
 import 'package:xml/xml.dart';
 
+import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
 import '../models/svg_edit_settings.dart';
@@ -339,12 +341,118 @@ void applyOpacitySvg(XmlElement root, double opacity) {
   }
 }
 
+/// Acrescenta os textos da aba "Texto" como `<text>` de verdade no fim de
+/// [root] — por cima da arte e do fundo, e fora do grupo de conteúdo, então
+/// o filtro e a opacidade não valem para eles (como na prévia). Cada texto
+/// vira um `<g>` marcado com `translate` + `rotate` em volta do próprio
+/// centro, com o fundo (`<rect>` arredondado) quando houver.
+///
+/// As medidas saem do `viewBox` atual (já recortado e girado): o centro é
+/// normalizado a ele e o tamanho da fonte é uma fração do menor lado, a
+/// mesma conta de `paintCollageTextItem`. A largura do fundo e a posição da
+/// linha de base de cada linha vêm de um [TextPainter] com a mesma fonte, o
+/// mesmo que a prévia usa. A fonte em si não é embutida: quem abrir o SVG
+/// usa a mesma família se a tiver instalada, senão uma sem serifa.
+void applyTextsSvg(XmlElement root, List<CollageTextItem> texts) {
+  root.children.removeWhere(
+    (node) => node is XmlElement && node.getAttribute('$_marker-text') == '1',
+  );
+  if (texts.isEmpty) return;
+
+  final (vbX, vbY, vbW, vbH) = _currentViewBox(root);
+  final sorted = [...texts]..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+  for (final item in sorted) {
+    if (item.text.trim().isEmpty) continue;
+    final fontSize = math.min(vbW, vbH) * item.fontSizeRatio * item.scale;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: item.text,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontFamily: item.fontFamily,
+          fontWeight: item.bold ? FontWeight.w700 : FontWeight.w400,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final cx = vbX + item.centerX * vbW;
+    final cy = vbY + item.centerY * vbH;
+    final degrees = item.rotation * 180 / math.pi;
+    final group = XmlElement.tag('g')
+      ..setAttribute('$_marker-text', '1')
+      ..setAttribute(
+        'transform',
+        'translate(${_num(cx)} ${_num(cy)})'
+            '${degrees == 0 ? '' : ' rotate(${_num(degrees)})'}',
+      );
+
+    final background = item.backgroundColor;
+    if (background != null) {
+      final (padH, padV) = CollageTextItem.backgroundPaddingFor(fontSize);
+      final w = painter.width + padH * 2;
+      final h = painter.height + padV * 2;
+      final radius =
+          math.min(w, h) *
+          item.backgroundCornerRatio.clamp(
+            0.0,
+            CollageTextItem.maxBackgroundCornerRatio,
+          );
+      final rect = XmlElement.tag('rect')
+        ..setAttribute('x', _num(-w / 2))
+        ..setAttribute('y', _num(-h / 2))
+        ..setAttribute('width', _num(w))
+        ..setAttribute('height', _num(h))
+        ..setAttribute('rx', _num(radius))
+        ..setAttribute('fill', _colorToHex(background));
+      if (background.a < 1) {
+        rect.setAttribute('fill-opacity', _num(background.a));
+      }
+      group.children.add(rect);
+    }
+
+    final text = XmlElement.tag('text')
+      ..setAttribute('text-anchor', 'middle')
+      ..setAttribute('font-size', _num(fontSize))
+      ..setAttribute('font-weight', item.bold ? '700' : '400')
+      ..setAttribute(
+        'font-family',
+        item.fontFamily == null
+            ? 'sans-serif'
+            : "'${item.fontFamily}', sans-serif",
+      )
+      ..setAttribute('fill', _colorToHex(item.color));
+    if (item.color.a < 1) {
+      text.setAttribute('fill-opacity', _num(item.color.a));
+    }
+    // Uma `<tspan>` por linha, cada uma na linha de base que o TextPainter
+    // calculou — o SVG não quebra linha sozinho.
+    final lines = item.text.split('\n');
+    final metrics = painter.computeLineMetrics();
+    for (var i = 0; i < lines.length; i++) {
+      final baseline = i < metrics.length
+          ? metrics[i].baseline
+          : painter.height * (i + 1) / lines.length;
+      text.children.add(
+        XmlElement.tag('tspan')
+          ..setAttribute('x', '0')
+          ..setAttribute('y', _num(baseline - painter.height / 2))
+          ..children.add(XmlText(lines[i])),
+      );
+    }
+    group.children.add(text);
+    painter.dispose();
+    root.children.add(group);
+  }
+}
+
 /// Aplica [settings] inteiro sobre [originalSource] (sempre a partir do XML
 /// original — nunca reedita um documento já editado numa chamada anterior,
 /// pra desfazer/refazer nunca acumular grupos/transforms obsoletos) e
 /// devolve o SVG resultante como texto. Ordem fixa: recorte → girar →
 /// espelhar → fundo → filtro (ajuste fino + preset, nessa ordem — ver
-/// [applyFilterSvg]) → opacidade.
+/// [applyFilterSvg]) → opacidade → textos ([applyTextsSvg]).
 String renderEditedSvg(
   String originalSource,
   SvgInfo info,
@@ -398,6 +506,7 @@ String renderEditedSvg(
     if (settings.opacity < 1) {
       applyOpacitySvg(root, settings.opacity);
     }
+    applyTextsSvg(root, settings.texts);
 
     return doc.toXmlString();
   } on SvgEditException {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/crop_rect.dart';
+import '../panel_rows.dart';
 
 /// Faixa com o tamanho atual da janela de recorte, acima dos campos
 /// numéricos. Compartilhada pelas telas de vídeo, foto e SVG.
@@ -137,6 +138,43 @@ class CropSizeInputs extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Controle "Tamanho da janela": 1% a 100% da maior janela do mesmo formato
+/// que cabe na mídia (`CropController.sizePercentOf`/`scaledTo`), mantendo o
+/// formato e o centro. Compartilhado por todas as telas de recorte.
+class CropSizeSlider extends StatelessWidget {
+  const CropSizeSlider({
+    super.key,
+    required this.percent,
+    required this.onChanged,
+    this.onChangeStart,
+  });
+
+  final int percent;
+  final ValueChanged<int> onChanged;
+
+  /// Chamado uma vez no começo do arraste — as telas com desfazer empilham
+  /// um checkpoint aqui, para o arraste inteiro virar um passo só.
+  final VoidCallback? onChangeStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return PanelSliderRow(
+      sliderKey: const ValueKey('cropSizeSlider'),
+      label: 'Tamanho da janela',
+      valueLabel: '$percent%',
+      value: percent.toDouble(),
+      min: 1,
+      max: 100,
+      divisions: 99,
+      onChangeStart: onChangeStart ?? () {},
+      onChanged: (v) {
+        final next = v.round();
+        if (next != percent) onChanged(next);
+      },
     );
   }
 }
