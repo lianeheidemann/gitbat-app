@@ -1,30 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../../models/frame_settings.dart';
+import '../panel_rows.dart';
+import 'frame_sliders.dart';
 
 /// Ladrilho de um modo de encaixe do conteúdo na moldura de imagem. O modo
-/// "Preencher" (expand) abre o slider de zoom quando está selecionado.
+/// "Expandir sem cortar" abre as opções dele (zoom e cor do fundo) quando
+/// está selecionado.
 class ContentFitTile extends StatelessWidget {
   const ContentFitTile({
     super.key,
     required this.mode,
     required this.selected,
     required this.onSelected,
-    this.zoomRow,
+    this.expandedOptions,
   });
 
   final ContentFitMode mode;
   final bool selected;
   final ValueChanged<ContentFitMode> onSelected;
 
-  /// Slider de zoom mostrado dentro do ladrilho selecionado de "Preencher".
-  final Widget? zoomRow;
+  /// Opções mostradas dentro do ladrilho selecionado de "Expandir sem
+  /// cortar" — o zoom e a cor do fundo da janela.
+  final Widget? expandedOptions;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final showZoom =
-        selected && mode == ContentFitMode.expand && zoomRow != null;
+    final showOptions =
+        selected && mode == ContentFitMode.expand && expandedOptions != null;
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -48,7 +52,7 @@ class ContentFitTile extends StatelessWidget {
               child: ContentFitTileHeader(mode: mode, selected: selected),
             ),
           ),
-          if (showZoom)
+          if (showOptions)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Column(
@@ -60,7 +64,7 @@ class ContentFitTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  zoomRow!,
+                  expandedOptions!,
                 ],
               ),
             ),
@@ -125,3 +129,45 @@ IconData contentFitIcon(ContentFitMode mode) => switch (mode) {
   ContentFitMode.fit => Icons.fit_screen_rounded,
   ContentFitMode.expand => Icons.open_in_full_rounded,
 };
+
+/// Opções do ladrilho "Expandir sem cortar": o zoom do conteúdo e a cor do
+/// fundo da janela da moldura em volta dele
+/// ([FrameSettings.expandBackgroundColor]).
+class ExpandFitOptions extends StatelessWidget {
+  const ExpandFitOptions({
+    super.key,
+    required this.frame,
+    required this.onChangeStart,
+    required this.onChanged,
+    required this.onPickColor,
+  });
+
+  final FrameSettings frame;
+  final VoidCallback onChangeStart;
+  final ValueChanged<FrameSettings> onChanged;
+  final VoidCallback onPickColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        ContentZoomRow(
+          frame: frame,
+          onChangeStart: onChangeStart,
+          onChanged: onChanged,
+        ),
+        Divider(
+          height: 13,
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+        PanelColorRow(
+          key: const ValueKey('expandBackgroundColorRow'),
+          label: 'Cor do fundo da moldura',
+          color: frame.expandBackgroundColor,
+          onTap: onPickColor,
+        ),
+      ],
+    );
+  }
+}

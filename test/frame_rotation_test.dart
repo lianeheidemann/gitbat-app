@@ -5,10 +5,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_to_gif/core/ffmpeg/filter_graph.dart';
+import 'package:video_to_gif/core/models/conversion_settings.dart';
 import 'package:video_to_gif/core/models/frame_settings.dart';
 import 'package:video_to_gif/core/models/image_frame.dart';
 import 'package:video_to_gif/core/models/output_transform.dart';
 import 'package:video_to_gif/core/models/photo_info.dart';
+import 'package:video_to_gif/core/models/video_info.dart';
 import 'package:video_to_gif/features/photo/photo_frame_page.dart';
 import 'package:video_to_gif/features/photo/services/photo_frame_compositor.dart';
 
@@ -140,6 +143,36 @@ void main() {
       expect(_rgbAt(decoded, 0.7, 0.5), _blue);
     });
 
+    test(
+      '"Expandir sem cortar" pinta o fundo da janela com a cor escolhida',
+      () async {
+        FrameSettings expand(ContentFitMode fit) => FrameSettings(
+          imageFrame: _ceramica,
+          contentFit: fit,
+          contentZoom: 0.5,
+          frameResolutionMode: ImageFrameResolutionMode.nativeMax,
+          expandBackgroundColor: const Color(0xFF00FF00),
+        );
+        // Foto deitada reduzida a 50% no meio da janela em pé: logo abaixo
+        // do topo da janela só há fundo.
+        final colored = await _decode(
+          await composeFramedPhoto(
+            photo: photo,
+            frame: expand(ContentFitMode.expand),
+          ),
+        );
+        expect(_rgbAt(colored, 0.5, 0.2), 0x00FF00);
+        // "Encaixar" (via ajuste automático) mantém as barras pretas.
+        final fitted = await _decode(
+          await composeFramedPhoto(
+            photo: photo,
+            frame: expand(ContentFitMode.fit),
+          ),
+        );
+        expect(_rgbAt(fitted, 0.5, 0.2), 0x000000);
+      },
+    );
+
     test('"90°" deita a moldura junto com a foto', () async {
       final decoded = await _decode(
         await composeFramedPhoto(photo: photo, frame: frame(frameTurns: 1)),
@@ -186,11 +219,41 @@ void main() {
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(find.text('Titânio · 90°'), findsOneWidget);
-    expect(find.text('Moldura girada 90°'), findsOneWidget);
 
     // Desfazer volta a moldura de pé.
     await tester.tap(find.byTooltip('Desfazer'));
     await tester.pumpAndSettle();
-    expect(find.text('Girar a moldura com o conteúdo'), findsOneWidget);
+    expect(find.text('Titânio · 90°'), findsNothing);
+  });
+
+  test('FFmpeg: o fundo de "Expandir sem cortar" usa a cor escolhida', () {
+    const video = VideoInfo(
+      path: '/tmp/v.mp4',
+      fileName: 'v.mp4',
+      rawWidth: 640,
+      rawHeight: 360,
+      durationSeconds: 2,
+      frameRate: 30,
+      bitrateBps: 1000000,
+      fileSizeBytes: 100000,
+      codec: 'h264',
+    );
+    String graph(Color? color) => imageFramedGraph(
+      ConversionSettings(
+        startSeconds: 0,
+        endSeconds: 2,
+        frame: FrameSettings(
+          imageFrame: _ceramica,
+          contentFit: ContentFitMode.expand,
+          expandBackgroundColor: color ?? const Color(0xFF000000),
+        ),
+      ),
+      video,
+      input: '0:v',
+      artInput: '1:v',
+      output: 'framed',
+    );
+    expect(graph(const Color(0xFFFF0000)), contains('color=0xff0000:t=fill'));
+    expect(graph(null), contains('color=0x000000:t=fill'));
   });
 }

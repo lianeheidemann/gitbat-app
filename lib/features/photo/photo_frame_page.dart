@@ -363,13 +363,13 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       ),
     ),
     EditorSection(
-      icon: Icons.smartphone_rounded,
+      icon: Icons.check_box_outline_blank_rounded,
       title: 'Borda',
       value: _activeFrameStyle.label,
       builder: (_) => _frameStyleSection(),
     ),
     EditorSection(
-      icon: Icons.image_outlined,
+      icon: Icons.smartphone_rounded,
       title: 'Moldura',
       value: _imageFrameLabel,
       builder: (_) => _imageFrameSection(),
@@ -730,7 +730,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     }
 
     return ColoredBox(
-      color: Colors.black,
+      color: _frame.expandBackgroundColor,
       child: ClipRect(
         child: Transform.scale(
           scale: _frame.effectiveContentZoom,
@@ -1034,20 +1034,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         // dimensionar.
         if (_frame.hasFixedAspect) ...[
           const SizedBox(height: 18),
-          SectionCard(
-            children: [
-              FrameRotateButton(
-                quarterTurns: _frame.frameQuarterTurns,
-                onRotate: () => _updateFrame(
-                  _frame.copyWith(
-                    frameQuarterTurns: _frame.frameQuarterTurns + 1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
           SectionCard(children: [_frameResolutionSelector()]),
+          // O giro da moldura fica por último, sozinho: é um botão só.
+          const SizedBox(height: 18),
+          FrameRotateButton(
+            onRotate: () => _updateFrame(
+              _frame.copyWith(frameQuarterTurns: _frame.frameQuarterTurns + 1),
+            ),
+          ),
         ],
       ],
     );
@@ -1066,10 +1060,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             mode: mode,
             selected: mode == selected,
             onSelected: (m) => _updateFrame(_frame.copyWith(contentFit: m)),
-            zoomRow: ContentZoomRow(
+            expandedOptions: ExpandFitOptions(
               frame: _frame,
               onChangeStart: _pushUndoCheckpoint,
               onChanged: (next) => _updateFrame(next, pushUndo: false),
+              onPickColor: _pickExpandBackgroundColor,
             ),
           ),
           if (mode != _selectableContentFitModes.last)
@@ -1118,6 +1113,15 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     selectedColor: _frame.color,
     onSelected: (color) =>
         _updateFrame(_frame.copyWith(color: color), pushUndo: false),
+  );
+
+  void _pickExpandBackgroundColor() => _pickColor(
+    title: 'Cor do fundo da moldura',
+    selectedColor: _frame.expandBackgroundColor,
+    onSelected: (color) => _updateFrame(
+      _frame.copyWith(expandBackgroundColor: color),
+      pushUndo: false,
+    ),
   );
 
   void _pickBackgroundColor() => _pickColor(

@@ -6,37 +6,22 @@ import 'package:flutter/material.dart';
 /// moldura de imagem ativa deixa a moldura parada e gira só o conteúdo
 /// (ver `FrameSettings.frameQuarterTurns`).
 class FrameRotateButton extends StatelessWidget {
-  const FrameRotateButton({
-    super.key,
-    required this.quarterTurns,
-    required this.onRotate,
-  });
+  const FrameRotateButton({super.key, required this.onRotate});
 
-  /// Giro atual da moldura, de 0 a 3 — só para o texto de apoio.
-  final int quarterTurns;
   final VoidCallback onRotate;
 
+  /// Só o botão, sem texto de apoio: o ícone de girar com "90°" já diz o
+  /// que ele faz, e o giro atual aparece no resumo da aba.
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            quarterTurns == 0
-                ? 'Girar a moldura com o conteúdo'
-                : 'Moldura girada ${quarterTurns * 90}°',
-            style: theme.textTheme.bodyMedium,
-          ),
-        ),
-        const SizedBox(width: 12),
-        OutlinedButton.icon(
-          key: const ValueKey('frameRotateButton'),
-          onPressed: onRotate,
-          icon: const Icon(Icons.rotate_right_rounded),
-          label: const Text('90°'),
-        ),
-      ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: OutlinedButton.icon(
+        key: const ValueKey('frameRotateButton'),
+        onPressed: onRotate,
+        icon: const Icon(Icons.rotate_right_rounded),
+        label: const Text('90°'),
+      ),
     );
   }
 }

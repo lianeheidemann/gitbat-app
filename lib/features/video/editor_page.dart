@@ -815,7 +815,7 @@ class _EditorPageState extends State<EditorPage> {
     }
 
     return ColoredBox(
-      color: Colors.black,
+      color: _settings.frame.expandBackgroundColor,
       child: ClipRect(
         child: Transform.scale(
           scale: _settings.frame.effectiveContentZoom,
@@ -849,7 +849,7 @@ class _EditorPageState extends State<EditorPage> {
     final style = _activeFrameStyle;
 
     return LabeledSection(
-      icon: Icons.smartphone_rounded,
+      icon: Icons.check_box_outline_blank_rounded,
       title: 'Borda',
       value: style.label,
       hint: 'Escolha uma opção',
@@ -905,15 +905,14 @@ class _EditorPageState extends State<EditorPage> {
   /// "Borda", e vice-versa.
   ///
   /// Com uma arte selecionada ([FrameSettings.hasFixedAspect]), aparecem
-  /// abaixo das miniaturas três cards independentes: o botão "90°" (gira a
-  /// moldura junto com o vídeo), "Ajuste do conteúdo" (como o vídeo se
-  /// encaixa na moldura) e "Resolução da moldura" (o tamanho/qualidade do
-  /// arquivo final). São perguntas diferentes, então cada uma tem seu
-  /// próprio card.
+  /// abaixo das miniaturas dois cards independentes — "Ajuste do conteúdo"
+  /// (como o vídeo se encaixa na moldura) e "Resolução da moldura" (o
+  /// tamanho/qualidade do arquivo final) — e, por último, o botão "90°"
+  /// (gira a moldura junto com o vídeo).
   LabeledSection _imageFrameSection() {
     final hasFixedAspect = _settings.frame.hasFixedAspect;
     return LabeledSection(
-      icon: Icons.image_outlined,
+      icon: Icons.smartphone_rounded,
       title: 'Moldura',
       value: _imageFrameLabel,
       hint: 'Escolha uma opção',
@@ -931,22 +930,18 @@ class _EditorPageState extends State<EditorPage> {
           ),
           if (hasFixedAspect) ...[
             const SizedBox(height: 18),
-            SectionCard(
-              children: [
-                FrameRotateButton(
-                  quarterTurns: _settings.frame.frameQuarterTurns,
-                  onRotate: () => _updateFrame(
-                    _settings.frame.copyWith(
-                      frameQuarterTurns: _settings.frame.frameQuarterTurns + 1,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
             SectionCard(children: [_contentFitSubsection()]),
             const SizedBox(height: 18),
             SectionCard(children: [_frameResolutionSelector()]),
+            // O giro da moldura fica por último, sozinho: é um botão só.
+            const SizedBox(height: 18),
+            FrameRotateButton(
+              onRotate: () => _updateFrame(
+                _settings.frame.copyWith(
+                  frameQuarterTurns: _settings.frame.frameQuarterTurns + 1,
+                ),
+              ),
+            ),
           ],
         ],
       ),
@@ -1067,6 +1062,15 @@ class _EditorPageState extends State<EditorPage> {
     });
   }
 
+  void _pickExpandBackgroundColor() => _pickColor(
+    title: 'Cor do fundo da moldura',
+    selectedColor: _settings.frame.expandBackgroundColor,
+    onSelected: (color) => _updateFrame(
+      _settings.frame.copyWith(expandBackgroundColor: color),
+      pushUndo: false,
+    ),
+  );
+
   void _pickFrameColor() => _pickColor(
     title: 'Cor da borda',
     selectedColor: _settings.frame.color,
@@ -1126,10 +1130,11 @@ class _EditorPageState extends State<EditorPage> {
               selected: mode == selected,
               onSelected: (m) =>
                   _updateFrame(_settings.frame.copyWith(contentFit: m)),
-              zoomRow: ContentZoomRow(
+              expandedOptions: ExpandFitOptions(
                 frame: _settings.frame,
                 onChangeStart: _pushUndoCheckpoint,
                 onChanged: (next) => _updateFrame(next, pushUndo: false),
+                onPickColor: _pickExpandBackgroundColor,
               ),
             ),
             if (mode != _selectableContentFitModes.last)

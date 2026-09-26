@@ -176,13 +176,19 @@ Future<Uint8List> _composeImageFramed(
     areaRect.width / areaRect.height,
   );
 
-  // Fundo preto da área: aparece nas barras de "Encaixar" e em volta da
-  // foto reduzida de "Expandir" — a arte de imagem não tem uma "cor de
-  // moldura" configurável para isso, então usa preto, igual a
-  // `imageFramedGraph`. Em "Preencher" a foto cobre tudo e ele some.
+  // Fundo da área: em "Expandir sem cortar" é a cor escolhida ali
+  // ([FrameSettings.expandBackgroundColor]), que aparece em volta da foto
+  // reduzida; nas barras de "Encaixar" é preto, igual a `imageFramedGraph`.
+  // Em "Preencher" a foto cobre tudo e ele some.
   canvas.save();
   canvas.clipRect(areaRect);
-  canvas.drawRect(areaRect, Paint()..color = Colors.black);
+  canvas.drawRect(
+    areaRect,
+    Paint()
+      ..color = fit == ContentFitMode.expand
+          ? frame.expandBackgroundColor
+          : Colors.black,
+  );
   final Rect dst;
   switch (fit) {
     case ContentFitMode.expand:

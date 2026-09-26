@@ -110,6 +110,7 @@ class FrameSettings {
     this.texts = const [],
     this.outputTransform = OutputTransform.identity,
     this.frameQuarterTurns = 0,
+    this.expandBackgroundColor = const Color(0xFF000000),
   });
 
   final FrameStyle style;
@@ -203,6 +204,14 @@ class FrameSettings {
   /// resultado é [outputTransform].
   final int frameQuarterTurns;
 
+  /// Cor do fundo dentro da janela da moldura de imagem em "Expandir sem
+  /// cortar" — o que aparece em volta do conteúdo quando ele não cobre a
+  /// janela (principalmente com o zoom abaixo de 100%). Preto por padrão,
+  /// que era a única opção antes. Só vale com moldura de imagem e
+  /// [ContentFitMode.expand]; as barras de "Ajuste automático"/"Encaixar"
+  /// continuam pretas.
+  final Color expandBackgroundColor;
+
   /// O que girar/espelhar só o conteúdo, antes de encaixá-lo na janela da
   /// moldura de imagem: [outputTransform] quando há uma, nada quando não há.
   OutputTransform get contentTransform =>
@@ -284,6 +293,7 @@ class FrameSettings {
     List<CollageTextItem>? texts,
     OutputTransform? outputTransform,
     int? frameQuarterTurns,
+    Color? expandBackgroundColor,
   }) {
     return FrameSettings(
       style: style ?? this.style,
@@ -302,6 +312,8 @@ class FrameSettings {
       texts: texts ?? this.texts,
       outputTransform: outputTransform ?? this.outputTransform,
       frameQuarterTurns: (frameQuarterTurns ?? this.frameQuarterTurns) % 4,
+      expandBackgroundColor:
+          expandBackgroundColor ?? this.expandBackgroundColor,
     );
   }
 }

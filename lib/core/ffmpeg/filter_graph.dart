@@ -362,9 +362,10 @@ String imageFramedGraph(
   );
 
   if (fit == ContentFitMode.expand) {
-    // O fundo permanece preto. O zoom atua somente no vídeo nítido central:
-    // abaixo de 100% revela mais da área preta; acima de 100% aproxima e o
-    // overlay recorta o excedente.
+    // O fundo é a cor escolhida em "Expandir sem cortar"
+    // ([FrameSettings.expandBackgroundColor], preto por padrão). O zoom atua
+    // somente no vídeo nítido central: abaixo de 100% revela mais do fundo;
+    // acima de 100% aproxima e o overlay recorta o excedente.
     final widthScale = areaWidth / contentWidth;
     final heightScale = areaHeight / contentHeight;
     final fitScale = widthScale < heightScale ? widthScale : heightScale;
@@ -377,7 +378,8 @@ String imageFramedGraph(
     parts.add('[content]split=2[bg][fg]');
     parts.add(
       '[bg]scale=$areaWidth:$areaHeight:flags=lanczos,'
-      'drawbox=x=0:y=0:w=iw:h=ih:color=black:t=fill[bg2]',
+      'drawbox=x=0:y=0:w=iw:h=ih:'
+      'color=${ffmpegColor(frame.expandBackgroundColor)}:t=fill[bg2]',
     );
     parts.add('[fg]scale=$zoomedWidth:$zoomedHeight:flags=lanczos[fg2]');
     parts.add('[bg2][fg2]overlay=(W-w)/2:(H-h)/2[fitted]');

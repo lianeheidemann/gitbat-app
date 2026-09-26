@@ -389,9 +389,17 @@ void main() {
     final button = find.byKey(const ValueKey('frameRotateButton'));
     await tester.ensureVisible(button);
     await tester.pump(const Duration(milliseconds: 300));
+    // É a última opção do painel, depois da resolução, e sem texto ao lado.
+    expect(
+      tester.getTopLeft(button).dy,
+      greaterThan(tester.getTopLeft(find.text('Resolução da moldura')).dy),
+    );
+    expect(
+      find.descendant(of: button, matching: find.byType(Text)),
+      findsOneWidget,
+    );
     await tester.tap(button);
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Moldura girada 90°'), findsOneWidget);
     expect(find.text('Titânio · 90°'), findsOneWidget);
 
     // Quatro toques dão a volta completa.
@@ -399,7 +407,7 @@ void main() {
       await tester.tap(button);
       await tester.pump(const Duration(milliseconds: 300));
     }
-    expect(find.text('Girar a moldura com o conteúdo'), findsOneWidget);
+    expect(find.text('Titânio · 90°'), findsNothing);
     expect(find.text('Titânio'), findsWidgets);
   });
 
@@ -420,5 +428,24 @@ void main() {
           .first,
     );
     expect(slider.divisions, 100);
+  });
+
+  testWidgets('ícones das abas: quadrado vazio na Borda, celular na Moldura', (
+    tester,
+  ) async {
+    await _openTab(tester, 'Borda');
+    Finder tabIcon(String label, IconData icon) => find.descendant(
+      of: find
+          .ancestor(of: find.text(label).last, matching: find.byType(Column))
+          .first,
+      matching: find.byIcon(icon),
+    );
+    expect(
+      tabIcon('Borda', Icons.check_box_outline_blank_rounded),
+      findsOneWidget,
+    );
+    expect(tabIcon('Moldura', Icons.smartphone_rounded), findsOneWidget);
+    // O quadro com a "montanha" saiu da Moldura (continua só em "Formato").
+    expect(tabIcon('Moldura', Icons.image_outlined), findsNothing);
   });
 }

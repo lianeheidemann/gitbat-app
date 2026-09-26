@@ -93,9 +93,12 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
 - **Borda** — procedural border: thin, medium or thick, with color and
   corner rounding in 1% steps
 - **Moldura** — image frame: bundled phone mockups, or your own with an
-  automatically-detected transparent window. A **90°** button turns the
-  frame together with its content (the mockup lies down, content and all)
-- Content fit — auto, fill, fit or expand with zoom
+  automatically-detected transparent window. A **90°** button, the last
+  option of the tab, turns the frame together with its content (the mockup
+  lies down, content and all)
+- Content fit — auto (fills when the proportions are close, otherwise fits
+  the whole picture with black bars), fill, or expand with zoom and a
+  **background color of your choice** inside the frame window
 - **Girar** (rotate/mirror) on both screens: without an image frame it
   turns the finished result; with one, the frame stays upright and only the
   photo/video inside its window turns
