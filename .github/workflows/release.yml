@@ -37,12 +37,13 @@ env:
 jobs:
   build:
     name: Compilar e publicar
-    runs-on: ubuntu-latest
+    # Versão fixa: subir para a próxima LTS é decisão manual, não automática.
+    runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -78,7 +79,7 @@ jobs:
           # verdade (`git tag vX.Y.Z && git push`) ela já garante isso
           # sozinha; nos outros dois gatilhos (push em main/workflow_dispatch)
           # o número do run entra no final da tag para diferenciar. O nome
-          # de exibição (arquivos, corpo do release) continua limpo, só com
+          # de exibição (nomes dos arquivos) continua limpo, só com
           # a versão — só a tag e o título do release ganham o "(build N)".
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
@@ -146,21 +147,14 @@ jobs:
              "entrega/video-em-gif-$V.aab"
 
       - name: Listar o que será publicado
-        id: arquivos
-        run: |
-          ls -lh entrega/
-          {
-            echo "tamanhos<<FIM"
-            du -h entrega/* | awk '{printf "- `%s` — %s\n", $2, $1}' | sed 's|entrega/||'
-            echo "FIM"
-          } >> "$GITHUB_OUTPUT"
+        run: ls -lh entrega/
 
       - name: Apagar o keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/upload.jks" android/key.properties
 
       - name: Publicar o Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.versao.outputs.tag }}
           name: ${{ steps.versao.outputs.titulo }}
@@ -172,50 +166,5 @@ jobs:
           # lateral do repositório ficou presa numa versão antiga enquanto os
           # runs saíam verdes.
           make_latest: true
-          body: |
-            ## Novidades
-
-            - O painel de opções do rodapé agora **recolhe**: arraste para baixo
-              para ver a prévia inteira e para cima para voltar. Recolhido, os
-              stickers e os textos continuam podendo ser selecionados e movidos.
-            - **Ajuste de cor** nas três telas — "Editar GIF", "Colocar moldura" e
-              "Montagem". Na montagem ele vale para todas as fotos de uma vez, sem
-              mexer no fundo, nas bordas nem nos outros elementos.
-            - Stickers organizados em **pastas**, com a pasta nova **GitHub** (38
-              desenhos) e a pasta **Black**. Também dá para criar, renomear e
-              apagar pastas suas.
-            - Texto escrito **direto no painel**, sem abrir outra janela, com alça
-              própria para girar e **importação de fontes** `.ttf`/`.otf`.
-            - "Margem" com as três medidas uma embaixo da outra e um botão para
-              zerar tudo.
-            - **Pop-up de progresso** ao exportar a montagem, com porcentagem,
-              formato, tamanho de saída e botão de cancelar.
-            - Montagens exportadas com muito mais nitidez: a largura de saída agora
-              vem do arranjo real das fotos (até 1440 px), e não mais do maior lado
-              de uma foto só.
-
-            ## Como instalar
-
-            Baixe **`video-em-gif-${{ steps.versao.outputs.nome }}-arm64-v8a.apk`**
-            — serve para praticamente todo celular Android dos últimos anos.
-            Se der erro de incompatibilidade, use o `armeabi-v7a` (aparelhos
-            antigos) ou o `universal`, que funciona em qualquer um por ser
-            maior.
-
-            No celular, é preciso permitir a instalação de fontes desconhecidas
-            quando o Android perguntar.
-
-            ### Arquivos
-
-            ${{ steps.arquivos.outputs.tamanhos }}
-
-            ### Assinatura
-
-            ${{ steps.chave.outputs.assinado == 'sim'
-              && 'Assinado com a chave de upload do projeto. O `.aab` é o arquivo que vai para a Play Console.'
-              || '⚠️ Assinado com a chave de DEPURAÇÃO, porque os segredos do keystore não estão configurados neste repositório. Instala e roda normalmente para teste, mas não pode ser enviado à Play Store. Veja `docs/PUBLICAR_NA_PLAY_STORE.md` para configurar os segredos.' }}
-
-            ---
-
-            Versão `${{ steps.versao.outputs.nome }}` · versionCode
-            `${{ steps.versao.outputs.codigo }}`
+          # Sem `body`: o release mostra só o título e os arquivos, sem texto
+          # descritivo.
