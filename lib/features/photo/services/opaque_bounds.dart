@@ -9,11 +9,17 @@ import '../../../core/models/crop_rect.dart';
 // menor retângulo que ainda contém todo pixel visível da foto, para cortar
 // só as faixas totalmente transparentes em volta do desenho.
 
-/// Menor [CropRect] que contém todo pixel de [rgba] com alfa maior que zero,
-/// ou `null` se a imagem inteira for transparente.
+/// Alfa até este valor (~3% de opacidade) conta como transparente.
 ///
-/// "Transparente" aqui é alfa 0 exato, sem limiar: uma sombra quase invisível
-/// ainda é parte do desenho e não pode ser cortada.
+/// Zero exato não serve: PNGs saídos de removedores de fundo costumam deixar
+/// dezenas de milhares de pixels com alfa 1–8 espalhados pela área "vazia".
+/// São invisíveis, mas seguravam o recorte quase no tamanho da imagem. Nas
+/// imagens reais medidas, o resultado é o mesmo com qualquer limiar entre 8
+/// e 64, então 8 corta a sujeira sem comer a borda suave do desenho.
+const invisibleAlphaThreshold = 8;
+
+/// Menor [CropRect] que contém todo pixel de [rgba] com alfa acima de
+/// [invisibleAlphaThreshold], ou `null` se nenhum pixel for visível.
 ///
 /// Varre de fora para dentro e para no primeiro pixel achado em cada lado —
 /// numa foto sem margem nenhuma isso sai quase de graça.
@@ -22,7 +28,7 @@ CropRect? opaqueBounds(Uint8List rgba, int width, int height) {
     final start = y * width * 4 + 3;
     final end = start + width * 4;
     for (var i = start; i < end; i += 4) {
-      if (rgba[i] != 0) return true;
+      if (rgba[i] > invisibleAlphaThreshold) return true;
     }
     return false;
   }
@@ -41,7 +47,9 @@ CropRect? opaqueBounds(Uint8List rgba, int width, int height) {
   // Esquerda e direita só precisam olhar a faixa entre topo e base.
   bool columnHasContent(int x) {
     for (var y = top; y <= bottom; y++) {
-      if (rgba[(y * width + x) * 4 + 3] != 0) return true;
+      if (rgba[(y * width + x) * 4 + 3] > invisibleAlphaThreshold) {
+        return true;
+      }
     }
     return false;
   }

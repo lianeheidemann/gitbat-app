@@ -33,9 +33,26 @@ void main() {
     expect((bounds.x, bounds.y, bounds.width, bounds.height), (4, 4, 1, 1));
   });
 
-  test('alfa mínimo ainda conta como conteúdo', () {
-    final bounds = opaqueBounds(_image(6, 6, [(1, 2)], alpha: 1), 6, 6)!;
+  test('alfa logo acima do limiar ainda conta como conteúdo', () {
+    final rgba = _image(6, 6, [(1, 2)], alpha: invisibleAlphaThreshold + 1);
+    final bounds = opaqueBounds(rgba, 6, 6)!;
     expect((bounds.x, bounds.y), (1, 2));
+  });
+
+  test('ignora a sujeira quase invisível de removedores de fundo', () {
+    // Conteúdo de verdade no meio, cercado de pixels com alfa 1–8 nas
+    // bordas, como nos PNGs que seguravam o recorte.
+    final rgba = _image(20, 20, [(8, 8), (11, 12)]);
+    for (final (x, y) in [(0, 0), (19, 3), (2, 19), (15, 17)]) {
+      rgba[(y * 20 + x) * 4 + 3] = 1 + (x + y) % invisibleAlphaThreshold;
+    }
+    final bounds = opaqueBounds(rgba, 20, 20)!;
+    expect((bounds.x, bounds.y, bounds.width, bounds.height), (8, 8, 4, 5));
+  });
+
+  test('só sujeira invisível conta como toda transparente', () {
+    final rgba = _image(4, 4, [(1, 1), (3, 2)], alpha: invisibleAlphaThreshold);
+    expect(opaqueBounds(rgba, 4, 4), isNull);
   });
 
   test('imagem toda transparente devolve null', () {
