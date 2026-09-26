@@ -459,12 +459,21 @@ class _SvgEditPageState extends State<SvgEditPage> {
             ),
             const SizedBox(height: 12),
           ],
+          CropSizeSlider(
+            percent: _crop.sizePercentOf(crop),
+            onChangeStart: _pushUndoCheckpoint,
+            onChanged: (percent) => _update(
+              _settings.copyWith(crop: _crop.scaledTo(percent, crop: crop)),
+              pushUndo: false,
+            ),
+          ),
+          const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: _resetCurrentCrop,
+              onPressed: _centerCurrentCrop,
               icon: const Icon(Icons.center_focus_strong_rounded),
-              label: const Text('Centralizar e redefinir'),
+              label: const Text('Centralizar'),
             ),
           ),
         ],
@@ -533,16 +542,12 @@ class _SvgEditPageState extends State<SvgEditPage> {
     );
   }
 
-  void _resetCurrentCrop() {
-    if (_aspect == _customAspectPreset) {
-      _update(_settings.copyWith(crop: _crop.defaultCustomCrop()));
-      return;
-    }
-    if (_aspect.ratio == null) {
-      _update(_settings.copyWith(clearCrop: true));
-      return;
-    }
-    _update(_settings.copyWith(crop: _crop.forRatio(_aspect.ratio!)));
+  /// Botão "Centralizar": leva a janela atual para o centro da mídia sem
+  /// mudar o tamanho dela (antes também voltava ao tamanho padrão do preset).
+  void _centerCurrentCrop() {
+    final crop = _settings.crop;
+    if (crop == null) return;
+    _update(_settings.copyWith(crop: _crop.centered(crop)), pushUndo: true);
   }
 
   /// Converte um [CropRect] do espaço original do SVG pro espaço de exibição

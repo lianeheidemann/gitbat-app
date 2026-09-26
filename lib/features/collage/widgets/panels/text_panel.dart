@@ -70,6 +70,15 @@ class CollageTextPanel extends StatelessWidget {
             color: selected.color,
             onTap: () => _pickTextColor(context, selected.id),
           ),
+          TextFontSizeRow(
+            item: selected,
+            onChangeStart: onPushUndoCheckpoint,
+            onChanged: (points) => onReplaceText(
+              selected.id,
+              selected.withFontSizePoints(points),
+              pushUndo: false,
+            ),
+          ),
           PanelSwitchRow(
             label: 'Fundo do texto',
             value: selected.hasBackground,

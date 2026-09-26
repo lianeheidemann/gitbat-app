@@ -79,6 +79,26 @@ class CollageTextItem {
   static const defaultBackgroundCornerRatio = 0.3;
   static const maxBackgroundCornerRatio = 0.5;
 
+  /// Limites do controle "Tamanho da fonte" das abas de texto.
+  static const minFontSizePoints = 1;
+  static const maxFontSizePoints = 80;
+
+  /// Tamanho da fonte em pontos do controle "Tamanho da fonte": 1 ponto =
+  /// 1% do menor lado do canvas, já com a [scale] da alça/pinça — o texto
+  /// novo (0,35 × 1) aparece como 35.
+  int get fontSizePoints => (fontSizeRatio * scale * 100).round().clamp(
+    minFontSizePoints,
+    maxFontSizePoints,
+  );
+
+  /// Cópia com o tamanho de fonte [points] do controle "Tamanho da fonte".
+  /// Zera a [scale] da alça/pinça em 1, para o controle e a alça partirem
+  /// do mesmo tamanho daí em diante.
+  CollageTextItem withFontSizePoints(int points) => copyWith(
+    fontSizeRatio: points.clamp(minFontSizePoints, maxFontSizePoints) / 100,
+    scale: 1.0,
+  );
+
   CollageTextItem copyWith({
     String? text,
     Color? color,

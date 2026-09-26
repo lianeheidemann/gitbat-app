@@ -784,12 +784,21 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             ),
             const SizedBox(height: 12),
           ],
+          CropSizeSlider(
+            percent: _crop.sizePercentOf(crop),
+            onChangeStart: _pushUndoCheckpoint,
+            onChanged: (percent) => _updateFrame(
+              _frame.copyWith(crop: _crop.scaledTo(percent, crop: crop)),
+              pushUndo: false,
+            ),
+          ),
+          const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: _resetCurrentCrop,
+              onPressed: _centerCurrentCrop,
               icon: const Icon(Icons.center_focus_strong_rounded),
-              label: const Text('Centralizar e redefinir'),
+              label: const Text('Centralizar'),
             ),
           ),
         ],
@@ -900,20 +909,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     );
   }
 
-  void _resetCurrentCrop() {
-    if (_aspect == _trimAspectPreset) {
-      unawaited(_trimTransparentEdges());
-      return;
-    }
-    if (_aspect == _customAspectPreset) {
-      _updateFrame(_frame.copyWith(crop: _crop.defaultCustomCrop()));
-      return;
-    }
-    if (_aspect.ratio == null) {
-      _updateFrame(_frame.copyWith(clearCrop: true));
-      return;
-    }
-    _updateFrame(_frame.copyWith(crop: _crop.forRatio(_aspect.ratio!)));
+  /// Botão "Centralizar": leva a janela atual para o centro da mídia sem
+  /// mudar o tamanho dela (antes também voltava ao tamanho padrão do preset).
+  void _centerCurrentCrop() {
+    final crop = _frame.crop;
+    if (crop == null) return;
+    _updateFrame(_frame.copyWith(crop: _crop.centered(crop)), pushUndo: true);
   }
 
   /// Converte o arraste de uma alça (em pixels da prévia exibida) para pixels

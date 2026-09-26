@@ -543,6 +543,39 @@ void main() {
     expect(find.text('Arredondamento'), findsOneWidget);
   });
 
+  testWidgets('texto da montagem tem "Tamanho da fonte" de 1 a 80', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+
+    final page = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.text('Texto'), 200, scrollable: page);
+    await tester.tap(find.text('Texto'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'oi');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Adicionar texto'));
+    await tester.pumpAndSettle();
+
+    final sliderFinder = find.byKey(const ValueKey('textFontSizeSlider'));
+    await tester.ensureVisible(sliderFinder);
+    await tester.pumpAndSettle();
+    Slider slider() => tester.widget<Slider>(sliderFinder);
+    expect(find.text('Tamanho da fonte'), findsOneWidget);
+    expect((slider().min, slider().max, slider().value), (1, 80, 35));
+
+    slider().onChangeStart!(slider().value);
+    slider().onChanged!(60);
+    await tester.pumpAndSettle();
+    expect(slider().value, 60);
+    expect(find.text('60'), findsOneWidget);
+  });
+
   testWidgets('sem foto animada, o download só pergunta o tamanho', (
     tester,
   ) async {

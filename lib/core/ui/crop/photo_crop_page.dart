@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../models/crop_rect.dart';
+import 'crop_controller.dart';
 import 'crop_overlay.dart';
+import 'crop_size_fields.dart';
 
 /// Proporções oferecidas na fileira de baixo da [PhotoCropPage] — as mesmas
 /// de todo recorte do app (`AspectPreset.presets`), com "Livre" no lugar de
@@ -81,6 +83,13 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
         width: widget.photoWidth,
         height: widget.photoHeight,
       );
+
+  /// Só para as contas do controle "Tamanho da janela" — o arraste das
+  /// alças continua com as funções de `crop_overlay.dart` de antes.
+  late final _cropMath = CropController(
+    sourceWidth: widget.photoWidth,
+    sourceHeight: widget.photoHeight,
+  );
 
   void _resize(CropHandle handle, Offset delta, Size previewSize) {
     if (previewSize.width <= 0 || previewSize.height <= 0) return;
@@ -215,6 +224,29 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
                       freeform: _lockedRatio == null,
                     ),
                   ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            // A tela é sempre preta, mesmo com o app no tema claro: o
+            // controle ganha as cores do tema escuro para continuar legível.
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: Theme.of(context).colorScheme.primary,
+                  brightness: Brightness.dark,
+                ),
+                textTheme: Theme.of(context).textTheme.apply(
+                  bodyColor: Colors.white,
+                  displayColor: Colors.white,
+                ),
+              ),
+              child: CropSizeSlider(
+                percent: _cropMath.sizePercentOf(_crop),
+                onChanged: (percent) => setState(
+                  () => _crop = _cropMath.scaledTo(percent, crop: _crop),
                 ),
               ),
             ),
