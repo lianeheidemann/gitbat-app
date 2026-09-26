@@ -73,9 +73,10 @@ Every crop screen (photo, video, SVG and the collage photo crop) has a
 **window size** slider — 1% to 100% of the largest window of the same shape
 that fits, keeping the shape and the center — and a **Centralizar** button
 that moves the window to the middle without resizing it. Every text tab
-(photo, video and collage) has a **font size** slider from 1 to 80, where 1
-is 1% of the image's shorter side; the resize handle keeps working
-alongside it.
+(photo, video, SVG and collage) has a **font size** slider from 1 to 80,
+where 1 is 1% of the image's shorter side; the resize handle keeps working
+alongside it. In the SVG editor, text is saved as real `<text>` elements —
+the file stays a vector, and the text stays editable in any SVG tool.
 
 ### Video → GIF / WebP
 

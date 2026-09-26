@@ -30,6 +30,7 @@ import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
+import '../../core/ui/text_overlay_editor.dart';
 
 /// Sentinela do preset "Personalizado" na fileira de proporções — mesma
 /// ideia de `_customAspectPreset` em `editor_page.dart`: não é uma proporção
@@ -90,6 +91,16 @@ class _SvgEditPageState extends State<SvgEditPage> {
   final _widthFocus = FocusNode();
   final _heightFocus = FocusNode();
 
+  /// Seleção, edição e fontes da aba "Texto" — o mesmo controlador de
+  /// "Editar imagem"/"Editar GIF".
+  final _textOverlay = TextOverlayController();
+
+  @override
+  void initState() {
+    super.initState();
+    _textOverlay.loadFonts();
+  }
+
   int get _sourceWidth => widget.svg.width.round();
   int get _sourceHeight => widget.svg.height.round();
 
@@ -114,6 +125,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     _heightController.dispose();
     _widthFocus.dispose();
     _heightFocus.dispose();
+    _textOverlay.dispose();
     super.dispose();
   }
 
@@ -208,6 +220,12 @@ class _SvgEditPageState extends State<SvgEditPage> {
       value: '${(_settings.opacity * 100).round()}%',
       builder: (_) => _opacitySection(),
     ),
+    EditorSection(
+      icon: Icons.text_fields_rounded,
+      title: 'Texto',
+      value: _settings.texts.isEmpty ? 'Nenhum' : '${_settings.texts.length}',
+      builder: (_) => _textSection(),
+    ),
     // Última aba da barra nas três telas de edição (vídeo, foto e montagem)
     // — configurações gerais, não deste SVG em si.
     EditorSection(
@@ -230,6 +248,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     // `EditorPage`.
     final showCropHandles =
         active != null && sections[active].title == 'Recorte';
+    final textTabActive = active != null && sections[active].title == 'Texto';
 
     return Scaffold(
       appBar: AppBar(
@@ -279,7 +298,10 @@ class _SvgEditPageState extends State<SvgEditPage> {
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                     child: RepaintBoundary(
                       key: _colorPreviewKey,
-                      child: _preview(showCropHandles: showCropHandles),
+                      child: _preview(
+                        showCropHandles: showCropHandles,
+                        textTabActive: textTabActive,
+                      ),
                     ),
                   ),
                 ),
@@ -300,8 +322,47 @@ class _SvgEditPageState extends State<SvgEditPage> {
   // Prévia
   // ---------------------------------------------------------------------
 
-  Widget _preview({required bool showCropHandles}) =>
-      showCropHandles ? _rawPreviewWithHandles() : _croppedDecoratedPreview();
+  Widget _preview({
+    required bool showCropHandles,
+    required bool textTabActive,
+  }) => showCropHandles
+      ? _rawPreviewWithHandles()
+      : _withTextOverlay(_croppedDecoratedPreview(), textTabActive);
+
+  /// Caixas de texto arrastáveis (aba "Texto") por cima do resultado — o
+  /// `LayoutBuilder` mede exatamente a caixa do resultado recortado/girado,
+  /// então as coordenadas normalizadas batem com o `viewBox` final que
+  /// `applyTextsSvg` usa na exportação. Mesma técnica de
+  /// `EditorPage._withTextOverlay`.
+  Widget _withTextOverlay(Widget content, bool textTabActive) => Stack(
+    children: [
+      content,
+      Positioned.fill(
+        child: LayoutBuilder(
+          builder: (context, constraints) => TextOverlayStack(
+            controller: _textOverlay,
+            texts: _settings.texts,
+            onChanged: (texts) =>
+                _update(_settings.copyWith(texts: texts), pushUndo: false),
+            canvasSize: constraints.biggest,
+            interactive: textTabActive,
+            onGestureStart: _pushUndoCheckpoint,
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _textSection() {
+    _textOverlay.dropSelectionIfGone(_settings.texts);
+    return TextOverlayPanel(
+      controller: _textOverlay,
+      texts: _settings.texts,
+      onChanged: (texts) => _update(_settings.copyWith(texts: texts)),
+      previewImageBuilder: _renderPreviewImage,
+      onGestureStart: _pushUndoCheckpoint,
+    );
+  }
 
   /// SVG inteiro (sem recorte aplicado) com o véu + alças por cima, igual à
   /// aba "Ajustar" do recorte de vídeo — mas, ao contrário de antes, já
