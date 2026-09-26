@@ -1149,4 +1149,39 @@ void main() {
     );
     expect(placeholder, findsNothing);
   });
+
+  testWidgets('"Remover foto" no menu "..." esvazia a célula e desfaz', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+
+    List<CollageCellSettings> cells() => tester
+        .widgetList<CollageCellView>(find.byType(CollageCellView))
+        .map((v) => v.cell)
+        .toList();
+    expect(cells().first.hasPhoto, isTrue);
+    final count = cells().length;
+
+    await tester.tap(find.byIcon(Icons.more_horiz_rounded).first);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Remover foto'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Remover foto'));
+    await tester.pumpAndSettle();
+
+    expect(cells().length, count);
+    expect(cells().first.hasPhoto, isFalse);
+
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(cells().first.hasPhoto, isTrue);
+  });
 }

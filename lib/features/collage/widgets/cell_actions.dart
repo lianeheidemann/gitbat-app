@@ -14,7 +14,7 @@ import 'panels/collage_panel_actions.dart';
 
 /// Ações de uma célula da montagem: o menu de contexto e o que cada item
 /// dele faz — substituir a foto, trocar com outra célula, recortar, ajustar
-/// cor, girar, espelhar e recentralizar.
+/// cor, girar, espelhar, recentralizar e remover a foto.
 ///
 /// [settings] é um getter, não um valor: as folhas abertas aqui sobrevivem a
 /// vários rebuilds e releem as configurações a cada um — a de ajuste de cor
@@ -153,6 +153,24 @@ void openCollageCellMenu(
                     settings: settings,
                     actions: actions,
                   );
+                },
+              ),
+              // Por último e em vermelho: é a única ação que tira algo da
+              // montagem (desfazível, como as outras).
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline_rounded,
+                  color: Theme.of(sheetContext).colorScheme.error,
+                ),
+                title: Text(
+                  'Remover foto',
+                  style: TextStyle(
+                    color: Theme.of(sheetContext).colorScheme.error,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  removeCellPhoto(index, settings: settings, actions: actions);
                 },
               ),
             ],
@@ -382,6 +400,24 @@ void recenterCell(
   actions.update(
     settings().replacingCell(index, cell.resetFraming()),
     pushUndo: false,
+  );
+}
+
+/// Tira a foto da célula [index], deixando a área vazia (com o "+" para
+/// escolher outra) — o layout e o tamanho das áreas não mudam. A célula vazia
+/// fica com a borda/canto/fundo das outras fotos, como as que nascem vazias
+/// ao crescer o layout.
+void removeCellPhoto(
+  int index, {
+  required CollageSettings Function() settings,
+  required CollagePanelActions actions,
+}) {
+  final current = settings();
+  actions.update(
+    current.replacingCell(
+      index,
+      current.withSharedCellStyle(const CollageCellSettings()),
+    ),
   );
 }
 
