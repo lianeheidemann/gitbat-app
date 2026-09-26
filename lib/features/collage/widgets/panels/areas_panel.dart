@@ -2,41 +2,236 @@ import 'package:flutter/material.dart';
 
 import '../../models/collage_layout.dart';
 
-/// Painel da aba "Áreas": com ela aberta, a prévia mostra as alças entre as
-/// fotos (ver [CollageDividerHandle]) para arrastar e mudar o tamanho de cada
-/// área. Aqui fica só a explicação e o botão de voltar ao padrão.
+/// Painel da aba "Áreas". Sem foto selecionada, só a explicação e
+/// "Tamanhos iguais". Com uma foto tocada na prévia, o cartão "Área
+/// selecionada": largura e altura dela em % (da largura disponível e da
+/// altura da coluna dela), "Bloquear proporção" (os dois mudam juntos,
+/// mantendo o formato da área), "Redefinir área" e "Tamanhos iguais".
 class CollageAreasPanel extends StatelessWidget {
   const CollageAreasPanel({
     super.key,
     required this.layout,
+    required this.selectedCell,
+    required this.lockAspect,
+    required this.onLockAspectChanged,
+    required this.onChangeStart,
+    required this.onWidthChanged,
+    required this.onHeightChanged,
+    required this.onResetArea,
     required this.onReset,
   });
 
   final CollageLayout layout;
+
+  /// Foto selecionada na prévia, ou `null`.
+  final int? selectedCell;
+  final bool lockAspect;
+  final ValueChanged<bool> onLockAspectChanged;
+
+  /// Começo de um arraste de slider — ponto de desfazer.
+  final VoidCallback onChangeStart;
+
+  /// Nova largura/altura, como fração (0 a 1).
+  final ValueChanged<double> onWidthChanged;
+  final ValueChanged<double> onHeightChanged;
+  final VoidCallback onResetArea;
   final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cell = selectedCell;
+    final resetAll = OutlinedButton.icon(
+      onPressed: layout.hasCustomSizes ? onReset : null,
+      icon: const Icon(Icons.filter_none_rounded),
+      label: const Text('Tamanhos iguais'),
+    );
+    if (cell == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Toque numa foto para ajustar a área dela: arraste as alças nas '
+            'laterais ou use os controles que aparecem aqui. Arrastar dentro '
+            'da foto move a imagem. Trocar o layout ou o número de fotos '
+            'volta tudo ao tamanho padrão.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          Align(alignment: Alignment.centerRight, child: resetAll),
+        ],
+      );
+    }
+
+    final (wLo, wHi) = layout.widthFractionRange;
+    final (hLo, hHi) = layout.heightFractionRange;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Toque numa foto para mostrar as alças dela e arraste para mudar o '
-          'tamanho. Arrastar dentro da foto move a imagem. Trocar o layout ou '
-          'o número de fotos volta tudo ao tamanho padrão.',
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: layout.hasCustomSizes ? onReset : null,
-            icon: const Icon(Icons.restart_alt_rounded),
-            label: const Text('Tamanhos iguais'),
+          'Área selecionada',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
         ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+            ),
+          ),
+          child: Column(
+            children: [
+              _AreaSliderRow(
+                sliderKey: const ValueKey('areaWidthSlider'),
+                icon: Icons.swap_horiz_rounded,
+                label: 'Largura',
+                value: layout.widthFractionOf(cell),
+                min: wLo,
+                max: wHi,
+                onChangeStart: onChangeStart,
+                onChanged: onWidthChanged,
+              ),
+              _AreaSliderRow(
+                sliderKey: const ValueKey('areaHeightSlider'),
+                icon: Icons.swap_vert_rounded,
+                label: 'Altura',
+                value: layout.heightFractionOf(cell),
+                min: hLo,
+                max: hHi,
+                onChangeStart: onChangeStart,
+                onChanged: onHeightChanged,
+              ),
+              Divider(
+                height: 13,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 40,
+                      child: Icon(Icons.lock_outline_rounded),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Bloquear proporção',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    Switch(
+                      key: const ValueKey('areaLockAspectSwitch'),
+                      value: lockAspect,
+                      onChanged: onLockAspectChanged,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onResetArea,
+                icon: const Icon(Icons.restart_alt_rounded),
+                label: const Text('Redefinir área'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: resetAll),
+          ],
+        ),
       ],
+    );
+  }
+}
+
+/// Linha "Largura"/"Altura" do cartão "Área selecionada": ícone à esquerda,
+/// rótulo com o slider embaixo e o valor em % à direita.
+class _AreaSliderRow extends StatelessWidget {
+  const _AreaSliderRow({
+    required this.sliderKey,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChangeStart,
+    required this.onChanged,
+  });
+
+  final Key sliderKey;
+  final IconData icon;
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final VoidCallback onChangeStart;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fixed = max <= min;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Text(label, style: theme.textTheme.bodyMedium),
+                ),
+                Slider(
+                  key: sliderKey,
+                  value: value.clamp(min, fixed ? min + 0.0001 : max),
+                  min: min,
+                  max: fixed ? min + 0.0001 : max,
+                  onChangeStart: fixed ? null : (_) => onChangeStart(),
+                  onChanged: fixed ? null : onChanged,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 60,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${(value * 100).round()}%',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -297,6 +297,133 @@ class CollageLayout {
     ];
   }
 
+  /// Largura da coluna da célula [cellIndex], como fração (0 a 1) da
+  /// largura disponível para as fotos — o "Largura" da aba "Áreas".
+  double widthFractionOf(int cellIndex) {
+    final cols = _effectiveColumns;
+    return _columnWeights()[cellIndex % cols] / cols;
+  }
+
+  /// Altura da célula [cellIndex] dentro da coluna dela, como fração (0 a 1)
+  /// da altura disponível — o "Altura" da aba "Áreas".
+  double heightFractionOf(int cellIndex) {
+    final cols = _effectiveColumns;
+    final rowsN = _effectiveRows;
+    return _rowWeightsOf(cellIndex % cols)[cellIndex ~/ cols] / rowsN;
+  }
+
+  /// Menor e maior fração que uma área pode ter numa fileira de [count]
+  /// áreas, deixando pelo menos [minWeight] para cada uma das outras.
+  static (double, double) fractionRange(int count) {
+    if (count <= 1) return (1, 1);
+    return (minWeight / count, 1 - (count - 1) * minWeight / count);
+  }
+
+  (double, double) get widthFractionRange => fractionRange(_effectiveColumns);
+  (double, double) get heightFractionRange => fractionRange(_effectiveRows);
+
+  /// [weights] (somando `weights.length`) com a posição [i] valendo
+  /// [fraction] do total; as outras encolhem ou crescem na mesma proporção
+  /// entre si, sem nenhuma ficar abaixo de [minWeight].
+  static List<double> _withFraction(
+    List<double> weights,
+    int i,
+    double fraction,
+  ) {
+    final n = weights.length;
+    if (n <= 1) return weights;
+    final (lo, hi) = fractionRange(n);
+    final target = fraction.clamp(lo, hi) * n;
+    final result = [...weights]..[i] = target;
+    // Distribui o resto entre as outras, proporcional ao que elas já
+    // tinham; quem cair abaixo do mínimo fica no mínimo e sai da conta.
+    final free = <int>{
+      for (var k = 0; k < n; k++)
+        if (k != i) k,
+    };
+    var remaining = n - target;
+    while (free.isNotEmpty) {
+      final sum = free.fold<double>(0, (a, k) => a + weights[k]);
+      var clamped = false;
+      for (final k in [...free]) {
+        final value = sum <= 0
+            ? remaining / free.length
+            : weights[k] / sum * remaining;
+        if (value < minWeight) {
+          result[k] = minWeight;
+          remaining -= minWeight;
+          free.remove(k);
+          clamped = true;
+        }
+      }
+      if (clamped) continue;
+      for (final k in free) {
+        result[k] = sum <= 0
+            ? remaining / free.length
+            : weights[k] / sum * remaining;
+      }
+      break;
+    }
+    return result;
+  }
+
+  /// A coluna da célula [cellIndex] com [fraction] da largura disponível;
+  /// as outras colunas se ajustam na mesma proporção entre si.
+  CollageLayout withWidthFraction(int cellIndex, double fraction) {
+    final cols = _effectiveColumns;
+    return CollageLayout(
+      kind: kind,
+      columns: columns,
+      rows: rows,
+      columnWeights: _withFraction(
+        _columnWeights(),
+        cellIndex % cols,
+        fraction,
+      ),
+      rowWeights: rowWeights,
+    );
+  }
+
+  /// A célula [cellIndex] com [fraction] da altura da coluna dela; as outras
+  /// fotos da mesma coluna se ajustam, as outras colunas não mudam.
+  CollageLayout withHeightFraction(int cellIndex, double fraction) {
+    final cols = _effectiveColumns;
+    final c = cellIndex % cols;
+    final perColumn = [for (var k = 0; k < cols; k++) _rowWeightsOf(k)];
+    perColumn[c] = _withFraction(perColumn[c], cellIndex ~/ cols, fraction);
+    return CollageLayout(
+      kind: kind,
+      columns: columns,
+      rows: rows,
+      columnWeights: columnWeights,
+      rowWeights: perColumn,
+    );
+  }
+
+  /// Largura e altura da célula [cellIndex] multiplicadas pelo mesmo fator
+  /// [factor] — com "Bloquear proporção" ligado, o formato da área não
+  /// muda. O fator é limitado para os dois caberem nos seus intervalos.
+  CollageLayout scaledArea(int cellIndex, double factor) {
+    final w = widthFractionOf(cellIndex);
+    final h = heightFractionOf(cellIndex);
+    final (wLo, wHi) = widthFractionRange;
+    final (hLo, hHi) = heightFractionRange;
+    final lo = [wLo / w, hLo / h].reduce((a, b) => a > b ? a : b);
+    final hi = [wHi / w, hHi / h].reduce((a, b) => a < b ? a : b);
+    final k = lo > hi ? 1.0 : factor.clamp(lo, hi);
+    return withWidthFraction(
+      cellIndex,
+      w * k,
+    ).withHeightFraction(cellIndex, h * k);
+  }
+
+  /// "Redefinir área": a célula [cellIndex] volta à largura e à altura
+  /// padrão (a mesma de todas numa grade igual); as vizinhas se ajustam.
+  CollageLayout resetArea(int cellIndex) => withWidthFraction(
+    cellIndex,
+    1 / _effectiveColumns,
+  ).withHeightFraction(cellIndex, 1 / _effectiveRows);
+
   /// [divider] arrastado [delta] pixels (para a direita num vertical, para
   /// baixo num horizontal) num canvas de [canvasSize]. Só as duas áreas que
   /// ele separa mudam, e nenhuma fica menor que [minWeight].

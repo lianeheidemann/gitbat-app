@@ -152,8 +152,12 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
   it shares with a neighbor, and drag them; the photos being resized are
   outlined while dragging. A top/bottom handle only moves the two photos of
   that column; a side handle moves the two columns it separates. Dragging
-  inside a photo still moves the picture. Changing the layout or the photo
+  inside a photo still moves the picture. With a photo selected, a
+  "Área selecionada" card sets its width and height in %, with an optional
+  aspect lock, plus "Redefinir área" (that photo back to the default size)
+  and "Tamanhos iguais" (all of them). Changing the layout or the photo
   count resets every area to the default size
+- "Remover foto" in a photo's "..." menu empties that area (undoable)
 - Photos with transparency (SVG or cut-out PNG) always show the collage
   background through them in the preview, just like the export
 - Per-photo replace, crop, rotate and flip from the cell menu; color
