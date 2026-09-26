@@ -24,6 +24,7 @@ import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
 import '../../core/ui/frame/content_fit_picker.dart';
 import '../../core/ui/frame/frame_color_row.dart';
+import '../../core/ui/frame/frame_rotate_button.dart';
 import '../../core/ui/panel_rows.dart';
 import '../../core/ui/frame/frame_sliders.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
@@ -203,6 +204,13 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   double get _photoAspectRatio =>
       _frame.crop?.aspectRatio ?? _photo.aspectRatio;
 
+  /// Proporção da foto como ela entra na janela da moldura de imagem: a de
+  /// [_photoAspectRatio], invertida quando a aba "Girar" deita a foto lá
+  /// dentro ([FrameSettings.contentTransform]).
+  double get _contentAspectRatio => _frame.contentTransform.swapsAxes
+      ? 1 / _photoAspectRatio
+      : _photoAspectRatio;
+
   /// A foto da prévia, já com o ajuste de cor por cima — o mesmo filtro que
   /// `photo_frame_compositor` aplica na exportação, para a tela mostrar o
   /// que vai sair. A moldura e o fundo ficam de fora, como lá.
@@ -312,9 +320,17 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     }
   }
 
-  /// O estilo procedural que a aba "Moldura" deve mostrar. Com uma moldura
-  /// de imagem ativa é sempre "Sem moldura": as duas famílias são mutuamente
-  /// exclusivas, como na aba "Frame" do editor de vídeo.
+  /// Resumo da aba "Moldura": o nome da arte, com o giro dela quando houver.
+  String get _imageFrameLabel {
+    final asset = _frame.imageFrame;
+    if (asset == null) return 'Sem moldura';
+    final turns = _frame.frameQuarterTurns;
+    return turns == 0 ? asset.label : '${asset.label} · ${turns * 90}°';
+  }
+
+  /// O estilo procedural que a aba "Borda" deve mostrar. Com uma moldura
+  /// de imagem ativa é sempre "Sem borda": as duas famílias são mutuamente
+  /// exclusivas, como no editor de vídeo.
   FrameStyle get _activeFrameStyle =>
       _frame.imageFrame == null ? _frame.style : FrameStyle.none;
 
@@ -348,15 +364,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     ),
     EditorSection(
       icon: Icons.smartphone_rounded,
-      title: 'Moldura',
+      title: 'Borda',
       value: _activeFrameStyle.label,
       builder: (_) => _frameStyleSection(),
     ),
     EditorSection(
       icon: Icons.image_outlined,
-      title: 'Moldura de imagem',
-      label: 'Imagem',
-      value: _frame.imageFrame?.label ?? FrameStyle.none.label,
+      title: 'Moldura',
+      value: _imageFrameLabel,
       builder: (_) => _imageFrameSection(),
     ),
     if (_frame.hasFixedAspect)
@@ -531,8 +546,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       // pixels da foto como ela veio, e arrastar uma alça girada moveria a
       // janela no sentido "errado" para quem está olhando.
       ? _rawCropPreviewWithHandles()
+      // Sem moldura de imagem, gira o resultado inteiro (aba "Girar"); com
+      // ela, só o giro da própria moldura (botão "90°") — o da aba "Girar"
+      // fica por conta de [_imageFrameContentPreview], lá dentro da janela.
       : applyOutputTransform(
-          _frame.outputTransform,
+          _frame.finalTransform,
           _framedPreview(textTabActive),
         );
 
@@ -658,7 +676,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           );
           final fit = resolveContentFit(
             _frame.contentFit,
-            _photoAspectRatio,
+            _contentAspectRatio,
             rect.width / rect.height,
           );
 
@@ -685,13 +703,18 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   Widget _imageFrameContentPreview(ContentFitMode fit) {
     // Tamanho de referência qualquer, na proporção certa (a real do recorte
     // não importa aqui — `FittedBox` só olha para a proporção do filho) —
-    // mesma técnica de `EditorPage._imageFrameContentPreview`.
+    // mesma técnica de `EditorPage._imageFrameContentPreview`. O giro da
+    // aba "Girar" entra aqui, dentro da janela: a moldura em volta fica
+    // parada.
     Widget photo(BoxFit boxFit) => FittedBox(
       fit: boxFit,
-      child: SizedBox(
-        width: 1000,
-        height: 1000 / _photoAspectRatio,
-        child: _croppedPhotoPreview(),
+      child: applyOutputTransform(
+        _frame.contentTransform,
+        SizedBox(
+          width: 1000,
+          height: 1000 / _photoAspectRatio,
+          child: _croppedPhotoPreview(),
+        ),
       ),
     );
 
@@ -942,7 +965,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   );
 
   // ---------------------------------------------------------------------
-  // Seção "Moldura" (procedural)
+  // Seção "Borda" (moldura procedural)
   // ---------------------------------------------------------------------
 
   Widget _frameStyleSection() {
@@ -961,7 +984,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           SectionCard(
             children: [
               PanelColorRow(
-                label: 'Cor da moldura',
+                label: 'Cor da borda',
                 color: _frame.color,
                 onTap: _pickFrameColor,
               ),
@@ -991,7 +1014,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   // ---------------------------------------------------------------------
-  // Seção "Moldura de imagem"
+  // Seção "Moldura" (moldura de imagem)
   // ---------------------------------------------------------------------
 
   Widget _imageFrameSection() {
@@ -1006,9 +1029,23 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           onImport: _importFrameImage,
           onRemoveImported: _confirmRemoveImportedFrame,
         ),
-        // A resolução só existe para moldura de imagem — sem uma escolhida,
-        // não há canvas próprio para dimensionar.
+        // O giro e a resolução só existem para moldura de imagem — sem uma
+        // escolhida, não há arte para deitar nem canvas próprio para
+        // dimensionar.
         if (_frame.hasFixedAspect) ...[
+          const SizedBox(height: 18),
+          SectionCard(
+            children: [
+              FrameRotateButton(
+                quarterTurns: _frame.frameQuarterTurns,
+                onRotate: () => _updateFrame(
+                  _frame.copyWith(
+                    frameQuarterTurns: _frame.frameQuarterTurns + 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           SectionCard(children: [_frameResolutionSelector()]),
         ],
@@ -1073,11 +1110,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   // ---------------------------------------------------------------------
-  // Cor (compartilhada entre moldura e fundo)
+  // Cor (compartilhada entre borda e fundo)
   // ---------------------------------------------------------------------
 
   void _pickFrameColor() => _pickColor(
-    title: 'Cor da moldura',
+    title: 'Cor da borda',
     selectedColor: _frame.color,
     onSelected: (color) =>
         _updateFrame(_frame.copyWith(color: color), pushUndo: false),

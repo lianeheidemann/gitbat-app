@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../models/frame_settings.dart';
 import '../../models/image_frame.dart';
 import '../../services/bundled_frame_store.dart';
 import 'frame_thumb_shell.dart';
@@ -79,7 +78,7 @@ class NoImageFrameThumb extends StatelessWidget {
     final theme = Theme.of(context);
     return FrameThumbShell(
       key: const ValueKey('imageFrameThumb_none'),
-      label: FrameStyle.none.label,
+      label: 'Sem moldura',
       selected: selected,
       padding: const EdgeInsets.all(8),
       onTap: onTap,

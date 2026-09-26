@@ -72,9 +72,10 @@ both use, so what you see is what gets encoded.
 ### Video → GIF / WebP
 
 - Preview with a timeline, duration trim and crop (presets or custom)
-- Rotate in 90° steps and mirror horizontally or vertically — applied to
-  the finished result, so crop, frame and the size estimate keep working in
-  the original orientation
+- Rotate in 90° steps and mirror horizontally or vertically — an output
+  step, so crop, frame and the size estimate keep working in the original
+  orientation (with an image frame, only the video inside it turns; see
+  below)
 - Speed 0.25x–4x, resolution as a percentage of the original (with pixel
   preview), frame rate 5–24 fps, loop or play once
 - Output as GIF (256-color palette, two-pass conversion) or animated WebP
@@ -86,11 +87,18 @@ both use, so what you see is what gets encoded.
 
 ### Frames (video and single photo)
 
-- Procedural border — thin, medium or thick, with color and corner rounding
-- Image frame — bundled phone mockups, or your own with an
-  automatically-detected transparent window
+Both editors split frames into two tabs: **Borda** (border) and **Moldura**
+(frame).
+
+- **Borda** — procedural border: thin, medium or thick, with color and
+  corner rounding in 1% steps
+- **Moldura** — image frame: bundled phone mockups, or your own with an
+  automatically-detected transparent window. A **90°** button turns the
+  frame together with its content (the mockup lies down, content and all)
 - Content fit — auto, fill, fit or expand with zoom
-- Rotate and mirror the finished result, on both screens
+- **Girar** (rotate/mirror) on both screens: without an image frame it
+  turns the finished result; with one, the frame stays upright and only the
+  photo/video inside its window turns
 - **Fit to content** crop on the single photo: one tap trims only the fully
   transparent margins around a PNG, snapping the crop to the visible pixels
   (it can still be refined with the handles afterwards)

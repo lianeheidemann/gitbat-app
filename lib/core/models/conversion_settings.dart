@@ -124,10 +124,15 @@ class ConversionSettings {
   /// `FfmpegService.buildVideoFilter`.
   final ColorAdjustments adjustments;
 
-  /// Giro e espelhamento finais da aba "Girar" — atalho para o campo de
+  /// Giro e espelhamento da aba "Girar" — atalho para o campo de
   /// mesmo nome em [frame], onde ele mora para o desfazer/refazer das duas
   /// telas cair sempre no mesmo lugar (ver [FrameSettings.outputTransform]).
   OutputTransform get outputTransform => frame.outputTransform;
+
+  /// Giro aplicado ao resultado já composto, no fim do grafo — ver
+  /// [FrameSettings.finalTransform]. Com moldura de imagem é só o giro da
+  /// moldura; o da aba "Girar" vai para dentro de `imageFramedGraph`.
+  OutputTransform get finalTransform => frame.finalTransform;
 
   /// Presets exibidos no editor redesenhado.
   static const fpsOptions = <int>[5, 8, 10, 12, 15, 20, 24];

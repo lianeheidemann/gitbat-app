@@ -51,15 +51,17 @@ Future<Uint8List> _composeProcedural(
   // O giro é o último passo: o canvas já sai com os lados trocados, mas
   // tudo abaixo continua desenhando na orientação original da foto — por
   // isso `size` vem do recorte, não do canvas.
+  // Sem moldura de imagem, `finalTransform` é o próprio giro da aba
+  // "Girar": a borda acompanha a foto.
   final (canvasWidth, canvasHeight) = transformedCanvasSize(
-    frame.outputTransform,
+    frame.finalTransform,
     crop.width,
     crop.height,
   );
   final size = Size(crop.width.toDouble(), crop.height.toDouble());
 
   return rasterizeCanvas(canvasWidth, canvasHeight, (canvas, _) {
-    applyCanvasOutputTransform(canvas, frame.outputTransform, size);
+    applyCanvasOutputTransform(canvas, frame.finalTransform, size);
     // `paintFrame` já não desenha nada quando o estilo é `none`, e a
     // geometria correspondente cobre o canvas inteiro sem cantos
     // arredondados — então não precisa de um caso especial para "sem
@@ -122,9 +124,12 @@ Future<Uint8List> _composeImageFramed(
   );
   final size = Size(canvasWidth.toDouble(), canvasHeight.toDouble());
   // Ver [_composeProcedural]: o canvas gravado já é o girado, a composição
-  // continua acontecendo em [size], na orientação original.
+  // continua acontecendo em [size], na orientação original. Aqui o giro do
+  // resultado é só o da própria moldura (botão "90°" da aba "Moldura"); o
+  // da aba "Girar" vale só para a foto, dentro da janela — ver
+  // [_drawTransformedPhoto].
   final (outputWidth, outputHeight) = transformedCanvasSize(
-    frame.outputTransform,
+    frame.finalTransform,
     canvasWidth,
     canvasHeight,
   );
@@ -137,7 +142,7 @@ Future<Uint8List> _composeImageFramed(
 
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
-  applyCanvasOutputTransform(canvas, frame.outputTransform, size);
+  applyCanvasOutputTransform(canvas, frame.finalTransform, size);
 
   if (!frame.transparentBackground) {
     canvas.drawRect(Offset.zero & size, Paint()..color = frame.backgroundColor);
@@ -159,60 +164,52 @@ Future<Uint8List> _composeImageFramed(
     // Vale para os três modos de encaixe abaixo; a arte da moldura é
     // desenhada com outro `Paint`, sem o filtro.
     ..colorFilter = frame.adjustments.filter;
+  // A foto entra na janela já girada/espelhada pela aba "Girar": o encaixe
+  // é calculado sobre a proporção dela depois do giro.
+  final transform = frame.contentTransform;
+  final (turnedWidth, turnedHeight) = transform.swapsAxes
+      ? (effectiveRect.height, effectiveRect.width)
+      : (effectiveRect.width, effectiveRect.height);
   final fit = resolveContentFit(
     frame.contentFit,
-    effectiveRect.width / effectiveRect.height,
+    turnedWidth / turnedHeight,
     areaRect.width / areaRect.height,
   );
 
-  if (fit == ContentFitMode.expand) {
-    // Mesma composição de `FfmpegService._imageFramedGraph`: a foto cabe
-    // inteira dentro da área (escala mínima dos dois eixos), o zoom amplia
-    // ou reduz só ela sobre um fundo preto do tamanho da área, e o que
-    // passar da área é recortado.
-    canvas.save();
-    canvas.clipRect(areaRect);
-    canvas.drawRect(areaRect, Paint()..color = Colors.black);
-    final fitScale = math.min(
-      areaRect.width / effectiveRect.width,
-      areaRect.height / effectiveRect.height,
-    );
-    final zoom = frame.effectiveContentZoom;
-    final drawWidth = effectiveRect.width * fitScale * zoom;
-    final drawHeight = effectiveRect.height * fitScale * zoom;
-    canvas.drawImageRect(
-      image,
-      effectiveRect,
-      Rect.fromLTWH(
+  // Fundo preto da área: aparece nas barras de "Encaixar" e em volta da
+  // foto reduzida de "Expandir" — a arte de imagem não tem uma "cor de
+  // moldura" configurável para isso, então usa preto, igual a
+  // `imageFramedGraph`. Em "Preencher" a foto cobre tudo e ele some.
+  canvas.save();
+  canvas.clipRect(areaRect);
+  canvas.drawRect(areaRect, Paint()..color = Colors.black);
+  final Rect dst;
+  switch (fit) {
+    case ContentFitMode.expand:
+      // Mesma composição de `imageFramedGraph`: a foto cabe inteira dentro
+      // da área (escala mínima dos dois eixos), o zoom amplia ou reduz só
+      // ela, e o que passar da área é recortado.
+      final fitScale = math.min(
+        areaRect.width / turnedWidth,
+        areaRect.height / turnedHeight,
+      );
+      final zoom = frame.effectiveContentZoom;
+      final drawWidth = turnedWidth * fitScale * zoom;
+      final drawHeight = turnedHeight * fitScale * zoom;
+      dst = Rect.fromLTWH(
         areaRect.left + (areaRect.width - drawWidth) / 2,
         areaRect.top + (areaRect.height - drawHeight) / 2,
         drawWidth,
         drawHeight,
-      ),
-      paint,
-    );
-    canvas.restore();
-  } else if (fit == ContentFitMode.fill) {
-    final coverSrc = _coverSrcRect(
-      effectiveRect.width,
-      effectiveRect.height,
-      areaRect.width,
-      areaRect.height,
-    );
-    final srcRect = coverSrc.shift(effectiveRect.topLeft);
-    canvas.drawImageRect(image, srcRect, areaRect, paint);
-  } else {
-    // `auto` resolvido para `fit`: cabe inteira, barras pretas — a arte de
-    // imagem não tem uma "cor de moldura" configurável para as barras,
-    // então usa preto, igual a `_imageFramedGraph`.
-    canvas.drawRect(areaRect, Paint()..color = Colors.black);
-    canvas.drawImageRect(
-      image,
-      effectiveRect,
-      _containDstRect(effectiveRect.width, effectiveRect.height, areaRect),
-      paint,
-    );
+      );
+    case ContentFitMode.fill:
+      dst = _coverDstRect(turnedWidth, turnedHeight, areaRect);
+    case ContentFitMode.auto:
+    case ContentFitMode.fit:
+      dst = _containDstRect(turnedWidth, turnedHeight, areaRect);
   }
+  _drawTransformedPhoto(canvas, image, effectiveRect, dst, transform, paint);
+  canvas.restore();
 
   await _drawArtwork(canvas, size, asset);
   _paintTexts(canvas, size, frame);
@@ -337,6 +334,45 @@ Rect _coverSrcRect(double srcW, double srcH, double dstW, double dstH) {
   }
   final cropHeight = srcW / dstAspect;
   return Rect.fromLTWH(0, (srcH - cropHeight) / 2, srcW, cropHeight);
+}
+
+/// Desenha a região [src] de [image] ocupando [dst], girada e espelhada por
+/// [transform] — [dst] já está na orientação de depois do giro. É o giro da
+/// aba "Girar" com moldura de imagem ativa: só a foto gira, dentro da
+/// janela.
+void _drawTransformedPhoto(
+  Canvas canvas,
+  ui.Image image,
+  Rect src,
+  Rect dst,
+  OutputTransform transform,
+  Paint paint,
+) {
+  final srcSize = Size(src.width, src.height);
+  final (turnedWidth, turnedHeight) = transform.swapsAxes
+      ? (src.height, src.width)
+      : (src.width, src.height);
+  canvas.save();
+  canvas.translate(dst.left, dst.top);
+  canvas.scale(dst.width / turnedWidth, dst.height / turnedHeight);
+  applyCanvasOutputTransform(canvas, transform, srcSize);
+  canvas.drawImageRect(image, src, Offset.zero & srcSize, paint);
+  canvas.restore();
+}
+
+/// Retângulo de destino, centralizado em [dst], que cobre [dst] inteiro sem
+/// distorcer a imagem — o "cover" do `BoxFit.cover`, do lado do destino (o
+/// excedente fica fora de [dst] e quem chama recorta).
+Rect _coverDstRect(double srcW, double srcH, Rect dst) {
+  final scale = math.max(dst.width / srcW, dst.height / srcH);
+  final w = srcW * scale;
+  final h = srcH * scale;
+  return Rect.fromLTWH(
+    dst.left + (dst.width - w) / 2,
+    dst.top + (dst.height - h) / 2,
+    w,
+    h,
+  );
 }
 
 /// Retângulo de destino, centralizado dentro de [dst], que mostra a imagem

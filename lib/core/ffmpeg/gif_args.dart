@@ -8,7 +8,7 @@ import 'filter_graph.dart';
 /// transparente e GIF dentro de uma moldura de imagem.
 
 /// A paleta é só uma contagem de cores: girar ou espelhar não muda nenhuma
-/// delas, então [FrameSettings.outputTransform] não entra aqui — só nos
+/// delas, então [FrameSettings.finalTransform] não entra aqui — só nos
 /// caminhos que produzem quadros de verdade.
 List<String> paletteGenArgs({
   required VideoInfo video,
@@ -81,7 +81,7 @@ List<String> paletteUseArgs({
 
   if (settings.frame.style == FrameStyle.none) {
     final filter = buildConversionVideoFilter(settings, video);
-    final (label, tail) = transformedTail(settings.outputTransform, 'v');
+    final (label, tail) = transformedTail(settings.finalTransform, 'v');
     return [
       '-y',
       '-ss',
@@ -110,7 +110,7 @@ List<String> paletteUseArgs({
   final graph = framedGraph(settings, video, input: '0:v', output: 'framed');
   final composed = transparent ? 'alpha' : 'framed';
   final maskStage = transparent ? ';[framed][2:v]alphamerge[$composed]' : '';
-  final (useLabel, tail) = transformedTail(settings.outputTransform, composed);
+  final (useLabel, tail) = transformedTail(settings.finalTransform, composed);
   final alphaThreshold = transparent ? ':alpha_threshold=128' : '';
 
   return [
@@ -166,7 +166,7 @@ List<String> transparentGifArgs({
 }) {
   final graph = framedGraph(settings, video, input: '0:v', output: 'framed');
   final newPalette = settings.palette == PaletteMode.perFrame ? ':new=1' : '';
-  final (source, tail) = transformedTail(settings.outputTransform, 'alpha');
+  final (source, tail) = transformedTail(settings.finalTransform, 'alpha');
 
   return [
     '-y',
@@ -230,7 +230,7 @@ List<String> buildImageFramedGifArgs({
   final newPalette = settings.palette == PaletteMode.perFrame ? ':new=1' : '';
   final reserve = transparent ? ':reserve_transparent=1' : '';
   final alphaThreshold = transparent ? ':alpha_threshold=128' : '';
-  final (source, tail) = transformedTail(settings.outputTransform, 'framed');
+  final (source, tail) = transformedTail(settings.finalTransform, 'framed');
 
   return [
     '-y',

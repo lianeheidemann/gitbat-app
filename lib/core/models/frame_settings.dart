@@ -7,16 +7,16 @@ import 'default_colors.dart';
 import 'image_frame.dart';
 import 'output_transform.dart';
 
-/// Estilo de moldura desenhado ao redor do GIF. Cada estilo é só um atalho
-/// para um par de valores — espessura da borda e arredondamento dos cantos —
-/// que o usuário ainda pode ajustar livremente nos dois sliders da seção
-/// "Moldura". O tamanho e a proporção do GIF são definidos na aba "Ajustar",
-/// nunca aqui.
+/// Estilo da borda (moldura procedural) desenhada ao redor do GIF/foto. Cada
+/// estilo é só um atalho para um par de valores — espessura da borda e
+/// arredondamento dos cantos — que o usuário ainda pode ajustar livremente
+/// nos dois sliders da aba "Borda". O tamanho e a proporção do GIF são
+/// definidos na aba "Ajustar", nunca aqui.
 enum FrameStyle {
-  none('Sem moldura', defaultThickness: 0, defaultCornerRatio: 0),
-  thin('Moldura fina', defaultThickness: 4, defaultCornerRatio: 0.06),
-  medium('Moldura média', defaultThickness: 10, defaultCornerRatio: 0.12),
-  thick('Moldura grossa', defaultThickness: 18, defaultCornerRatio: 0.20);
+  none('Sem borda', defaultThickness: 0, defaultCornerRatio: 0),
+  thin('Borda fina', defaultThickness: 4, defaultCornerRatio: 0.06),
+  medium('Borda média', defaultThickness: 10, defaultCornerRatio: 0.12),
+  thick('Borda grossa', defaultThickness: 18, defaultCornerRatio: 0.20);
 
   const FrameStyle(
     this.label, {
@@ -109,6 +109,7 @@ class FrameSettings {
     this.crop,
     this.texts = const [],
     this.outputTransform = OutputTransform.identity,
+    this.frameQuarterTurns = 0,
   });
 
   final FrameStyle style;
@@ -176,8 +177,13 @@ class FrameSettings {
   /// (incluindo moldura e fundo), não só à foto.
   final List<CollageTextItem> texts;
 
-  /// Giro e espelhamento da aba "Girar", aplicados ao resultado já
-  /// composto — ver [OutputTransform].
+  /// Giro e espelhamento da aba "Girar" — ver [OutputTransform].
+  ///
+  /// Sem moldura de imagem, vale para o resultado já composto (a borda
+  /// procedural acompanha a foto/vídeo de qualquer jeito). Com moldura de
+  /// imagem, vale só para o conteúdo dentro da janela da arte: a moldura
+  /// fica parada na orientação dela ([frameQuarterTurns]) e a foto/vídeo
+  /// gira lá dentro — ver [contentTransform] e [finalTransform].
   ///
   /// Mora aqui, e não num campo só da tela de foto, porque as duas telas
   /// que oferecem a aba guardam seu desfazer/refazer em cima do objeto que
@@ -186,10 +192,28 @@ class FrameSettings {
   /// as duas divirjam — `ConversionSettings.outputTransform` é só um atalho
   /// para este.
   ///
-  /// Apesar do nome da classe, não é uma propriedade da moldura: a moldura
-  /// é desenhada na orientação original e gira junto com tudo o mais, no
-  /// fim. [crop], [adjustments] e [texts] já moram aqui pelo mesmo motivo.
+  /// Apesar do nome da classe, não é uma propriedade da moldura. [crop],
+  /// [adjustments] e [texts] já moram aqui pelo mesmo motivo.
   final OutputTransform outputTransform;
+
+  /// Quartos de volta (horário, 0 a 3) da moldura de imagem **junto com o
+  /// conteúdo** — o botão "90°" da aba "Moldura". Gira o resultado inteiro
+  /// (arte, foto/vídeo e textos), como se o celular do mockup fosse
+  /// deitado. Sem moldura de imagem não tem efeito: aí quem gira o
+  /// resultado é [outputTransform].
+  final int frameQuarterTurns;
+
+  /// O que girar/espelhar só o conteúdo, antes de encaixá-lo na janela da
+  /// moldura de imagem: [outputTransform] quando há uma, nada quando não há.
+  OutputTransform get contentTransform =>
+      hasImageFrame ? outputTransform : OutputTransform.identity;
+
+  /// O que girar/espelhar o resultado já composto, no fim: só o giro da
+  /// moldura ([frameQuarterTurns]) quando há moldura de imagem, ou o
+  /// [outputTransform] inteiro quando não há.
+  OutputTransform get finalTransform => hasImageFrame
+      ? OutputTransform(quarterTurns: frameQuarterTurns)
+      : outputTransform;
 
   /// Zoom que realmente deve ser aplicado pela prévia e pela exportação.
   /// Manter o valor escolhido em [contentZoom] permite recuperá-lo quando o
@@ -259,6 +283,7 @@ class FrameSettings {
     bool clearCrop = false,
     List<CollageTextItem>? texts,
     OutputTransform? outputTransform,
+    int? frameQuarterTurns,
   }) {
     return FrameSettings(
       style: style ?? this.style,
@@ -276,6 +301,7 @@ class FrameSettings {
       crop: clearCrop ? null : (crop ?? this.crop),
       texts: texts ?? this.texts,
       outputTransform: outputTransform ?? this.outputTransform,
+      frameQuarterTurns: (frameQuarterTurns ?? this.frameQuarterTurns) % 4,
     );
   }
 }

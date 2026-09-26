@@ -4,7 +4,8 @@ import '../../models/frame_settings.dart';
 import '../../painting/frame_painter.dart';
 import 'frame_thumb_shell.dart';
 
-/// Fileira horizontal de miniaturas dos estilos de moldura procedural.
+/// Fileira horizontal de miniaturas dos estilos de borda (moldura
+/// procedural) — a aba "Borda".
 class FrameStylePicker extends StatelessWidget {
   const FrameStylePicker({
     super.key,

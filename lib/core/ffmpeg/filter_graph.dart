@@ -43,8 +43,10 @@ String buildConversionVideoFilter(
   return parts.join(',');
 }
 
-/// Filtros que giram e espelham o resultado, na ordem girar → espelhar (a
-/// mesma de [applyOutputTransform] na prévia).
+/// Filtros que giram e espelham, na ordem girar → espelhar (a mesma de
+/// [applyOutputTransform] na prévia) — usados tanto no fim do grafo
+/// ([FrameSettings.finalTransform]) quanto, com moldura de imagem, só no
+/// vídeo antes do encaixe na janela ([FrameSettings.contentTransform]).
 ///
 /// `transpose=1` é um quarto de volta no sentido horário e `transpose=2` no
 /// anti-horário; meia volta é o horário duas vezes. Lista vazia quando não
@@ -329,10 +331,21 @@ String imageFramedGraph(
   bool needsAreaMask = false,
   required String output,
 }) {
-  final contentFilter = buildConversionVideoFilter(settings, video);
   final frame = settings.frame;
+  // O giro da aba "Girar", com moldura de imagem, vale só para o vídeo
+  // dentro da janela: entra logo depois da cadeia do conteúdo, antes do
+  // encaixe — e o encaixe passa a olhar as dimensões já giradas. O giro da
+  // moldura inteira ([FrameSettings.finalTransform]) fica para o fim do
+  // grafo, em quem chama (ver [transformedTail]/[transformedInto]).
+  final contentFilter = [
+    buildConversionVideoFilter(settings, video),
+    ...outputTransformFilters(frame.contentTransform),
+  ].join(',');
 
-  final (contentWidth, contentHeight) = settings.contentDimensions(video);
+  final (scaledWidth, scaledHeight) = settings.contentDimensions(video);
+  final (contentWidth, contentHeight) = frame.contentTransform.swapsAxes
+      ? (scaledHeight, scaledWidth)
+      : (scaledWidth, scaledHeight);
   final (areaX, areaY, areaWidth, areaHeight) = settings
       .imageFrameContentAreaPx(video);
   final (canvasWidth, canvasHeight) = settings.imageFrameCanvasDimensions(

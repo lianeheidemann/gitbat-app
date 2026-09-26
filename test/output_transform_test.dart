@@ -11,10 +11,12 @@ import 'package:video_to_gif/core/models/image_frame.dart';
 import 'package:video_to_gif/core/models/output_transform.dart';
 import 'package:video_to_gif/core/models/video_info.dart';
 
-// A aba "Girar" do vídeo e da foto é um passo de saída: ela gira o
-// resultado já composto, sem mexer em recorte, moldura ou estimativa. Dois
-// pontos são fáceis de quebrar sem perceber, e é neles que este arquivo
-// insiste:
+// A aba "Girar" do vídeo e da foto é um passo de saída: sem moldura de
+// imagem, ela gira o resultado já composto, sem mexer em recorte, moldura
+// ou estimativa. Com moldura de imagem, ela gira só o conteúdo dentro da
+// janela e quem gira o resultado inteiro é o botão "90°" da aba "Moldura"
+// (`FrameSettings.frameQuarterTurns`). Dois pontos são fáceis de quebrar
+// sem perceber, e é neles que este arquivo insiste:
 //
 //  * sem giro nenhum (o caso de longe mais comum) a linha de comando tem
 //    que sair exatamente como saía antes, senão qualquer regressão some no
@@ -40,6 +42,7 @@ ConversionSettings _settings({
   FrameStyle style = FrameStyle.none,
   bool transparent = true,
   bool imageFrame = false,
+  int frameQuarterTurns = 0,
   OutputFormat format = OutputFormat.gif,
 }) => ConversionSettings(
   startSeconds: 0,
@@ -52,6 +55,7 @@ ConversionSettings _settings({
     transparentBackground: transparent,
     imageFrame: imageFrame ? ImageFrameLibrary.bundled.first : null,
     outputTransform: transform,
+    frameQuarterTurns: frameQuarterTurns,
   ),
 );
 
@@ -306,12 +310,12 @@ void main() {
       expect(args[args.indexOf('-map') + 1], '[out]');
     });
 
-    test('WebP com moldura de imagem gira no fim do grafo', () {
+    test('WebP: o 90° da moldura de imagem gira no fim do grafo', () {
       final args = ffmpeg.webpImageFramedArgs(
         video: _video,
         settings: _settings(
-          transform: quarterTurn,
           imageFrame: true,
+          frameQuarterTurns: 1,
           format: OutputFormat.webp,
         ),
         artPath: '/tmp/arte.png',
@@ -321,11 +325,11 @@ void main() {
       expect(args[args.indexOf('-map') + 1], '[out]');
     });
 
-    test('GIF com moldura de imagem gira antes do split da paleta', () {
+    test('GIF: o 90° da moldura de imagem gira antes do split da paleta', () {
       final lavfi = _lavfiOf(
         ffmpeg.imageFramedGifArgs(
           video: _video,
-          settings: _settings(transform: quarterTurn, imageFrame: true),
+          settings: _settings(imageFrame: true, frameQuarterTurns: 1),
           artPath: '/tmp/arte.png',
           outputPath: '/tmp/s.gif',
         ),
@@ -333,6 +337,70 @@ void main() {
       _expectRotatesAfterEveryMask(lavfi);
       expect(lavfi, contains('[framed]transpose=1[framed_girado];'));
       expect(lavfi, contains('[framed_girado]split=2'));
+    });
+
+    test(
+      'com moldura de imagem, "Girar" gira só o vídeo, antes do encaixe',
+      () {
+        for (final format in OutputFormat.values) {
+          final settings = _settings(
+            transform: quarterTurn,
+            imageFrame: true,
+            format: format,
+          );
+          final lavfi = _lavfiOf(
+            format == OutputFormat.gif
+                ? ffmpeg.imageFramedGifArgs(
+                    video: _video,
+                    settings: settings,
+                    artPath: '/tmp/arte.png',
+                    outputPath: '/tmp/s.gif',
+                  )
+                : ffmpeg.webpImageFramedArgs(
+                    video: _video,
+                    settings: settings,
+                    artPath: '/tmp/arte.png',
+                    outputPath: '/tmp/s.webp',
+                  ),
+          );
+          expect(
+            'transpose'.allMatches(lavfi).length,
+            1,
+            reason: 'a moldura fica parada: só o vídeo gira ($format)',
+          );
+          expect(
+            lavfi.indexOf('transpose=1'),
+            lessThan(lavfi.indexOf('[content]')),
+            reason: 'o giro entra na cadeia do vídeo, antes do encaixe',
+          );
+          expect(lavfi, isNot(contains('_girado')));
+          expect(lavfi, isNot(contains('_bruto')));
+        }
+      },
+    );
+
+    test('vídeo deitado na janela usa as dimensões já giradas no encaixe', () {
+      // 640x360 girado vira retrato: em "Preencher" o `scale` do encaixe
+      // tem que cobrir a janela a partir da proporção de pé, não da deitada.
+      final settings = ConversionSettings(
+        startSeconds: 0,
+        endSeconds: 5,
+        frame: FrameSettings(
+          imageFrame: ImageFrameLibrary.bundled.first,
+          contentFit: ContentFitMode.fill,
+          outputTransform: quarterTurn,
+        ),
+      );
+      final graph = imageFramedGraph(
+        settings,
+        _video,
+        input: '0:v',
+        artInput: '1:v',
+        output: 'framed',
+      );
+      final (scaledWidth, scaledHeight) = settings.contentDimensions(_video);
+      expect(graph, contains('scale=$scaledWidth:$scaledHeight'));
+      expect(graph, contains(',transpose=1[content]'));
     });
   });
 
