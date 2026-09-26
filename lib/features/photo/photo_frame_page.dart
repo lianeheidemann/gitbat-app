@@ -471,12 +471,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 child: Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: RepaintBoundary(
-                      key: _colorPreviewKey,
-                      child: _preview(
-                        showCropHandles: showCropHandles,
-                        textTabActive: textTabActive,
-                        eraserTabActive: eraserTabActive,
+                    child: MediaCheckerboard(
+                      child: RepaintBoundary(
+                        key: _colorPreviewKey,
+                        child: _preview(
+                          showCropHandles: showCropHandles,
+                          textTabActive: textTabActive,
+                          eraserTabActive: eraserTabActive,
+                        ),
                       ),
                     ),
                   ),
