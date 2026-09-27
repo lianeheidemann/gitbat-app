@@ -48,6 +48,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Cache do Gradle entre execuções: as partes que não mudaram desde o
+      # último build vêm prontas (mesmo cache do "APK para testes").
+      - name: Configurar o Gradle (com cache)
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+          dependency-graph: disabled
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable

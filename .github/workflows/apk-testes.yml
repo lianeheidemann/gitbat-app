@@ -40,6 +40,16 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Cache do Gradle entre execuções (o projeto já liga
+      # org.gradle.caching): o que não mudou desde o último APK — R8 das
+      # dependências Java, Kotlin dos plugins, dexing — vem pronto, e só o
+      # código Dart é compilado de novo. É o que mais encurta este workflow.
+      - name: Configurar o Gradle (com cache)
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+          dependency-graph: disabled
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -103,6 +113,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/upload.jks" android/key.properties
 
       - name: Publicar como pré-lançamento
+        id: publicar
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.versao.outputs.tag }}
@@ -112,3 +123,19 @@ jobs:
           fail_on_unmatched_files: true
           prerelease: true
           make_latest: false
+
+      # O APK vai para Releases (pré-lançamento), não para "Artifacts" —
+      # o link fica no Summary da execução para não precisar procurar.
+      - name: Link do APK
+        env:
+          PAGINA: ${{ steps.publicar.outputs.url }}
+          ARQUIVOS: ${{ steps.publicar.outputs.assets }}
+        run: |
+          APK=$(echo "$ARQUIVOS" | jq -r '.[0].browser_download_url // empty')
+          {
+            echo "## 📱 APK de teste pronto"
+            echo
+            [ -n "$APK" ] && echo "**Baixar o APK:** $APK"
+            echo
+            echo "Página do pré-lançamento: $PAGINA"
+          } >> "$GITHUB_STEP_SUMMARY"
