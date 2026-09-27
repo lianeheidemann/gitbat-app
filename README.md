@@ -6,8 +6,9 @@
 
 <img width="460" src="assets/video-to-gif-badges-adaptive-7.svg"/><br>
 
-<a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/ci.yml"><img height="16" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=372b4d"></a> 
-<a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/release.yml"><img height="16" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=372b4d"></a>
+<p align="center"><a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a>&nbsp;<a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a></p>
+
+
 
 **Turn videos and photos into animated GIF or WebP<br>
 directly on Android — privately and offline.**
