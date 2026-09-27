@@ -3,7 +3,11 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import '../../quick_convert/services/animated_webp_source.dart'
+    show parseAnimatedWebp;
 import '../models/collage_background.dart';
+import '../models/collage_cell.dart';
+import '../painting/collage_painter.dart' show CollageGeometry;
 import '../models/collage_export.dart';
 import '../models/collage_settings.dart';
 import 'collage_compositor.dart';
@@ -115,6 +119,10 @@ Future<Duration?> _animationDuration(String path) async {
     } on _GifParseFailure {
       // Não é um GIF reconhecível — segue para o decode completo abaixo.
     }
+    // WebP animado: a duração está no cabeçalho de cada quadro, sem
+    // precisar decodificar os pixels (que num WebP grande levava minutos).
+    final webp = parseAnimatedWebp(bytes);
+    if (webp != null) return Duration(milliseconds: webp.durationMs);
     final codec = await ui.instantiateImageCodec(bytes);
     try {
       if (codec.frameCount <= 1) return null;
@@ -308,8 +316,12 @@ Future<CollageFrameSequence> renderCollageFrames({
   final backgrounds = <String, ui.Image>{};
 
   try {
+    final neededWidths = _neededPhotoWidths(settings, outputWidth);
     for (final path in _photoPaths(settings)) {
-      final decoded = await _decodeAnimated(path);
+      final decoded = await _decodeAnimated(
+        path,
+        targetWidth: neededWidths[path],
+      );
       if (decoded == null) continue;
       if (decoded.frames.length > 1) {
         animated[path] = decoded;
@@ -402,11 +414,77 @@ Set<String> _backgroundPaths(CollageSettings settings) => {
       cell.background.imagePath!,
 };
 
-/// Decodifica todos os quadros de [path] (um só, quando a imagem é parada).
-Future<_AnimatedPhoto?> _decodeAnimated(String path) async {
+/// Largura (em pixels da foto) que cada foto precisa ter para sair nítida
+/// na montagem de [outputWidth] — a maior entre as células que a usam, com
+/// zoom e recorte. `null` quando precisa da foto inteira. Guardar todos os
+/// quadros de um WebP de 1080×1920 no tamanho original passava de 2 GB de
+/// memória, e a exportação morria sem salvar.
+Map<String, int?> _neededPhotoWidths(
+  CollageSettings settings,
+  int outputWidth,
+) {
+  final width = outputWidth < 2 ? 2 : outputWidth;
+  final height = (width / settings.aspectRatio).round().clamp(2, 1 << 20);
+  final geometry = CollageGeometry.of(
+    ui.Size(width.toDouble(), height.toDouble()),
+    settings,
+  );
+  final needed = <String, double>{};
+  for (var i = 0; i < settings.cells.length; i++) {
+    final cell = settings.cells[i];
+    final path = cell.photoPath;
+    if (path == null || i >= geometry.cellRects.length) continue;
+    if (cell.photoWidth <= 0) {
+      needed[path] = double.infinity;
+      continue;
+    }
+    final size = geometry.cellRects[i].size;
+    final double pixelsPerPhotoPixel;
+    if (cell.fitMode == CollageCellFitMode.cover) {
+      final src = cell.coverSrcRect(size);
+      // A foto girada é desenhada no tamanho do "footprint", maior que a
+      // célula — a diagonal cobre qualquer ângulo.
+      final dest = math.sqrt(
+        size.width * size.width + size.height * size.height,
+      );
+      pixelsPerPhotoPixel = src.width <= 0 ? 1 : dest / src.width;
+    } else {
+      final display = cell.containDisplaySize(size);
+      final src = cell.manualCropSrcRect;
+      pixelsPerPhotoPixel = src.width <= 0 ? 1 : display.width / src.width;
+    }
+    final w = cell.photoWidth * pixelsPerPhotoPixel;
+    needed[path] = math.max(needed[path] ?? 0, w);
+  }
+  return {
+    for (final MapEntry(:key, :value) in needed.entries)
+      key: value.isFinite ? value.ceil().clamp(16, 1 << 20) : null,
+  };
+}
+
+/// Decodifica todos os quadros de [path] (um só, quando a imagem é parada),
+/// com no máximo [targetWidth] de largura (a proporção é mantida).
+Future<_AnimatedPhoto?> _decodeAnimated(String path, {int? targetWidth}) async {
   try {
     final bytes = await File(path).readAsBytes();
-    final codec = await ui.instantiateImageCodec(bytes);
+    ui.Codec codec;
+    if (targetWidth != null) {
+      final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+      final descriptor = await ui.ImageDescriptor.encoded(buffer);
+      final shrink = targetWidth < descriptor.width;
+      codec = await descriptor.instantiateCodec(
+        targetWidth: shrink ? targetWidth : null,
+        targetHeight: shrink
+            ? (descriptor.height * targetWidth / descriptor.width)
+                  .round()
+                  .clamp(1, descriptor.height)
+            : null,
+      );
+      descriptor.dispose();
+      buffer.dispose();
+    } else {
+      codec = await ui.instantiateImageCodec(bytes);
+    }
     try {
       final frames = <ui.Image>[];
       final starts = <Duration>[];
