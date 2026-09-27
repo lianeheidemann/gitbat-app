@@ -359,7 +359,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Image.asset(
-                  'assets/icon/icon-v4.png',
+                  'assets/icon/icon-v2/morceguinho-icone-simples.png',
                   width: 96,
                   height: 96,
                   fit: BoxFit.contain,

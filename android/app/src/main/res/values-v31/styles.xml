@@ -3,7 +3,7 @@
     <!--
       Splash do Android 12+. Sem isso, o sistema põe o ícone num círculo
       branco. Aqui o fundo do ícone tem a mesma cor da tela, então aparece só
-      o quadrado roxo da logo, sem borda.
+      o quadrado azul-noite do morceguinho, sem borda.
     -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>

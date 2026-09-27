@@ -600,8 +600,8 @@ class _GradientActionButton extends StatelessWidget {
     final accent =
         Theme.of(context).extension<AppAccent>() ??
         AppAccent(
-          gradient: lavenderPalette.accentGradient,
-          onAccent: lavenderPalette.onAccent,
+          gradient: batPalette.accentGradient,
+          onAccent: batPalette.onAccent,
         );
     final foreground = accent.onAccent;
 

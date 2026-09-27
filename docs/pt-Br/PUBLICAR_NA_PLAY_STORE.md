@@ -107,8 +107,12 @@ todas as densidades, mais a versão adaptativa do Android 8+:
 android/app/src/main/res/mipmap-*/ic_launcher.png
 android/app/src/main/res/mipmap-*/ic_launcher_foreground.png
 android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-assets/icone.png                                 (mestre 1024×1024)
+android/app/src/main/res/drawable-nodpi/splash_icon.png
+assets/icon/icon-v2/morceguinho-icone-simples.png  (mestre, o morceguinho)
 ```
+
+O ícone anterior, com tudo o que era gerado a partir dele, fica guardado em
+`assets/icon/icon-v1/`.
 
 Se quiser mudar o desenho ou as cores, edite `tool/gerar_icones.py` e rode:
 

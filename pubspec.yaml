@@ -60,7 +60,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/icon/icon-v4.png
+    - assets/icon/icon-v2/morceguinho-icone-simples.png
     - assets/background/
     - assets/fonts/
     - assets/frame/

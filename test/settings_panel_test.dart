@@ -45,15 +45,15 @@ void main() {
         findsOneWidget,
       );
     }
-    await tester.tap(find.byKey(const ValueKey('paletteSwatch-morceguinho')));
+    await tester.tap(find.byKey(const ValueKey('paletteSwatch-lavanda')));
     await tester.pumpAndSettle();
-    expect(paletteNotifier.value, batPalette);
-    expect(find.text('Morceguinho'), findsOneWidget);
+    expect(paletteNotifier.value, lavenderPalette);
+    expect(find.text('Lavanda'), findsOneWidget);
 
     // Ao abrir de novo, o app já nasce na paleta salva.
     paletteNotifier.value = appPalettes.first;
     await loadPalette();
-    expect(paletteNotifier.value, batPalette);
+    expect(paletteNotifier.value, lavenderPalette);
   });
 
   test('paleta desconhecida cai na padrão', () {
@@ -69,9 +69,19 @@ void main() {
         expect(theme.extension<AppAccent>()!.gradient, palette.accentGradient);
         if (brightness == Brightness.dark) {
           expect(theme.colorScheme.primary, palette.seed);
+          expect(theme.colorScheme.surface, palette.darkBackground);
           expect(theme.scaffoldBackgroundColor, palette.darkBackground);
         }
       });
     }
   }
+
+  test('a paleta oficial é a do morceguinho, com cores próprias', () {
+    expect(appPalettes.first, batPalette);
+    final dark = buildTheme(Brightness.dark).colorScheme;
+    expect(dark.surface, const Color(0xFF111929));
+    expect(dark.secondary, const Color(0xFF22D8EE));
+    final light = buildTheme(Brightness.light).colorScheme;
+    expect(light.primary, const Color(0xFF0C48A8));
+  });
 }
