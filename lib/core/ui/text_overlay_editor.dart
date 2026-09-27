@@ -16,7 +16,7 @@ import 'color_picker_sheet.dart';
 /// visual da aba "Texto" de `CollagePage` (arrastar/pinçar move e redimensiona,
 /// alças de um dedo giram/redimensionam, um painel escreve/estiliza),
 /// generalizada aqui para qualquer tela que só precise de texto (sem
-/// stickers): "Editar imagem" e "Editar GIF". [TextOverlayStack] entra na
+/// stickers): "Editar imagem" e "Editar vídeo". [TextOverlayStack] entra na
 /// pilha da prévia; [TextOverlayPanel] entra na aba/painel de baixo; as duas
 /// compartilham estado efêmero (seleção, edição, campo de texto, fontes
 /// importadas) através de um [TextOverlayController] comum, enquanto a

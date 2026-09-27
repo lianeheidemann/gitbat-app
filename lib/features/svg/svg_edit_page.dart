@@ -16,6 +16,7 @@ import '../../core/models/output_transform.dart';
 import 'models/svg_edit_settings.dart';
 import 'models/svg_info.dart';
 import '../../core/services/output_service.dart';
+import 'services/svg_sticker_art.dart';
 import 'services/svg_xml_editor.dart';
 import '../../core/ui/app_bar_title.dart';
 import '../../core/ui/checkerboard_background.dart';
@@ -30,7 +31,10 @@ import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
+import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/saved_dialog.dart';
+import '../../core/services/opaque_bounds.dart';
 
 /// Sentinela do preset "Personalizado" na fileira de proporções — mesma
 /// ideia de `_customAspectPreset` em `editor_page.dart`: não é uma proporção
@@ -38,6 +42,11 @@ import '../../core/ui/text_overlay_editor.dart';
 /// [AspectPreset.presets], usado pra saber quando mostrar os campos de
 /// largura/altura em vez de travar a uma proporção fixa.
 const _customAspectPreset = AspectPreset('Personalizado', -1);
+
+/// "Ajustar": encosta o recorte no desenho, cortando só a margem totalmente
+/// transparente — a mesma opção de "Editar imagem" (ver
+/// `opaque_bounds.dart`). Como "Personalizado", o -2 nunca vira razão.
+const _trimAspectPreset = AspectPreset('Ajustar', -2);
 
 /// Tela de recorte/edição de um SVG — mantém o arquivo como vetor o tempo
 /// todo: a prévia é só composição de widgets (nunca mexe no XML), e o XML só
@@ -92,13 +101,18 @@ class _SvgEditPageState extends State<SvgEditPage> {
   final _heightFocus = FocusNode();
 
   /// Seleção, edição e fontes da aba "Texto" — o mesmo controlador de
-  /// "Editar imagem"/"Editar GIF".
+  /// "Editar imagem"/"Editar vídeo".
   final _textOverlay = TextOverlayController();
+  final _stickerOverlay = StickerOverlayController();
+
+  /// Aba "Stickers" aberta — atualizado a cada build, antes da prévia.
+  bool _stickersTabActive = false;
 
   @override
   void initState() {
     super.initState();
     _textOverlay.loadFonts();
+    _stickerOverlay.load();
   }
 
   int get _sourceWidth => widget.svg.width.round();
@@ -126,6 +140,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     _widthFocus.dispose();
     _heightFocus.dispose();
     _textOverlay.dispose();
+    _stickerOverlay.dispose();
     super.dispose();
   }
 
@@ -221,6 +236,14 @@ class _SvgEditPageState extends State<SvgEditPage> {
       builder: (_) => _opacitySection(),
     ),
     EditorSection(
+      icon: Icons.emoji_emotions_outlined,
+      title: 'Stickers',
+      value: _settings.stickers.isEmpty
+          ? 'Nenhum'
+          : '${_settings.stickers.length}',
+      builder: (_) => _stickerSection(),
+    ),
+    EditorSection(
       icon: Icons.text_fields_rounded,
       title: 'Texto',
       value: _settings.texts.isEmpty ? 'Nenhum' : '${_settings.texts.length}',
@@ -249,6 +272,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     final showCropHandles =
         active != null && sections[active].title == 'Recorte';
     final textTabActive = active != null && sections[active].title == 'Texto';
+    _stickersTabActive = active != null && sections[active].title == 'Stickers';
 
     return Scaffold(
       appBar: AppBar(
@@ -339,6 +363,22 @@ class _SvgEditPageState extends State<SvgEditPage> {
   Widget _withTextOverlay(Widget content, bool textTabActive) => Stack(
     children: [
       content,
+      // Stickers por baixo dos textos, como na exportação.
+      Positioned.fill(
+        child: LayoutBuilder(
+          builder: (context, constraints) => StickerOverlayStack(
+            controller: _stickerOverlay,
+            stickers: _settings.stickers,
+            onChanged: (stickers) => _update(
+              _settings.copyWith(stickers: stickers),
+              pushUndo: false,
+            ),
+            canvasSize: constraints.biggest,
+            interactive: _stickersTabActive,
+            onGestureStart: _pushUndoCheckpoint,
+          ),
+        ),
+      ),
       Positioned.fill(
         child: LayoutBuilder(
           builder: (context, constraints) => TextOverlayStack(
@@ -354,6 +394,15 @@ class _SvgEditPageState extends State<SvgEditPage> {
       ),
     ],
   );
+
+  Widget _stickerSection() {
+    _stickerOverlay.dropSelectionIfGone(_settings.stickers);
+    return StickerOverlayPanel(
+      controller: _stickerOverlay,
+      stickers: _settings.stickers,
+      onChanged: (stickers) => _update(_settings.copyWith(stickers: stickers)),
+    );
+  }
 
   Widget _textSection() {
     _textOverlay.dropSelectionIfGone(_settings.texts);
@@ -414,7 +463,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
               crop: crop == null ? null : _toDisplayCrop(crop),
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
-              freeform: _aspect == _customAspectPreset,
+              freeform: _isFreeformAspect,
             ),
           ],
         ),
@@ -491,7 +540,9 @@ class _SvgEditPageState extends State<SvgEditPage> {
   Widget _cropSection() {
     final crop = _settings.crop;
     final visiblePresets = <AspectPreset>[
-      ...AspectPreset.presets,
+      AspectPreset.presets.first,
+      _trimAspectPreset,
+      ...AspectPreset.presets.skip(1),
       _customAspectPreset,
     ];
 
@@ -508,7 +559,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
         ),
         if (crop != null) ...[
           const SizedBox(height: 18),
-          if (_aspect == _customAspectPreset) ...[
+          if (_isFreeformAspect) ...[
             CropSizeSummary(crop: crop),
             const SizedBox(height: 12),
             CropSizeInputs(
@@ -548,6 +599,10 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// remove o recorte ("Original") ou centraliza um recorte na proporção
   /// fixa selecionada.
   void _selectAspectPreset(AspectPreset preset) {
+    if (preset == _trimAspectPreset) {
+      _trimTransparentEdges();
+      return;
+    }
     setState(() {
       _aspect = preset;
 
@@ -567,9 +622,49 @@ class _SvgEditPageState extends State<SvgEditPage> {
     });
   }
 
-  /// Proporção travada pelo preset atual, ou `null` em "Personalizado".
-  double? get _lockedRatio =>
-      _aspect == _customAspectPreset ? null : _aspect.ratio;
+  /// Recorte sem proporção travada: "Personalizado" e "Ajustar".
+  bool get _isFreeformAspect =>
+      _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
+
+  /// Proporção travada pelo preset atual, ou `null` num recorte livre.
+  double? get _lockedRatio => _isFreeformAspect ? null : _aspect.ratio;
+
+  bool _trimming = false;
+
+  /// "Ajustar": rasteriza o SVG no espaço original do recorte e encosta a
+  /// janela nos pixels visíveis.
+  Future<void> _trimTransparentEdges() async {
+    if (_trimming) return;
+    setState(() => _trimming = true);
+    CropRect? bounds;
+    try {
+      bounds = await detectSvgOpaqueBounds(
+        widget.svg.path,
+        _sourceWidth,
+        _sourceHeight,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _trimming = false);
+      _message('Não foi possível ler o SVG.');
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _trimming = false);
+    if (bounds == null) {
+      _message('O SVG está todo transparente.');
+      return;
+    }
+    if (bounds.x == 0 &&
+        bounds.y == 0 &&
+        bounds.width == _sourceWidth &&
+        bounds.height == _sourceHeight) {
+      _message('O SVG não tem bordas transparentes para remover.');
+      return;
+    }
+    _aspect = _trimAspectPreset;
+    _update(_settings.copyWith(crop: bounds));
+  }
 
   void _applyCropWidth(String value) {
     final parsed = int.tryParse(value.trim());
@@ -964,7 +1059,13 @@ class _SvgEditPageState extends State<SvgEditPage> {
 
   Future<String> _buildEditedSvg() async {
     final source = await File(widget.svg.path).readAsString();
-    return renderEditedSvg(source, widget.svg, _settings);
+    final stickerArt = await loadStickerSvgArt(_settings.stickers);
+    return renderEditedSvg(
+      source,
+      widget.svg,
+      _settings,
+      stickerArt: stickerArt,
+    );
   }
 
   String _suggestedFileName() {
@@ -988,7 +1089,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
         allowedExtensions: ['svg'],
       );
       if (!mounted) return;
-      if (uri != null) _message('SVG salvo.');
+      if (uri != null) await showSavedDialog(context, 'SVG salvo.');
     } on SvgEditException catch (e) {
       if (!mounted) return;
       _message(e.message);

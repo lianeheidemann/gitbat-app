@@ -53,6 +53,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Só para os testes trocarem a pasta temporária (ver
+  # test/svg_source_fixer_test.dart); já vem junto do path_provider.
+  path_provider_platform_interface: ^2.1.0
 
 flutter:
   uses-material-design: true

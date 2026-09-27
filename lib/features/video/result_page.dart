@@ -65,7 +65,6 @@ class _ResultPageState extends State<ResultPage> {
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 72,
         title: Text('${result.format.shortLabel} pronto'),
         actions: [
           IconButton(
@@ -83,13 +82,13 @@ class _ResultPageState extends State<ResultPage> {
       body: SafeArea(
         top: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 22),
+              padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: scheme.outlineVariant.withValues(alpha: 0.55),
                 ),
@@ -97,7 +96,7 @@ class _ResultPageState extends State<ResultPage> {
               child: Column(
                 children: [
                   _SuccessMark(color: accent),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 10),
                   Wrap(
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -106,7 +105,7 @@ class _ResultPageState extends State<ResultPage> {
                     children: [
                       Text(
                         result.formattedSize,
-                        style: theme.textTheme.displaySmall?.copyWith(
+                        style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -1,
                           color: accent,
@@ -133,7 +132,7 @@ class _ResultPageState extends State<ResultPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
                   Text.rich(
                     TextSpan(
                       text: 'Conversão concluída em ',
@@ -152,7 +151,7 @@ class _ResultPageState extends State<ResultPage> {
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
                   _SizeComparison(
                     original: SizeEstimate.formatBytes(
                       widget.video.fileSizeBytes,
@@ -171,24 +170,24 @@ class _ResultPageState extends State<ResultPage> {
                         : null,
                     accent: accent,
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
                   Divider(
                     height: 1,
                     color: scheme.outlineVariant.withValues(alpha: 0.55),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   _SectionTitle(
                     icon: Icons.video_file_outlined,
                     label: '${result.format.shortLabel} gerado',
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                   _MetricRow(
                     icon: Icons.layers_outlined,
                     label: 'Quadros',
                     original: 'de ${_originalFrames()}',
                     value: '${result.frames}',
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
                   _MetricRow(
                     icon: Icons.schedule_outlined,
                     label: 'Duração',
@@ -197,7 +196,7 @@ class _ResultPageState extends State<ResultPage> {
                     value:
                         '${widget.settings.outputDurationSeconds.toStringAsFixed(1)}s • ${widget.settings.fps} FPS',
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
                   _MetricRow(
                     icon: Icons.aspect_ratio_outlined,
                     label: 'Dimensões',
@@ -205,17 +204,17 @@ class _ResultPageState extends State<ResultPage> {
                         'de ${widget.video.width} × ${widget.video.height} px',
                     value: '${result.width} × ${result.height} px',
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
                   Divider(
                     height: 1,
                     color: scheme.outlineVariant.withValues(alpha: 0.55),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   const _SectionTitle(
                     icon: Icons.workspace_premium_outlined,
                     label: 'Qualidade',
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                   if (result.format == OutputFormat.gif)
                     Row(
                       children: [
@@ -249,34 +248,11 @@ class _ResultPageState extends State<ResultPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             _GradientActionButton(
               isBusy: _saving,
               isDone: _saved,
               onPressed: _saving || _saved ? null : _save,
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => _output.share(
-                result.file,
-                mimeType: result.format.mimeType,
-                text:
-                    '${result.format.shortLabel} feito com o app Video to GIF',
-              ),
-              icon: const Icon(Icons.share_outlined),
-              label: const Text('Compartilhar'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(60),
-                foregroundColor: scheme.primary,
-                side: BorderSide(color: scheme.outline.withValues(alpha: 0.85)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
             ),
           ],
         ),
@@ -311,8 +287,8 @@ class _SuccessMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 58,
-      height: 58,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color.withValues(alpha: 0.08),
@@ -320,20 +296,20 @@ class _SuccessMark extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.28),
-            blurRadius: 18,
+            blurRadius: 12,
             spreadRadius: 1,
           ),
         ],
       ),
       alignment: Alignment.center,
       child: Container(
-        width: 31,
-        height: 31,
+        width: 22,
+        height: 22,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: color, width: 3),
+          border: Border.all(color: color, width: 2),
         ),
-        child: Icon(Icons.check_rounded, color: color, size: 21),
+        child: Icon(Icons.check_rounded, color: color, size: 15),
       ),
     );
   }
@@ -410,10 +386,10 @@ class _SizeComparison extends StatelessWidget {
               color: scheme.outlineVariant.withValues(alpha: 0.38),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
                 difference!,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant.withValues(alpha: 0.78),
                 ),
               ),
@@ -438,23 +414,23 @@ class _SizeCell extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
-            style: theme.textTheme.bodyMedium?.copyWith(
+            style: theme.textTheme.bodySmall?.copyWith(
               color: accent ?? scheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
               maxLines: 1,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.titleSmall?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w700,
               ),
@@ -479,11 +455,11 @@ class _SectionTitle extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(icon, color: scheme.primary, size: 24),
-        const SizedBox(width: 10),
+        Icon(icon, color: scheme.primary, size: 18),
+        const SizedBox(width: 8),
         Text(
           label,
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -514,28 +490,27 @@ class _MetricRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
             color: scheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(11),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: scheme.outlineVariant.withValues(alpha: 0.38),
             ),
           ),
           alignment: Alignment.center,
-          child: Icon(icon, color: scheme.primary, size: 22),
+          child: Icon(icon, color: scheme.primary, size: 16),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: theme.textTheme.bodyLarge),
-              const SizedBox(height: 1),
+              Text(label, style: theme.textTheme.bodyMedium),
               Text(
                 original,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
               ),
@@ -547,7 +522,7 @@ class _MetricRow extends StatelessWidget {
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -569,11 +544,11 @@ class _QualityPill extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 52),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 36),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: scheme.outlineVariant.withValues(alpha: 0.62),
         ),
@@ -581,8 +556,8 @@ class _QualityPill extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: scheme.primary, size: 21),
-          const SizedBox(width: 7),
+          Icon(icon, color: scheme.primary, size: 16),
+          const SizedBox(width: 5),
           Expanded(
             child: FittedBox(
               fit: BoxFit.scaleDown,
@@ -592,7 +567,7 @@ class _QualityPill extends StatelessWidget {
                 maxLines: 1,
                 softWrap: false,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -625,24 +600,24 @@ class _GradientActionButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Ink(
-          height: 64,
+          height: 40,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFD3B4FF), Color(0xFFBC8FFF)],
             ),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: InkWell(
             onTap: onPressed,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(16),
             child: Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (isBusy)
                     const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
                         color: foreground,
@@ -652,9 +627,9 @@ class _GradientActionButton extends StatelessWidget {
                     Icon(
                       isDone ? Icons.check_rounded : Icons.download_rounded,
                       color: foreground,
-                      size: 24,
+                      size: 18,
                     ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Text(
                     isBusy
                         ? 'Salvando…'
@@ -663,7 +638,7 @@ class _GradientActionButton extends StatelessWidget {
                         : 'Salvar na galeria',
                     style: const TextStyle(
                       color: foreground,
-                      fontSize: 18,
+                      fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
                   ),

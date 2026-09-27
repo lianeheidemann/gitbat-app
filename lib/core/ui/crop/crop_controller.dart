@@ -4,7 +4,7 @@ import '../../models/crop_rect.dart';
 import 'crop_overlay.dart';
 
 /// Regras de recorte comuns às três telas que recortam uma fonte de tamanho
-/// fixo: Editar GIF (vídeo), Moldura (foto) e Editar SVG.
+/// fixo: Editar vídeo (vídeo), Moldura (foto) e Editar SVG.
 ///
 /// Guarda só o que as três compartilham — os limites da fonte, o mínimo de
 /// cada lado e a sobra fracionária do arrasto. Quem grava o recorte continua
@@ -203,13 +203,43 @@ class CropController {
 
   /// Desloca a janela inteira, sem deixá-la sair da área da fonte. Devolve
   /// `null` quando nada mudou.
-  CropRect? moveBy({required CropRect crop, required Offset sourceDelta}) {
+  ///
+  /// Com [snapDistance] (em pixels da fonte, por eixo), a janela "gruda" no
+  /// centro horizontal e/ou vertical da fonte quando o centro dela chega a
+  /// essa distância — como nos editores de imagem. A posição sem a trava
+  /// continua sendo acompanhada durante o gesto, então basta seguir
+  /// arrastando para soltar do centro.
+  CropRect? moveBy({
+    required CropRect crop,
+    required Offset sourceDelta,
+    Offset? snapDistance,
+  }) {
     final maxX = (sourceWidth - crop.width).clamp(0, sourceWidth);
     final maxY = (sourceHeight - crop.height).clamp(0, sourceHeight);
 
     int x;
     int y;
-    if (accumulateDragRemainder) {
+    if (snapDistance != null) {
+      // Recomeça do recorte atual quando ele mudou por fora (outro gesto,
+      // preset, desfazer) desde o último movimento.
+      var free = _freeMove;
+      if (free == null || !_same(_lastMoved, crop)) {
+        free = Offset(crop.x.toDouble(), crop.y.toDouble());
+      }
+      free = Offset(
+        (free.dx + sourceDelta.dx).clamp(0.0, maxX.toDouble()),
+        (free.dy + sourceDelta.dy).clamp(0.0, maxY.toDouble()),
+      );
+      _freeMove = free;
+      final centeredX = (sourceWidth - crop.width) / 2;
+      final centeredY = (sourceHeight - crop.height) / 2;
+      x = ((free.dx - centeredX).abs() <= snapDistance.dx ? centeredX : free.dx)
+          .round()
+          .clamp(0, maxX);
+      y = ((free.dy - centeredY).abs() <= snapDistance.dy ? centeredY : free.dy)
+          .round()
+          .clamp(0, maxY);
+    } else if (accumulateDragRemainder) {
       final dx = sourceDelta.dx + _moveRemainder.dx;
       final dy = sourceDelta.dy + _moveRemainder.dy;
       final rawX = (crop.x + dx).clamp(0.0, maxX.toDouble());
@@ -226,6 +256,56 @@ class CropController {
     }
 
     if (x == crop.x && y == crop.y) return null;
-    return crop.copyWith(x: x, y: y);
+    final next = crop.copyWith(x: x, y: y);
+    _lastMoved = next;
+    return next;
   }
+
+  /// Se o centro de [crop] está no centro horizontal/vertical da fonte (a
+  /// menos de meio pixel, por causa do arredondamento) — para a prévia
+  /// mostrar as guias da trava.
+  (bool horizontal, bool vertical) centerAlignment(CropRect crop) => (
+    ((crop.x + crop.width / 2) - sourceWidth / 2).abs() <= 0.5,
+    ((crop.y + crop.height / 2) - sourceHeight / 2).abs() <= 0.5,
+  );
+
+  Offset? _freeMove;
+  CropRect? _lastMoved;
+  CropRect? _pinchStart;
+
+  /// Começo de uma pinça sobre a janela: guarda o recorte de partida.
+  void pinchStart(CropRect crop) => _pinchStart = crop;
+
+  /// A janela da pinça com [scale] vezes o tamanho de quando ela começou,
+  /// mesmo formato e mesmo centro (encostando nas bordas quando precisar).
+  /// Devolve `null` sem pinça começada ou quando nada muda.
+  CropRect? pinchTo(double scale, {required CropRect crop}) {
+    final start = _pinchStart;
+    if (start == null || scale <= 0) return null;
+    final minScale = [
+      minSide / start.width,
+      minSide / start.height,
+      (minHandleSize ?? 32) / start.width,
+      (minHandleSize ?? 32) / start.height,
+    ].reduce((a, b) => a > b ? a : b);
+    final maxScale = [
+      sourceWidth / start.width,
+      sourceHeight / start.height,
+    ].reduce((a, b) => a < b ? a : b);
+    final k = maxScale < minScale ? 1.0 : scale.clamp(minScale, maxScale);
+    final next = centeredOn(
+      (start.width * k).round(),
+      (start.height * k).round(),
+      around: crop,
+    );
+    if (_same(next, crop)) return null;
+    return next;
+  }
+
+  static bool _same(CropRect? a, CropRect b) =>
+      a != null &&
+      a.x == b.x &&
+      a.y == b.y &&
+      a.width == b.width &&
+      a.height == b.height;
 }

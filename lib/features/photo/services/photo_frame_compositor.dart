@@ -13,6 +13,8 @@ import '../../../core/models/output_transform.dart';
 import '../../../core/models/photo_info.dart';
 import '../../collage/painting/collage_painter.dart' show paintCollageTextItem;
 import '../../../core/painting/frame_painter.dart';
+import '../../collage/services/collage_compositor.dart'
+    show paintCollageSticker;
 
 /// Compõe uma [PhotoInfo] com a [FrameSettings] escolhida (moldura
 /// procedural ou moldura de imagem) num PNG final, com `dart:ui`/[Canvas]
@@ -43,7 +45,7 @@ Future<Uint8List> _composeProcedural(
   PhotoInfo photo,
   ui.Image image,
   FrameSettings frame,
-) {
+) async {
   final crop =
       frame.crop ??
       CropRect(x: 0, y: 0, width: photo.width, height: photo.height);
@@ -59,44 +61,97 @@ Future<Uint8List> _composeProcedural(
     crop.height,
   );
   final size = Size(crop.width.toDouble(), crop.height.toDouble());
+  final stickers = await _stickerLayer(size, frame);
 
-  return rasterizeCanvas(canvasWidth, canvasHeight, (canvas, _) {
-    applyCanvasOutputTransform(canvas, frame.finalTransform, size);
-    // `paintFrame` já não desenha nada quando o estilo é `none`, e a
-    // geometria correspondente cobre o canvas inteiro sem cantos
-    // arredondados — então não precisa de um caso especial para "sem
-    // moldura": o recorte abaixo já sai igual à foto (já cortada).
-    paintFrame(canvas, size, frame);
-    final geometry = FrameGeometry.of(size, frame);
-    canvas.save();
-    canvas.clipRRect(geometry.contentClip);
-    final coverSrc = _coverSrcRect(
-      crop.width.toDouble(),
-      crop.height.toDouble(),
-      geometry.contentRect.width,
-      geometry.contentRect.height,
-    );
-    final srcRect = coverSrc.shift(
-      Offset(crop.x.toDouble(), crop.y.toDouble()),
-    );
-    canvas.drawImageRect(
-      image,
-      srcRect,
-      geometry.contentRect,
-      Paint()
-        ..filterQuality = FilterQuality.high
-        // Só a foto leva o ajuste de cor: a moldura e o fundo são pintados
-        // fora deste `Paint`, então continuam com a cor escolhida.
-        ..colorFilter = frame.adjustments.filter,
-    );
-    canvas.restore();
-    _paintTexts(canvas, size, frame);
-  });
+  try {
+    return await rasterizeCanvas(canvasWidth, canvasHeight, (canvas, _) {
+      applyCanvasOutputTransform(canvas, frame.finalTransform, size);
+      // `paintFrame` já não desenha nada quando o estilo é `none`, e a
+      // geometria correspondente cobre o canvas inteiro sem cantos
+      // arredondados — então não precisa de um caso especial para "sem
+      // moldura": o recorte abaixo já sai igual à foto (já cortada).
+      // Sem borda, "Fundo transparente" desligado pinta a cor atrás da
+      // foto inteira (aparece onde ela é transparente, ou em volta dela se
+      // foi diminuída); com borda, `paintFrame` já cuida do fundo.
+      if (frame.style == FrameStyle.none && !frame.transparentBackground) {
+        canvas.drawRect(
+          Offset.zero & size,
+          Paint()..color = frame.backgroundColor,
+        );
+      }
+      paintFrame(canvas, size, frame);
+      final geometry = FrameGeometry.of(size, frame);
+      if (frame.style != FrameStyle.none) {
+        // `paintFrame` enche o retângulo todo com a cor da borda (no vídeo o
+        // conteúdo cobre o miolo). Na foto o miolo volta a ficar vazio —
+        // transparente ou com a cor do fundo —, para as partes
+        // transparentes da foto não saírem com a cor da borda.
+        canvas.drawRRect(
+          geometry.contentClip,
+          Paint()..blendMode = BlendMode.clear,
+        );
+        if (!frame.transparentBackground) {
+          canvas.drawRRect(
+            geometry.contentClip,
+            Paint()..color = frame.backgroundColor,
+          );
+        }
+      }
+      canvas.save();
+      canvas.clipRRect(geometry.contentClip);
+      final coverSrc = _coverSrcRect(
+        crop.width.toDouble(),
+        crop.height.toDouble(),
+        geometry.contentRect.width,
+        geometry.contentRect.height,
+      );
+      final srcRect = coverSrc.shift(
+        Offset(crop.x.toDouble(), crop.y.toDouble()),
+      );
+      // Posição livre (arrastar/pinçar/girar na prévia), em volta da janela.
+      frame.placement.applyTo(canvas, geometry.contentRect);
+      canvas.drawImageRect(
+        image,
+        srcRect,
+        geometry.contentRect,
+        Paint()
+          ..filterQuality = FilterQuality.high
+          // Só a foto leva o ajuste de cor: a moldura e o fundo são pintados
+          // fora deste `Paint`, então continuam com a cor escolhida.
+          ..colorFilter = frame.adjustments.filter,
+      );
+      canvas.restore();
+      if (stickers != null) canvas.drawImage(stickers, Offset.zero, Paint());
+      _paintTexts(canvas, size, frame);
+    });
+  } finally {
+    stickers?.dispose();
+  }
 }
 
 /// Desenha `FrameSettings.texts`, ordenados por `zIndex`, sobre o canvas
 /// final já composto — mesmo desenho da prévia ao vivo (`TextOverlayStack`),
 /// para as duas nunca divergirem.
+/// Desenha `FrameSettings.stickers` (por baixo dos textos) numa imagem do
+/// tamanho [size] — à parte porque carregar a arte é assíncrono e o canvas
+/// da moldura procedural é síncrono. `null` sem sticker nenhum.
+Future<ui.Image?> _stickerLayer(Size size, FrameSettings frame) async {
+  if (frame.stickers.isEmpty) return null;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  final sorted = [...frame.stickers]
+    ..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+  for (final sticker in sorted) {
+    await paintCollageSticker(canvas, size, sticker);
+  }
+  final picture = recorder.endRecording();
+  try {
+    return await picture.toImage(size.width.round(), size.height.round());
+  } finally {
+    picture.dispose();
+  }
+}
+
 void _paintTexts(Canvas canvas, Size size, FrameSettings frame) {
   final sorted = [...frame.texts]..sort((a, b) => a.zIndex.compareTo(b.zIndex));
   for (final item in sorted) {
@@ -176,19 +231,13 @@ Future<Uint8List> _composeImageFramed(
     areaRect.width / areaRect.height,
   );
 
-  // Fundo da área: em "Expandir sem cortar" é a cor escolhida ali
-  // ([FrameSettings.expandBackgroundColor]), que aparece em volta da foto
-  // reduzida; nas barras de "Encaixar" é preto, igual a `imageFramedGraph`.
-  // Em "Preencher" a foto cobre tudo e ele some.
+  // Fundo da área: a "Cor do fundo da moldura"
+  // ([FrameSettings.expandBackgroundColor]) em qualquer ajuste — aparece em
+  // volta da foto reduzida, nas barras de "Encaixar" e nas partes
+  // transparentes da foto. Igual a `imageFramedGraph`.
   canvas.save();
   canvas.clipRect(areaRect);
-  canvas.drawRect(
-    areaRect,
-    Paint()
-      ..color = fit == ContentFitMode.expand
-          ? frame.expandBackgroundColor
-          : Colors.black,
-  );
+  canvas.drawRect(areaRect, Paint()..color = frame.expandBackgroundColor);
   final Rect dst;
   switch (fit) {
     case ContentFitMode.expand:
@@ -214,10 +263,14 @@ Future<Uint8List> _composeImageFramed(
     case ContentFitMode.fit:
       dst = _containDstRect(turnedWidth, turnedHeight, areaRect);
   }
+  // Posição livre (arrastar/pinçar/girar na prévia), em volta da foto.
+  frame.placement.applyTo(canvas, dst);
   _drawTransformedPhoto(canvas, image, effectiveRect, dst, transform, paint);
   canvas.restore();
 
   await _drawArtwork(canvas, size, asset);
+  final stickers = await _stickerLayer(size, frame);
+  if (stickers != null) canvas.drawImage(stickers, Offset.zero, Paint());
   _paintTexts(canvas, size, frame);
 
   final picture = recorder.endRecording();
@@ -231,6 +284,7 @@ Future<Uint8List> _composeImageFramed(
     }
   } finally {
     picture.dispose();
+    stickers?.dispose();
   }
 }
 

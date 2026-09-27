@@ -34,6 +34,7 @@ import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import 'widgets/size_panel.dart';
+import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import 'widgets/webp_convert_panel.dart';
 
@@ -119,6 +120,10 @@ class _EditorPageState extends State<EditorPage> {
   final _heightFocus = FocusNode();
 
   final _textOverlay = TextOverlayController();
+  final _stickerOverlay = StickerOverlayController();
+
+  /// Aba "Stickers" aberta — atualizado a cada build, antes da prévia.
+  bool _stickersTabActive = false;
 
   VideoInfo get _video => widget.video;
 
@@ -136,6 +141,7 @@ class _EditorPageState extends State<EditorPage> {
     _initPlayer();
     _loadImportedFrames();
     _textOverlay.loadFonts();
+    _stickerOverlay.load();
   }
 
   /// Carrega as molduras de imagem importadas em sessões anteriores, para
@@ -176,6 +182,7 @@ class _EditorPageState extends State<EditorPage> {
     _widthFocus.dispose();
     _heightFocus.dispose();
     _textOverlay.dispose();
+    _stickerOverlay.dispose();
     super.dispose();
   }
 
@@ -283,9 +290,19 @@ class _EditorPageState extends State<EditorPage> {
         '${_settings.outputDurationSeconds.toStringAsFixed(1)} s';
 
     return [
+      // Mesma ordem nas quatro telas de edição: primeiro o que é só deste
+      // modo (aqui, o formato e o tempo do vídeo), depois Recorte → Girar →
+      // Borda → Moldura → Fundo → Cor → Stickers → Texto, e Ajustes no fim.
       EditorSection.fromLabeled(_formatSection(), label: 'Formato'),
       EditorSection.fromLabeled(_durationSection(), label: 'Duração'),
-      EditorSection.fromLabeled(_aspectSection(), label: 'Janela'),
+      EditorSection.fromLabeled(_speedSection(), label: 'Velocidade'),
+      EditorSection.fromLabeled(_fpsSection(), label: 'FPS'),
+      EditorSection.fromLabeled(_resolutionSection(), label: 'Resolução'),
+      if (isWebp)
+        EditorSection.fromLabeled(_webpQualitySection(), label: 'Qualidade')
+      else
+        EditorSection.fromLabeled(_colorSection(), label: 'Cores'),
+      EditorSection.fromLabeled(_aspectSection(), label: 'Recorte'),
       EditorSection(
         icon: Icons.rotate_90_degrees_ccw_rounded,
         title: 'Girar',
@@ -299,13 +316,14 @@ class _EditorPageState extends State<EditorPage> {
           ),
         ),
       ),
-      EditorSection.fromLabeled(_speedSection(), label: 'Velocidade'),
-      EditorSection.fromLabeled(_fpsSection(), label: 'FPS'),
-      EditorSection.fromLabeled(_resolutionSection(), label: 'Resolução'),
-      if (isWebp)
-        EditorSection.fromLabeled(_webpQualitySection(), label: 'Qualidade')
-      else
-        EditorSection.fromLabeled(_colorSection(), label: 'Cores'),
+      EditorSection.fromLabeled(_frameStyleSection(), label: 'Borda'),
+      EditorSection.fromLabeled(_imageFrameSection(), label: 'Moldura'),
+      EditorSection(
+        icon: Icons.wallpaper_rounded,
+        title: 'Fundo',
+        value: _settings.frame.transparentBackground ? 'Transparente' : 'Cor',
+        builder: (_) => _backgroundSection(),
+      ),
       EditorSection(
         icon: Icons.tune_rounded,
         title: 'Ajustar cor',
@@ -314,20 +332,20 @@ class _EditorPageState extends State<EditorPage> {
         builder: (_) => _colorAdjustSection(),
       ),
       EditorSection(
+        icon: Icons.emoji_emotions_outlined,
+        title: 'Stickers',
+        value: _settings.frame.stickers.isEmpty
+            ? 'Nenhum'
+            : '${_settings.frame.stickers.length}',
+        builder: (_) => _stickerSection(),
+      ),
+      EditorSection(
         icon: Icons.text_fields_rounded,
         title: 'Texto',
         value: _settings.frame.texts.isEmpty
             ? 'Nenhum'
             : '${_settings.frame.texts.length}',
         builder: (_) => _textSection(),
-      ),
-      EditorSection.fromLabeled(_frameStyleSection(), label: 'Borda'),
-      EditorSection.fromLabeled(_imageFrameSection(), label: 'Moldura'),
-      EditorSection(
-        icon: Icons.wallpaper_rounded,
-        title: 'Fundo',
-        value: _settings.frame.transparentBackground ? 'Transparente' : 'Cor',
-        builder: (_) => _backgroundSection(),
       ),
       // Penúltima aba: fecha os ajustes de conteúdo com o resultado (tamanho
       // estimado), depois de todos os ajustes, formato/moldura incluídos.
@@ -369,13 +387,15 @@ class _EditorPageState extends State<EditorPage> {
     // a janela; em qualquer outra aba a prévia já mostra o corte aplicado
     // (ver _previewArea), como o resultado final vai sair.
     final isCropTabActive =
-        active != null && sections[active].barLabel == 'Janela';
+        active != null && sections[active].barLabel == 'Recorte';
     final textTabActive =
         active != null && sections[active].barLabel == 'Texto';
+    _stickersTabActive =
+        active != null && sections[active].barLabel == 'Stickers';
 
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitle('Editar GIF'),
+        title: const AppBarTitle('Editar vídeo'),
         actions: [
           IconButton(
             tooltip: 'Desfazer',
@@ -604,6 +624,24 @@ class _EditorPageState extends State<EditorPage> {
     return Stack(
       children: [
         content,
+        // Stickers por baixo dos textos.
+        Positioned.fill(
+          child: LayoutBuilder(
+            builder: (context, constraints) => StickerOverlayStack(
+              controller: _stickerOverlay,
+              stickers: _settings.frame.stickers,
+              onChanged: (stickers) => _update(
+                _settings.copyWith(
+                  frame: _settings.frame.copyWith(stickers: stickers),
+                ),
+                pushUndo: false,
+              ),
+              canvasSize: constraints.biggest,
+              interactive: _stickersTabActive,
+              onGestureStart: _pushUndoCheckpoint,
+            ),
+          ),
+        ),
         Positioned.fill(
           child: LayoutBuilder(
             builder: (context, constraints) => TextOverlayStack(
@@ -717,7 +755,10 @@ class _EditorPageState extends State<EditorPage> {
     return ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(22)),
       child: ColoredBox(
-        color: const Color(0xF0000000),
+        // Escuro no tema escuro; no claro, a superfície clara do tema.
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xF0000000)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         child: _previewTimeline(player),
       ),
     );
@@ -808,7 +849,7 @@ class _EditorPageState extends State<EditorPage> {
 
     if (fit != ContentFitMode.expand) {
       return ColoredBox(
-        color: Colors.black,
+        color: _settings.frame.expandBackgroundColor,
         child: ClipRect(
           child: video(
             fit == ContentFitMode.fill ? BoxFit.cover : BoxFit.contain,
@@ -935,6 +976,19 @@ class _EditorPageState extends State<EditorPage> {
             const SizedBox(height: 18),
             SectionCard(children: [_contentFitSubsection()]),
             const SizedBox(height: 18),
+            SectionCard(
+              children: [
+                // Fundo de dentro da janela da moldura, em qualquer ajuste
+                // (antes só em "Expandir sem cortar"; nos outros era preto).
+                PanelColorRow(
+                  key: const ValueKey('frameWindowColorRow'),
+                  label: 'Cor do fundo da moldura',
+                  color: _settings.frame.expandBackgroundColor,
+                  onTap: _pickExpandBackgroundColor,
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
             SectionCard(children: [_frameResolutionSelector()]),
             // O giro da moldura fica por último, sozinho: é um botão só.
             const SizedBox(height: 18),
@@ -974,6 +1028,17 @@ class _EditorPageState extends State<EditorPage> {
           pushUndo: false,
         );
       },
+    );
+  }
+
+  Widget _stickerSection() {
+    _stickerOverlay.dropSelectionIfGone(_settings.frame.stickers);
+    return StickerOverlayPanel(
+      controller: _stickerOverlay,
+      stickers: _settings.frame.stickers,
+      onChanged: (stickers) => _update(
+        _settings.copyWith(frame: _settings.frame.copyWith(stickers: stickers)),
+      ),
     );
   }
 
@@ -1416,6 +1481,11 @@ class _EditorPageState extends State<EditorPage> {
           });
         }
 
+        // Cor dos traços e textos: branca no cartão escuro, a do tema no
+        // claro.
+        final fg = Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Theme.of(context).colorScheme.onSurface;
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
           child: Column(
@@ -1443,7 +1513,7 @@ class _EditorPageState extends State<EditorPage> {
                             child: Container(
                               height: 5,
                               decoration: BoxDecoration(
-                                color: Colors.white24,
+                                color: fg.withValues(alpha: 0.24),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
@@ -1465,7 +1535,7 @@ class _EditorPageState extends State<EditorPage> {
                               width: 3,
                               height: 16,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: fg,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -1475,7 +1545,7 @@ class _EditorPageState extends State<EditorPage> {
                             child: Container(
                               width: 2,
                               height: 18,
-                              color: Colors.white70,
+                              color: fg.withValues(alpha: 0.7),
                             ),
                           ),
                           Positioned(
@@ -1483,7 +1553,7 @@ class _EditorPageState extends State<EditorPage> {
                             child: Container(
                               width: 2,
                               height: 18,
-                              color: Colors.white70,
+                              color: fg.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -1497,15 +1567,24 @@ class _EditorPageState extends State<EditorPage> {
                 children: [
                   Text(
                     _formatSeconds(_settings.startSeconds),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(
+                      color: fg.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
                   ),
                   Text(
                     'Atual ${_formatSeconds(current.clamp(0, duration).toDouble())}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    style: TextStyle(
+                      color: fg.withValues(alpha: 0.54),
+                      fontSize: 11,
+                    ),
                   ),
                   Text(
                     _formatSeconds(_settings.endSeconds),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(
+                      color: fg.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),

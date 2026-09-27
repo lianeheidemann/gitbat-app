@@ -209,10 +209,16 @@ class FfmpegService {
     required String stamp,
   }) async {
     final texts = settings.frame.texts;
-    if (texts.isEmpty) return;
+    final stickers = settings.frame.stickers;
+    if (texts.isEmpty && stickers.isEmpty) return;
 
     final (width, height) = settings.outputDimensions(video);
-    final layerBytes = await renderTextOverlayLayer(texts, width, height);
+    final layerBytes = await renderTextOverlayLayer(
+      texts,
+      width,
+      height,
+      stickers: stickers,
+    );
     final layerPath = '${dir.path}/texto_$stamp.png';
     await File(layerPath).writeAsBytes(layerBytes);
 
@@ -540,13 +546,13 @@ class FfmpegService {
 
   /// Converte [video] para [format], sem nenhuma configuração exposta —
   /// usado pela tela "Converter formato" (`quick_convert_*`), que é um
-  /// recurso à parte de "Editar GIF": só troca de formato, arquivo inteiro,
+  /// recurso à parte de "Editar vídeo": só troca de formato, arquivo inteiro,
   /// sem corte/moldura/qualidade.
   ///
   /// GIF/WebP: monta um [ConversionSettings] fixo (arquivo inteiro, largura
   /// escolhida do mesmo jeito que [ConversionSettings.recommendedFor], sem
   /// ampliar) e reaproveita [convert] — mesmo pipeline de paleta/WebP já
-  /// usado por "Editar GIF" (com a mesma correção de velocidade do WebP).
+  /// usado por "Editar vídeo" (com a mesma correção de velocidade do WebP).
   ///
   /// MP4: linha de comando própria e simples — só limita a largura (mesmo
   /// teto de [ConversionSettings.recommendedFor], nunca amplia) e codifica
@@ -690,6 +696,82 @@ class FfmpegService {
 
     _activeSessionId = session.getSessionId();
     return completer.future;
+  }
+
+  /// Junta quadros RGBA crus ([width]×[height], um atrás do outro) num
+  /// `.mov` com codec PNG — sem perda e com transparência — a [fps] quadros
+  /// por segundo. É o intermediário do WebP animado em "Converter formato":
+  /// o FFmpeg desta build não sabe decodificar WebP animado, então o Flutter
+  /// decodifica os quadros e o resto do app trabalha em cima deste arquivo
+  /// (ver `animated_webp_source.dart`).
+  ///
+  /// [writeFrames] escreve os quadros no `IOSink` recebido. Primeiro tenta
+  /// por um pipe do FFmpegKit (sem arquivo intermediário e sem esperar o
+  /// último quadro para começar); se o pipe falhar, chama [writeFrames] de
+  /// novo para um arquivo cru em [scratchDir]. Crus, e não PNGs, porque
+  /// codificar PNG quadro a quadro no Flutter era o que deixava a abertura
+  /// lenta.
+  Future<void> rawRgbaToMov({
+    required int width,
+    required int height,
+    required double fps,
+    required String outputPath,
+    required String scratchDir,
+    required Future<void> Function(IOSink sink) writeFrames,
+  }) async {
+    _cancelled = false;
+    const step = 'leitura do WebP animado';
+    List<String> args(String input) => rawRgbaToMovArgs(
+      input: input,
+      width: width,
+      height: height,
+      fps: fps,
+      outputPath: outputPath,
+    );
+
+    String? pipe;
+    try {
+      pipe = await FFmpegKitConfig.registerNewFFmpegPipe();
+    } catch (_) {
+      pipe = null;
+    }
+    if (pipe != null) {
+      final pipePath = pipe;
+      try {
+        final done = _run(args(pipePath), step: step);
+        Future<void> write() async {
+          final sink = File(pipePath).openWrite();
+          try {
+            await writeFrames(sink);
+          } finally {
+            await sink.close();
+          }
+          await done;
+        }
+
+        // Se o FFmpeg falhar antes de ler o pipe, a escrita ficaria parada
+        // para sempre esperando um leitor — o erro dele encerra a espera.
+        await Future.any([write(), done.then((_) => Completer<void>().future)]);
+        return;
+      } catch (_) {
+        // Cai para o arquivo abaixo.
+      } finally {
+        unawaited(FFmpegKitConfig.closeFFmpegPipe(pipePath).catchError((_) {}));
+      }
+    }
+
+    final rawPath = '$scratchDir/quadros.rgba';
+    final sink = File(rawPath).openWrite();
+    try {
+      await writeFrames(sink);
+    } finally {
+      await sink.close();
+    }
+    try {
+      await _run(args(rawPath), step: step);
+    } finally {
+      _deleteQuietly(rawPath);
+    }
   }
 
   /// Codifica uma sequência de PNGs numerados (`.../quadro_%05d.png`, gerada
@@ -1047,3 +1129,33 @@ class FfmpegService {
     }
   }
 }
+
+/// Argumentos de [FfmpegService.rawRgbaToMov], separados para os testes
+/// conferirem a linha de comando sem rodar o FFmpeg. PNG com compressão
+/// leve: sem perda e com alfa, e bem mais rápido de gravar que o padrão.
+List<String> rawRgbaToMovArgs({
+  required String input,
+  required int width,
+  required int height,
+  required double fps,
+  required String outputPath,
+}) => [
+  '-y',
+  '-f',
+  'rawvideo',
+  '-pix_fmt',
+  'rgba',
+  '-s',
+  '${width}x$height',
+  '-framerate',
+  filterNumber(fps),
+  '-i',
+  input,
+  '-c:v',
+  'png',
+  '-compression_level',
+  '1',
+  '-pix_fmt',
+  'rgba',
+  outputPath,
+];

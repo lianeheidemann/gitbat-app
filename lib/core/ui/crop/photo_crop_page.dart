@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../models/crop_rect.dart';
+import '../../services/opaque_bounds.dart';
 import 'crop_controller.dart';
+import '../checkerboard_background.dart';
 import 'crop_overlay.dart';
 import 'crop_size_fields.dart';
 
@@ -155,6 +157,55 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
     });
   }
 
+  static const _trimLabel = 'Ajustar';
+  bool _trimming = false;
+
+  /// "Ajustar": recorte livre encostado nos pixels visíveis da foto,
+  /// cortando só a margem totalmente transparente (`opaque_bounds.dart`).
+  Future<void> _trimTransparentEdges() async {
+    if (_trimming) return;
+    _trimming = true;
+    CropRect? bounds;
+    try {
+      bounds = await detectOpaqueBounds(
+        widget.photoPath,
+        width: widget.photoWidth,
+        height: widget.photoHeight,
+      );
+    } catch (_) {
+      bounds = null;
+      _trimming = false;
+      _snack('Não foi possível ler a imagem.');
+      return;
+    }
+    _trimming = false;
+    if (!mounted) return;
+    if (bounds == null) {
+      _snack('A imagem está toda transparente.');
+      return;
+    }
+    final found = bounds;
+    if (found.x == 0 &&
+        found.y == 0 &&
+        found.width == widget.photoWidth &&
+        found.height == widget.photoHeight) {
+      _snack('A imagem não tem bordas transparentes para remover.');
+      return;
+    }
+    setState(() {
+      _selectedLabel = _trimLabel;
+      _lockedRatio = null;
+      _crop = found;
+    });
+  }
+
+  void _snack(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
   /// Se a proporção digitada bater com um preset já na fileira (ou com "Da
   /// célula"), seleciona esse chip existente em vez de duplicar o mesmo
   /// número num chip "Personalizada…" à parte — dois chips mostrando "2:1"
@@ -184,21 +235,17 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Segue o tema do app (claro ou escuro), como as outras telas de
+    // edição; a área da foto usa o mesmo fundo de prévia delas.
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
         title: const Text('Recortar foto'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(_crop),
             child: const Text(
               'Usar recorte',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -206,48 +253,36 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
       body: Column(
         children: [
           Expanded(
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: widget.photoWidth / widget.photoHeight,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.file(File(widget.photoPath), fit: BoxFit.fill),
-                    CropOverlay(
-                      bounds: Size(
-                        widget.photoWidth.toDouble(),
-                        widget.photoHeight.toDouble(),
+            child: PreviewAreaBackground(
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: widget.photoWidth / widget.photoHeight,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.file(File(widget.photoPath), fit: BoxFit.fill),
+                      CropOverlay(
+                        bounds: Size(
+                          widget.photoWidth.toDouble(),
+                          widget.photoHeight.toDouble(),
+                        ),
+                        crop: _crop,
+                        onResize: _resize,
+                        onMove: _move,
+                        freeform: _lockedRatio == null,
                       ),
-                      crop: _crop,
-                      onResize: _resize,
-                      onMove: _move,
-                      freeform: _lockedRatio == null,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            // A tela é sempre preta, mesmo com o app no tema claro: o
-            // controle ganha as cores do tema escuro para continuar legível.
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: Theme.of(context).colorScheme.primary,
-                  brightness: Brightness.dark,
-                ),
-                textTheme: Theme.of(context).textTheme.apply(
-                  bodyColor: Colors.white,
-                  displayColor: Colors.white,
-                ),
-              ),
-              child: CropSizeSlider(
-                percent: _cropMath.sizePercentOf(_crop),
-                onChanged: (percent) => setState(
-                  () => _crop = _cropMath.scaledTo(percent, crop: _crop),
-                ),
+            child: CropSizeSlider(
+              percent: _cropMath.sizePercentOf(_crop),
+              onChanged: (percent) => setState(
+                () => _crop = _cropMath.scaledTo(percent, crop: _crop),
               ),
             ),
           ),
@@ -269,6 +304,12 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
             for (final preset in _cropRatioPresets) ...[
               _ratioChip(preset.$1, () => _selectRatio(preset.$1, preset.$2)),
               const SizedBox(width: 8),
+              // "Ajustar" logo depois de "Livre": encosta o recorte no
+              // desenho, como em "Editar imagem" e "Editar SVG".
+              if (preset.$2 == null) ...[
+                _ratioChip(_trimLabel, _trimTransparentEdges),
+                const SizedBox(width: 8),
+              ],
             ],
             _ratioChip(
               'Da célula',
@@ -288,21 +329,7 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
       label: Text(label),
       selected: selected,
       onSelected: (_) => onTap(),
-      // Cor sólida, não translúcida: um branco a 10% deixa o fundo real do
-      // Material 3 (que segue o tema ambiente, claro ou escuro) transparecer
-      // por baixo — no modo claro isso apagava o texto branco do rótulo
-      // contra um fundo quase branco. Esta tela é sempre escura de
-      // propósito (Scaffold preto acima), então o fundo do chip também
-      // precisa ser opaco para não depender do tema ambiente.
-      backgroundColor: const Color(0xFF2A2932),
-      selectedColor: Theme.of(context).colorScheme.primary,
-      labelStyle: TextStyle(
-        color: selected
-            ? Theme.of(context).colorScheme.onPrimary
-            : Colors.white,
-        fontWeight: FontWeight.w600,
-      ),
-      side: const BorderSide(color: Colors.white24),
+      // Cores do tema (claro ou escuro), iguais aos chips das outras telas.
       showCheckmark: false,
       surfaceTintColor: Colors.transparent,
       elevation: 0,

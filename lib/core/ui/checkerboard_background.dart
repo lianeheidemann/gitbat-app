@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '../../app/preview_background_controller.dart';
 
 /// Fundo quadriculado clássico de "transparência" (o mesmo indicador visual
-/// de editores de imagem como Photoshop/GIMP) — cores neutras fixas,
-/// independentes do tema claro/escuro, para representar sempre a mesma
-/// coisa não importa o tema do app.
+/// de editores de imagem como Photoshop/GIMP) — cinzas neutros, escuros no
+/// tema escuro e claros no claro.
 class CheckerboardBackground extends StatelessWidget {
   const CheckerboardBackground({super.key, this.cellSize = 6});
 
@@ -14,21 +13,25 @@ class CheckerboardBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _CheckerboardPainter(cellSize: cellSize),
+      painter: _CheckerboardPainter(
+        cellSize: cellSize,
+        dark: Theme.of(context).brightness == Brightness.dark,
+      ),
       child: const SizedBox.expand(),
     );
   }
 }
 
 class _CheckerboardPainter extends CustomPainter {
-  const _CheckerboardPainter({required this.cellSize});
+  const _CheckerboardPainter({required this.cellSize, required this.dark});
 
   final double cellSize;
+  final bool dark;
 
-  // Tons escuros: o xadrez claro de antes brigava com a interface escura e
-  // chamava mais atenção do que a própria foto.
-  static const _light = Color(0xFF4A4A4F);
-  static const _dark = Color(0xFF323236);
+  // Tons escuros no tema escuro (o xadrez claro brigava com a interface
+  // e chamava mais atenção que a foto) e claros no tema claro.
+  static const _darkThemeColors = (Color(0xFF4A4A4F), Color(0xFF323236));
+  static const _lightThemeColors = (Color(0xFFFFFFFF), Color(0xFFDCDCE1));
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -37,9 +40,10 @@ class _CheckerboardPainter extends CustomPainter {
     // `CustomPaint` não recorta sozinho: sem isto o xadrez vazava até uma
     // casa inteira para fora, por cima da tira da alça do rodapé recolhido.
     canvas.clipRect(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, Paint()..color = _light);
+    final (light, darker) = dark ? _darkThemeColors : _lightThemeColors;
+    canvas.drawRect(Offset.zero & size, Paint()..color = light);
 
-    final darkPaint = Paint()..color = _dark;
+    final darkPaint = Paint()..color = darker;
     final cols = (size.width / cellSize).ceil();
     final rows = (size.height / cellSize).ceil();
     for (var row = 0; row < rows; row++) {
@@ -56,12 +60,20 @@ class _CheckerboardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CheckerboardPainter oldDelegate) =>
-      oldDelegate.cellSize != cellSize;
+      oldDelegate.cellSize != cellSize || oldDelegate.dark != dark;
 }
 
 /// Cor sólida da área de prévia em volta da mídia — nas quatro telas de
 /// edição, a região que não é da foto/vídeo/SVG/montagem nunca é xadrez.
+/// Escura no tema escuro, clara no claro.
 const previewAreaColor = Color(0xFF26272B);
+const previewAreaColorLight = Color(0xFFE9E8EE);
+
+/// [previewAreaColor] ou [previewAreaColorLight], conforme o tema.
+Color previewAreaColorFor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+    ? previewAreaColor
+    : previewAreaColorLight;
 
 /// Fundo da área de prévia inteira: sempre a cor sólida [previewAreaColor].
 /// O xadrez (quando ligado nas configurações) fica só atrás da própria
@@ -73,7 +85,7 @@ class PreviewAreaBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(color: previewAreaColor, child: child);
+    return ColoredBox(color: previewAreaColorFor(context), child: child);
   }
 }
 

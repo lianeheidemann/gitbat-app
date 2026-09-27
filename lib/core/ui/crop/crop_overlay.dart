@@ -225,7 +225,7 @@ CropRect resizeLockedCrop(
 /// [freeform]), mais um botão para mover a janela inteira. Puramente visual +
 /// gestos; quem decide a nova geometria são [resizeFreeCrop]/
 /// [resizeLockedCrop], chamados pelo dono deste widget via [onResize].
-class CropOverlay extends StatelessWidget {
+class CropOverlay extends StatefulWidget {
   const CropOverlay({
     super.key,
     required this.bounds,
@@ -233,6 +233,9 @@ class CropOverlay extends StatelessWidget {
     required this.onResize,
     required this.onMove,
     required this.freeform,
+    this.onPinchStart,
+    this.onPinch,
+    this.centerGuides = false,
   });
 
   final Size bounds;
@@ -245,11 +248,40 @@ class CropOverlay extends StatelessWidget {
   /// borda (meio de cada lado) para redimensionar um lado por vez.
   final bool freeform;
 
+  /// Com os dois dados, tocar dentro da janela também a controla: um dedo
+  /// arrasta (como o botão de mover) e dois dedos em pinça redimensionam —
+  /// [onPinch] recebe a escala desde [onPinchStart].
+  final VoidCallback? onPinchStart;
+  final ValueChanged<double>? onPinch;
+
+  /// Mostra guias no centro horizontal/vertical enquanto a janela é movida e
+  /// está travada nele (a trava em si é do [CropController.moveBy]).
+  final bool centerGuides;
+
   static const _handleBoxSize = 34.0;
 
   @override
+  State<CropOverlay> createState() => _CropOverlayState();
+}
+
+class _CropOverlayState extends State<CropOverlay> {
+  static const _handleBoxSize = CropOverlay._handleBoxSize;
+
+  /// Um gesto de mover (botão ou dentro da janela) em andamento.
+  bool _moving = false;
+  int _pointers = 0;
+
+  void _setMoving(bool value) {
+    if (_moving != value) setState(() => _moving = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final rect = crop;
+    final bounds = widget.bounds;
+    final onResize = widget.onResize;
+    final onMove = widget.onMove;
+    final freeform = widget.freeform;
+    final rect = widget.crop;
     if (rect == null) return const SizedBox.shrink();
 
     return LayoutBuilder(
@@ -329,6 +361,9 @@ class CropOverlay extends StatelessWidget {
           top: moveTop,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
+            onPanStart: (_) => _setMoving(true),
+            onPanEnd: (_) => _setMoving(false),
+            onPanCancel: () => _setMoving(false),
             onPanUpdate: (details) => onMove(details.delta, previewSize),
             child: Container(
               width: _handleBoxSize,
@@ -353,6 +388,54 @@ class CropOverlay extends StatelessWidget {
             ),
           ),
         );
+
+        final interactiveInside =
+            widget.onPinch != null && widget.onPinchStart != null;
+        final interior = interactiveInside
+            ? Positioned(
+                key: const ValueKey('cropInteriorGesture'),
+                left: left,
+                top: top,
+                width: width,
+                height: height,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onScaleStart: (details) {
+                    _pointers = details.pointerCount;
+                    if (_pointers >= 2) {
+                      widget.onPinchStart!();
+                    } else {
+                      _setMoving(true);
+                    }
+                  },
+                  onScaleUpdate: (details) {
+                    if (details.pointerCount >= 2) {
+                      if (_pointers < 2) {
+                        // O segundo dedo chegou depois: vira pinça daqui.
+                        _pointers = details.pointerCount;
+                        _setMoving(false);
+                        widget.onPinchStart!();
+                        return;
+                      }
+                      widget.onPinch!(details.scale);
+                    } else if (_pointers < 2) {
+                      onMove(details.focalPointDelta, previewSize);
+                    }
+                  },
+                  onScaleEnd: (_) {
+                    _pointers = 0;
+                    _setMoving(false);
+                  },
+                ),
+              )
+            : null;
+
+        final showGuides = widget.centerGuides && _moving;
+        final centeredX =
+            ((rect.x + rect.width / 2) - bounds.width / 2).abs() <= 0.5;
+        final centeredY =
+            ((rect.y + rect.height / 2) - bounds.height / 2).abs() <= 0.5;
+        const guideColor = Color(0xFFFF4FD8);
 
         return Stack(
           clipBehavior: Clip.none,
@@ -398,6 +481,29 @@ class CropOverlay extends StatelessWidget {
                 ),
               ),
             ),
+            ?interior,
+            if (showGuides && centeredX)
+              Positioned(
+                key: const ValueKey('cropCenterGuideVertical'),
+                left: previewSize.width / 2 - 0.75,
+                top: 0,
+                bottom: 0,
+                width: 1.5,
+                child: const IgnorePointer(
+                  child: ColoredBox(color: guideColor),
+                ),
+              ),
+            if (showGuides && centeredY)
+              Positioned(
+                key: const ValueKey('cropCenterGuideHorizontal'),
+                top: previewSize.height / 2 - 0.75,
+                left: 0,
+                right: 0,
+                height: 1.5,
+                child: const IgnorePointer(
+                  child: ColoredBox(color: guideColor),
+                ),
+              ),
             handle(CropHandle.topLeft, left - 17, top - 17),
             handle(CropHandle.topRight, left + width - 17, top - 17),
             handle(CropHandle.bottomLeft, left - 17, top + height - 17),

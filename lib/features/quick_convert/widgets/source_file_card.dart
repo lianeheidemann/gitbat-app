@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/models/size_estimate.dart';
@@ -15,6 +17,7 @@ class SourceFileCard extends StatelessWidget {
     super.key,
     required this.video,
     required this.extension,
+    this.thumbnail,
   });
 
   final VideoInfo video;
@@ -23,6 +26,10 @@ class SourceFileCard extends StatelessWidget {
   /// pela tela — mesmo valor usado para desmarcar o formato de saída igual
   /// ao de origem. Aqui só vira o selo "GIF"/"MP4"/etc. ao lado do nome.
   final String extension;
+
+  /// Miniatura (um quadro do arquivo) no lugar do ícone — `null` mostra o
+  /// ícone de arquivo, enquanto ela não fica pronta.
+  final File? thumbnail;
 
   /// Duração em texto curto: acima de um minuto vira "1min 5s"; abaixo,
   /// "6.0s", que é a precisão que interessa em vídeo curto.
@@ -48,17 +55,31 @@ class SourceFileCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              key: const ValueKey('sourceFileThumbnail'),
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(12),
               ),
+              clipBehavior: Clip.antiAlias,
               alignment: Alignment.center,
-              child: Icon(
-                Icons.insert_drive_file_outlined,
-                color: scheme.primary,
-              ),
+              child: thumbnail == null
+                  ? Icon(
+                      Icons.insert_drive_file_outlined,
+                      color: scheme.primary,
+                    )
+                  : Image.file(
+                      thumbnail!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                      errorBuilder: (_, _, _) => Icon(
+                        Icons.insert_drive_file_outlined,
+                        color: scheme.primary,
+                      ),
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(

@@ -14,6 +14,8 @@ import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../core/services/output_service.dart';
 import '../../core/ui/app_bar_title.dart';
 import 'widgets/source_file_card.dart';
+import '../../core/ui/saved_dialog.dart';
+import 'services/animated_webp_source.dart';
 
 /// Tela única de "Converter formato": escolher o arquivo e escolher para qual
 /// formato converter acontecem no mesmo lugar.
@@ -24,9 +26,12 @@ import 'widgets/source_file_card.dart';
 /// informações no lugar, e o botão de escolher continua visível para trocar
 /// quantas vezes quiser.
 ///
-/// Aceita qualquer formato que o FFmpeg saiba abrir — vídeo, GIF ou WebP. Usa
-/// `FileType.media` (seletor de mídia estilo galeria, aceitando vídeo e imagem
-/// no mesmo seletor), validando depois se o conteúdo pode ser convertido.
+/// Aceita MP4, GIF e WebP ([quickConvertSourceExtensions]) — o seletor do
+/// sistema só deixa escolher esses —, validando depois se o conteúdo pode
+/// ser convertido.
+/// Extensões que "Converter formato" aceita como origem.
+const quickConvertSourceExtensions = ['mp4', 'gif', 'webp'];
+
 class QuickConvertPage extends StatefulWidget {
   const QuickConvertPage({super.key, this.initialVideo});
 
@@ -47,6 +52,11 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
 
   bool _loading = false;
   VideoInfo? _video;
+
+  /// Quadro do arquivo escolhido para a miniatura do cartão — `null` até
+  /// ficar pronto (ou se não der para extrair), e aí o cartão mostra o
+  /// ícone de arquivo.
+  File? _thumbnail;
   QuickConvertFormat? _selected;
 
   /// Porcentagem da resolução original — 100% por padrão, então nenhum
@@ -110,12 +120,34 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
     }
   }
 
+  /// Extrai um quadro do começo do arquivo (FFmpeg, pequeno) para a
+  /// miniatura do cartão. Melhor esforço: sem ele, fica o ícone.
+  Future<void> _loadThumbnail(VideoInfo video) async {
+    final at = video.durationSeconds > 1 ? 0.5 : 0.0;
+    File? frame;
+    try {
+      frame = await _ffmpeg.extractFrame(
+        video: video,
+        atSeconds: at,
+        width: 240,
+      );
+    } catch (_) {
+      frame = null;
+    }
+    // Só vale se o arquivo ainda é o mesmo (a pessoa pode ter trocado).
+    if (!mounted || frame == null || !identical(_video, video)) return;
+    setState(() => _thumbnail = frame);
+  }
+
   Future<void> _pickFile() async {
     setState(() => _loading = true);
 
     try {
+      // Só os formatos que esta tela converte: o seletor do sistema mostra
+      // apenas MP4, GIF e WebP (o resto aparece apagado).
       final picked = await FilePicker.pickFile(
-        type: FileType.media,
+        type: FileType.custom,
+        allowedExtensions: quickConvertSourceExtensions,
         dialogTitle: 'Escolha um arquivo',
       );
 
@@ -135,12 +167,17 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
         return;
       }
 
-      final video = await _ffmpeg.probe(path);
+      // WebP animado: o FFmpeg do app não decodifica, então os quadros
+      // passam pelo Flutter antes (ver `animated_webp_source.dart`).
+      final video = await isAnimatedWebp(path)
+          ? await probeAnimatedWebp(path, _ffmpeg)
+          : await _ffmpeg.probe(path);
       if (!mounted) return;
 
       setState(() {
         _loading = false;
         _video = video;
+        _thumbnail = null;
         // O chip do formato igual ao da origem vem desabilitado. Sem zerar a
         // escolha, quem pega GIF para um MP4 e depois troca para um arquivo
         // GIF fica com uma seleção apontando para o formato do próprio
@@ -151,6 +188,7 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
         // próximo.
         _resolutionPercent = 100;
       });
+      _loadThumbnail(video);
     } on FfmpegException catch (e) {
       if (mounted) setState(() => _loading = false);
       _showPickError(e.message);
@@ -201,7 +239,11 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
                 onTap: _loading ? null : _pickFile,
               )
             else ...[
-              SourceFileCard(video: video, extension: _sourceExtension),
+              SourceFileCard(
+                video: video,
+                extension: _sourceExtension,
+                thumbnail: _thumbnail,
+              ),
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: _loading ? null : _pickFile,
@@ -353,13 +395,13 @@ class _PickDropzone extends StatelessWidget {
             radius: _radius,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: scheme.primary,
                     shape: BoxShape.circle,
@@ -367,20 +409,20 @@ class _PickDropzone extends StatelessWidget {
                   alignment: Alignment.center,
                   child: loading
                       ? SizedBox(
-                          width: 24,
-                          height: 24,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
+                            strokeWidth: 2.2,
                             color: scheme.onPrimary,
                           ),
                         )
                       : Icon(
                           Icons.add_rounded,
-                          size: 30,
+                          size: 22,
                           color: scheme.onPrimary,
                         ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Flexible(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -558,11 +600,12 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
         _saving = false;
         _saved = true;
       });
+      await showSavedDialog(context, 'Arquivo salvo na galeria.');
     } on OutputException catch (e) {
       if (!mounted) return;
       // Dentro de um popup o SnackBar sairia atrás do véu do diálogo, por
-      // isso o aviso vem aqui no corpo. O sucesso não precisa de aviso: o
-      // próprio botão passa a dizer "Salvo na galeria".
+      // isso o erro vem aqui no corpo. O sucesso abre o pop-up "Salvo!"
+      // por cima, e o botão passa a dizer "Salvo na galeria".
       setState(() {
         _saving = false;
         _saveError = e.message;

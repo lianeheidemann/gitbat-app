@@ -4,7 +4,7 @@ import '../../../core/models/size_estimate.dart';
 import '../../../app/theme.dart';
 
 /// Painel final do editor: compara o peso do vídeo original com a
-/// estimativa do GIF e traz a ação de recalcular. Converter é feito pelo
+/// estimativa do GIF, com o ícone de recalcular no canto do cabeçalho. Converter é feito pelo
 /// botão de download na AppBar — este painel não duplica mais essa ação.
 class SizePanel extends StatelessWidget {
   const SizePanel({
@@ -72,6 +72,23 @@ class SizePanel extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // "Recalcular" é só o ícone, no canto do cabeçalho.
+                    IconButton(
+                      tooltip: measuring ? 'Medindo…' : 'Recalcular',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: measuring ? null : onMeasure,
+                      icon: measuring
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              Icons.refresh_rounded,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -134,25 +151,6 @@ class SizePanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _ImpactBar(verdict: estimate.verdict),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                  ),
-                  onPressed: measuring ? null : onMeasure,
-                  icon: measuring
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 18),
-                  label: Text(measuring ? 'Medindo…' : 'Recalcular'),
-                ),
               ],
             ),
           ),

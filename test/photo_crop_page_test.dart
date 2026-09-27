@@ -112,7 +112,7 @@ void main() {
     // "Personalizada…" é a última — numa largura de celular ela nasce fora da
     // viewport (e o que não está na viewport de uma lista não existe na
     // árvore para o teste tocar).
-    await pumpPage(tester, viewSize: const Size(1400, 900));
+    await pumpPage(tester, viewSize: const Size(1800, 900));
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Personalizada…'));
     await tester.pumpAndSettle();

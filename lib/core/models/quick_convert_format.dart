@@ -1,5 +1,5 @@
 /// Formatos oferecidos na tela "Converter formato" — um recurso à parte de
-/// "Editar GIF" (ver [OutputFormat] em `conversion_settings.dart`), sem
+/// "Editar vídeo" (ver [OutputFormat] em `conversion_settings.dart`), sem
 /// nenhuma configuração exposta: só escolher o arquivo de entrada e o
 /// formato de saída.
 enum QuickConvertFormat {

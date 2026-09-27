@@ -9,7 +9,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../models/background_image.dart';
 import '../models/collage_background.dart';
 import '../models/collage_settings.dart';
-import '../models/collage_sticker.dart';
+import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
 import '../painting/collage_painter.dart';
 
@@ -170,6 +170,24 @@ class _StickerOverlay extends _Overlay {
   int get zIndex => sticker.zIndex;
 
   @override
+  Future<void> paint(Canvas canvas, Size canvasSize) =>
+      paintCollageSticker(canvas, canvasSize, sticker);
+}
+
+/// Desenha um sticker no [canvas] de [canvasSize] — o mesmo desenho da
+/// prévia (`CollageOverlayView` com a arte em `refSize`). Compartilhado com
+/// as outras telas que têm a aba "Stickers" (foto, vídeo e SVG).
+Future<void> paintCollageSticker(
+  Canvas canvas,
+  Size canvasSize,
+  CollageSticker sticker,
+) => _StickerPainter(sticker).paint(canvas, canvasSize);
+
+class _StickerPainter {
+  _StickerPainter(this.sticker);
+
+  final CollageSticker sticker;
+
   Future<void> paint(Canvas canvas, Size canvasSize) async {
     final refSize =
         canvasSize.shortestSide *

@@ -57,7 +57,7 @@ void main() {
   /// Toca no chip e deixa a decodificação/varredura (assíncronas de
   /// verdade) terminarem antes de redesenhar.
   Future<void> tapTrim(WidgetTester tester) async {
-    final chip = find.text('Ajustar ao conteúdo');
+    final chip = find.text('Ajustar');
     await tester.ensureVisible(chip);
     await tester.pumpAndSettle();
     await tester.tap(chip);

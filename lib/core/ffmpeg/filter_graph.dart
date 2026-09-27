@@ -396,7 +396,8 @@ String imageFramedGraph(
       '[content]scale=$areaWidth:$areaHeight:'
       'force_original_aspect_ratio=decrease:flags=lanczos,'
       'pad=$areaWidth:$areaHeight:(ow-iw)/2:(oh-ih)/2:'
-      'color=black[fitted]',
+      // Barras na "Cor do fundo da moldura" (preta por padrão).
+      'color=${ffmpegColor(frame.expandBackgroundColor)}[fitted]',
     );
   }
 

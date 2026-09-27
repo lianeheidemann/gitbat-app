@@ -12,7 +12,7 @@ import 'models/collage_cell.dart';
 import 'models/collage_export.dart';
 import 'models/collage_layout.dart';
 import 'models/collage_settings.dart';
-import 'models/collage_sticker.dart';
+import '../../core/models/collage_sticker.dart';
 import '../../core/models/collage_text.dart';
 import '../../core/models/photo_info.dart';
 import 'services/collage_animation.dart';
@@ -46,6 +46,7 @@ import '../../core/ui/text_input_dialog.dart';
 import 'widgets/panels/layout_panel.dart';
 import 'widgets/panels/areas_panel.dart';
 import '../../core/ui/preview_settings_panel.dart';
+import '../../core/ui/saved_dialog.dart';
 
 /// Geometria do sticker/texto selecionado, na medida necessária para
 /// posicionar as alças de redimensionar/girar por fora dele (ver
@@ -163,16 +164,23 @@ class _CollagePageState extends State<CollagePage> {
   _CollageTab? _activeTab = _CollageTab.layout;
 
   /// Foto tocada na aba "Áreas" — só ela mostra as alças de redimensionar.
-  /// `null` = nenhuma (a aba abre sem alças até tocar numa foto).
+  /// `null` = a primeira foto (a aba já abre com ela selecionada).
   int? _selectedAreaCell;
 
   /// Divisor sendo arrastado agora na aba "Áreas", para destacar as fotos
   /// que ele está redimensionando.
   CollageDivider? _draggingDivider;
 
-  /// "Bloquear proporção" do cartão "Área selecionada": largura e altura
-  /// mudam juntas, mantendo o formato da área.
-  bool _lockAreaAspect = false;
+  /// Fotos com "Bloquear proporção" ligado no cartão "Área selecionada":
+  /// largura e altura delas mudam juntas, mantendo o formato. Cada foto tem
+  /// o seu — ligar numa não trava as outras.
+  final Set<int> _lockedAreaCells = {};
+
+  /// Se a foto selecionada agora está com a proporção bloqueada.
+  bool get _lockAreaAspect {
+    final cell = _validSelectedAreaCell;
+    return cell != null && _lockedAreaCells.contains(cell);
+  }
 
   /// Alvo dos controles da aba "Borda e cantos": `false` = a montagem
   /// inteira, `true` = todas as fotos de uma vez. Só estado de UI (qual
@@ -530,7 +538,11 @@ class _CollagePageState extends State<CollagePage> {
       layout: _settings.layout,
       selectedCell: _validSelectedAreaCell,
       lockAspect: _lockAreaAspect,
-      onLockAspectChanged: (v) => setState(() => _lockAreaAspect = v),
+      onLockAspectChanged: (v) => setState(() {
+        final cell = _validSelectedAreaCell;
+        if (cell == null) return;
+        v ? _lockedAreaCells.add(cell) : _lockedAreaCells.remove(cell);
+      }),
       onChangeStart: _pushUndoCheckpoint,
       onWidthChanged: (f) => _resizeSelectedArea(width: f),
       onHeightChanged: (f) => _resizeSelectedArea(height: f),
@@ -719,85 +731,99 @@ class _CollagePageState extends State<CollagePage> {
   Widget _preview() {
     return AspectRatio(
       aspectRatio: _settings.aspectRatio,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, constraints.maxHeight);
-          final geometry = CollageGeometry.of(size, _settings);
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // A borda da prévia é desenhada pelo mesmo `paintCollageBorder`
-              // da exportação (antes era um Container pintado à mão aqui, que
-              // podia divergir do PNG final).
-              if (geometry.borderThickness > 0)
+      // Contorno fino marcando sempre a área da montagem, como em "Editar
+      // imagem" — por cima (não empurra o conteúdo) e só na prévia.
+      child: Container(
+        key: const ValueKey('collageAreaOutline'),
+        foregroundDecoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.45),
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final size = Size(constraints.maxWidth, constraints.maxHeight);
+            final geometry = CollageGeometry.of(size, _settings);
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // A borda da prévia é desenhada pelo mesmo `paintCollageBorder`
+                // da exportação (antes era um Container pintado à mão aqui, que
+                // podia divergir do PNG final).
+                if (geometry.borderThickness > 0)
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: CollageBorderPainter(_settings),
+                    ),
+                  ),
                 Positioned.fill(
-                  child: CustomPaint(painter: CollageBorderPainter(_settings)),
-                ),
-              Positioned.fill(
-                child: Padding(
-                  padding: EdgeInsets.all(geometry.borderThickness),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(geometry.innerRadius),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        _backgroundPreview(),
-                        for (var i = 0; i < _settings.cells.length; i++)
-                          Positioned.fromRect(
-                            rect: geometry.cellRects[i].translate(
-                              -geometry.borderThickness,
-                              -geometry.borderThickness,
-                            ),
-                            child: _areaSelectable(
-                              i,
-                              CollageCellView(
-                                cell: _settings.cells[i],
-                                cellSize: geometry.cellRects[i].size,
-                                // Com "Stickers" ou "Texto" aberto no rodapé, a
-                                // foto para de responder a gesto — só um dos
-                                // dois grupos (fotos, ou stickers/texto) pode
-                                // ser movido por vez, o mesmo motivo que
-                                // CollageOverlayView.interactive já aplica ao
-                                // contrário nesses dois casos.
-                                // Em "Áreas" também: o arrasto é das alças
-                                // entre as fotos, não do enquadramento.
-                                // Em "Áreas" a foto continua podendo ser
-                                // movida; o toque nela só a seleciona (ver o
-                                // `Listener` abaixo).
-                                interactive:
-                                    _activeTab != _CollageTab.stickers &&
-                                    _activeTab != _CollageTab.text,
-                                onGestureStart: _pushUndoCheckpoint,
-                                onChanged: (cell) => _update(
-                                  _settings.replacingCell(i, cell),
-                                  pushUndo: false,
-                                ),
-                                onMenu: () => openCollageCellMenu(
-                                  i,
-                                  context,
-                                  settings: () => _settings,
-                                  actions: _panelActions,
+                  child: Padding(
+                    padding: EdgeInsets.all(geometry.borderThickness),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(geometry.innerRadius),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _backgroundPreview(),
+                          for (var i = 0; i < _settings.cells.length; i++)
+                            Positioned.fromRect(
+                              rect: geometry.cellRects[i].translate(
+                                -geometry.borderThickness,
+                                -geometry.borderThickness,
+                              ),
+                              child: _areaSelectable(
+                                i,
+                                CollageCellView(
+                                  cell: _settings.cells[i],
+                                  cellSize: geometry.cellRects[i].size,
+                                  // Com "Stickers" ou "Texto" aberto no rodapé, a
+                                  // foto para de responder a gesto — só um dos
+                                  // dois grupos (fotos, ou stickers/texto) pode
+                                  // ser movido por vez, o mesmo motivo que
+                                  // CollageOverlayView.interactive já aplica ao
+                                  // contrário nesses dois casos.
+                                  // Em "Áreas" também: o arrasto é das alças
+                                  // entre as fotos, não do enquadramento.
+                                  // Em "Áreas" a foto continua podendo ser
+                                  // movida; o toque nela só a seleciona (ver o
+                                  // `Listener` abaixo).
+                                  interactive:
+                                      _activeTab != _CollageTab.stickers &&
+                                      _activeTab != _CollageTab.text,
+                                  onGestureStart: _pushUndoCheckpoint,
+                                  onChanged: (cell) => _update(
+                                    _settings.replacingCell(i, cell),
+                                    pushUndo: false,
+                                  ),
+                                  onMenu: () => openCollageCellMenu(
+                                    i,
+                                    context,
+                                    settings: () => _settings,
+                                    actions: _panelActions,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              ..._overlayWidgets(size),
-              if (_activeTab == _CollageTab.areas) ...[
-                ..._areaHighlights(geometry),
-                ..._dividerHandles(geometry),
+                ..._overlayWidgets(size),
+                if (_activeTab == _CollageTab.areas) ...[
+                  ..._areaHighlights(geometry),
+                  ..._dividerHandles(geometry),
+                ],
+                // Sempre depois (por cima) das sobreposições, sem ligar para
+                // o zIndex de quem está selecionado — ver o porquê no doc de
+                // `CollageOverlayView`.
+                ..._selectedHandlesWidgets(size),
               ],
-              // Sempre depois (por cima) das sobreposições, sem ligar para
-              // o zIndex de quem está selecionado — ver o porquê no doc de
-              // `CollageOverlayView`.
-              ..._selectedHandlesWidgets(size),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -842,9 +868,32 @@ class _CollagePageState extends State<CollagePage> {
   /// Foto selecionada na aba "Áreas", se ela ainda existe no layout atual
   /// (desfazer ou trocar de layout pode ter tirado células).
   int? get _validSelectedAreaCell {
-    final index = _selectedAreaCell;
-    if (index == null || index >= _settings.cells.length) return null;
-    return index;
+    if (_settings.cells.isEmpty) return null;
+    final index = _selectedAreaCell ?? 0;
+    return index < _settings.cells.length ? index : 0;
+  }
+
+  /// Arrasto de uma alça da aba "Áreas". Com "Bloquear proporção", a foto
+  /// selecionada cresce/encolhe nas duas direções juntas (como nos sliders),
+  /// mantendo o formato; sem o bloqueio, só o divisor arrastado se move.
+  void _dragDivider(CollageDivider divider, double delta, Size contentSize) {
+    final layout = _settings.layout;
+    final moved = layout.resizedBy(
+      divider,
+      delta,
+      contentSize,
+      outerMarginRatio: _settings.outerMarginRatio,
+      innerMarginRatio: _settings.innerMarginRatio,
+    );
+    final cell = _validSelectedAreaCell;
+    var next = moved;
+    if (_lockAreaAspect && cell != null) {
+      final factor = divider.vertical
+          ? moved.widthFractionOf(cell) / layout.widthFractionOf(cell)
+          : moved.heightFractionOf(cell) / layout.heightFractionOf(cell);
+      next = layout.scaledArea(cell, factor);
+    }
+    _update(_settings.copyWith(layout: next), pushUndo: false);
   }
 
   /// Tamanho da área de conteúdo (dentro da borda) — o espaço de
@@ -883,6 +932,27 @@ class _CollagePageState extends State<CollagePage> {
                     width: 2.5,
                   ),
                   borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+      // Cadeado no canto de cima, à esquerda (o da direita é do "..."), de
+      // cada foto com "Bloquear proporção" ligado.
+      for (final i in _lockedAreaCells)
+        if (i < geometry.cellRects.length)
+          Positioned(
+            key: ValueKey('collageAreaLockBadge_$i'),
+            left: geometry.cellRects[i].left + 6,
+            top: geometry.cellRects[i].top + 6,
+            width: 20,
+            height: 20,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: Icon(
+                  Icons.lock_rounded,
+                  size: 12,
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
             ),
@@ -931,18 +1001,7 @@ class _CollagePageState extends State<CollagePage> {
               setState(() => _draggingDivider = handle.divider);
             },
             onDragEnd: () => setState(() => _draggingDivider = null),
-            onDrag: (delta) => _update(
-              _settings.copyWith(
-                layout: _settings.layout.resizedBy(
-                  handle.divider,
-                  delta,
-                  contentSize,
-                  outerMarginRatio: _settings.outerMarginRatio,
-                  innerMarginRatio: _settings.innerMarginRatio,
-                ),
-              ),
-              pushUndo: false,
-            ),
+            onDrag: (delta) => _dragDivider(handle.divider, delta, contentSize),
           ),
         ),
     ];
@@ -1374,6 +1433,7 @@ class _CollagePageState extends State<CollagePage> {
           : _settings.withSharedCellStyle(const CollageCellSettings()),
     );
     _selectedAreaCell = null;
+    _lockedAreaCells.clear();
     _update(_settings.copyWith(layout: layout, cells: cells));
   }
 
@@ -2185,9 +2245,6 @@ class _CollagePageState extends State<CollagePage> {
                     FilledButton(
                       onPressed: () =>
                           Navigator.of(sheetContext).pop(selectedFormat),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
-                      ),
                       child: const Text('Continuar'),
                     ),
                   ],
@@ -2284,7 +2341,7 @@ class _CollagePageState extends State<CollagePage> {
       }
       await _output.saveToGallery(file);
       if (!mounted) return;
-      _message('Montagem salva na galeria.');
+      await showSavedDialog(context, 'Montagem salva na galeria.');
     } on OutputException catch (e) {
       if (!mounted) return;
       _message(e.message);

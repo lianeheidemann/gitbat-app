@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/collage_layout.dart';
 
-/// Painel da aba "Áreas". Sem foto selecionada, só a explicação e
-/// "Tamanhos iguais". Com uma foto tocada na prévia, o cartão "Área
+/// Painel da aba "Áreas". Sem foto (montagem vazia), só "Tamanhos iguais".
+/// Com a foto selecionada na prévia (a primeira, ao abrir a aba), o cartão "Área
 /// selecionada": largura e altura dela em % (da largura disponível e da
 /// altura da coluna dela), "Bloquear proporção" (os dois mudam juntos,
 /// mantendo o formato da área), "Redefinir área" e "Tamanhos iguais".
@@ -43,42 +43,32 @@ class CollageAreasPanel extends StatelessWidget {
     final cell = selectedCell;
     final resetAll = OutlinedButton.icon(
       onPressed: layout.hasCustomSizes ? onReset : null,
-      icon: const Icon(Icons.filter_none_rounded),
+      icon: const Icon(Icons.filter_none_rounded, size: 16),
       label: const Text('Tamanhos iguais'),
     );
     if (cell == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Toque numa foto para ajustar a área dela: arraste as alças nas '
-            'laterais ou use os controles que aparecem aqui. Arrastar dentro '
-            'da foto move a imagem. Trocar o layout ou o número de fotos '
-            'volta tudo ao tamanho padrão.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          Align(alignment: Alignment.centerRight, child: resetAll),
-        ],
-      );
+      return Align(alignment: Alignment.centerRight, child: resetAll);
     }
 
     final (wLo, wHi) = layout.widthFractionRange;
     final (hLo, hHi) = layout.heightFractionRange;
+    // Com um lado fixo neste layout (ex.: uma fileira só), manter o formato
+    // impede o outro de mudar — avisa em vez de parecer que não funciona.
+    final lockFreezes = lockAspect && (wHi <= wLo || hHi <= hLo);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Área selecionada',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          padding: const EdgeInsets.fromLTRB(10, 4, 10, 2),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
             ),
@@ -106,22 +96,28 @@ class CollageAreasPanel extends StatelessWidget {
                 onChanged: onHeightChanged,
               ),
               Divider(
-                height: 13,
+                height: 9,
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
                   children: [
-                    const SizedBox(
-                      width: 40,
-                      child: Icon(Icons.lock_outline_rounded),
+                    SizedBox(
+                      width: 32,
+                      child: Icon(
+                        lockAspect
+                            ? Icons.lock_rounded
+                            : Icons.lock_open_rounded,
+                        size: 18,
+                        color: lockAspect ? theme.colorScheme.primary : null,
+                      ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Bloquear proporção',
-                        style: theme.textTheme.bodyMedium,
+                        style: theme.textTheme.bodySmall,
                       ),
                     ),
                     Switch(
@@ -132,20 +128,34 @@ class CollageAreasPanel extends StatelessWidget {
                   ],
                 ),
               ),
+              if (lockFreezes)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    wHi <= wLo
+                        ? 'A largura é fixa neste layout, então com a '
+                              'proporção bloqueada o tamanho não muda.'
+                        : 'A altura é fixa neste layout, então com a '
+                              'proporção bloqueada o tamanho não muda.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onResetArea,
-                icon: const Icon(Icons.restart_alt_rounded),
+                icon: const Icon(Icons.restart_alt_rounded, size: 18),
                 label: const Text('Redefinir área'),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Expanded(child: resetAll),
           ],
         ),
@@ -182,50 +192,53 @@ class _AreaSliderRow extends StatelessWidget {
     final theme = Theme.of(context);
     final fixed = max <= min;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 20),
+            child: Icon(icon, size: 16),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 12),
-                  child: Text(label, style: theme.textTheme.bodyMedium),
+                  child: Text(label, style: theme.textTheme.bodySmall),
                 ),
-                Slider(
-                  key: sliderKey,
-                  value: value.clamp(min, fixed ? min + 0.0001 : max),
-                  min: min,
-                  max: fixed ? min + 0.0001 : max,
-                  onChangeStart: fixed ? null : (_) => onChangeStart(),
-                  onChanged: fixed ? null : onChanged,
+                SizedBox(
+                  height: 28,
+                  child: Slider(
+                    key: sliderKey,
+                    value: value.clamp(min, fixed ? min + 0.0001 : max),
+                    min: min,
+                    max: fixed ? min + 0.0001 : max,
+                    onChangeStart: fixed ? null : (_) => onChangeStart(),
+                    onChanged: fixed ? null : onChanged,
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Container(
-            width: 60,
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            width: 48,
+            padding: const EdgeInsets.symmetric(vertical: 5),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
             child: Text(
               '${(value * 100).round()}%',
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),

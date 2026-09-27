@@ -16,7 +16,7 @@ import 'models/eraser_mask.dart';
 import '../../core/services/imported_frame_store.dart';
 import '../../core/services/output_service.dart';
 import 'services/magic_eraser.dart';
-import 'services/opaque_bounds.dart';
+import '../../core/services/opaque_bounds.dart';
 import 'services/photo_frame_compositor.dart';
 import '../../core/ui/app_bar_title.dart';
 import '../../core/ui/checkerboard_background.dart';
@@ -37,10 +37,13 @@ import '../../core/ui/editor_tabs_footer.dart';
 import '../collage/widgets/export_progress_dialog.dart';
 import 'widgets/eraser_mask_overlay.dart';
 import 'widgets/eraser_option_button.dart';
+import 'widgets/photo_placement_view.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
+import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/saved_dialog.dart';
 
 /// Mesmos três modos apresentados ao usuário em `EditorPage` — `fit` só
 /// existe como resultado interno do ajuste automático.
@@ -56,11 +59,11 @@ const _selectableContentFitModes = [
 /// travar largura/altura entre si.
 const _customAspectPreset = AspectPreset('Personalizado', -1);
 
-/// "Ajustar ao conteúdo": também não é uma proporção (o -2 nunca vira razão).
+/// "Ajustar": também não é uma proporção (o -2 nunca vira razão).
 /// Tocar nele encosta o recorte nos pixels visíveis, cortando só a margem
 /// totalmente transparente (ver `opaque_bounds.dart`); depois disso o recorte
 /// fica livre como em "Personalizado", para a pessoa refinar se quiser.
-const _trimAspectPreset = AspectPreset('Ajustar ao conteúdo', -2);
+const _trimAspectPreset = AspectPreset('Ajustar', -2);
 
 /// Tela dedicada a aplicar uma moldura (procedural ou de imagem) a uma foto
 /// estática. Reaproveita o mesmo modelo ([FrameSettings], [ImageFrameAsset])
@@ -151,6 +154,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   final _heightFocus = FocusNode();
 
   final _textOverlay = TextOverlayController();
+  final _stickerOverlay = StickerOverlayController();
+
+  /// Aba "Stickers" aberta — atualizado a cada build, antes da prévia.
+  bool _stickersTabActive = false;
 
   /// Aba aberta no rodapé (índice em [_sections]) — `null` fecha o painel e
   /// deixa a prévia com o máximo de espaço.
@@ -175,6 +182,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     super.initState();
     _loadImportedFrames();
     _textOverlay.loadFonts();
+    _stickerOverlay.load();
   }
 
   @override
@@ -184,6 +192,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     _widthFocus.dispose();
     _heightFocus.dispose();
     _textOverlay.dispose();
+    _stickerOverlay.dispose();
     // Os PNGs da borracha só existem para esta edição: quem quis guardar já
     // salvou ou compartilhou.
     for (final path in _erasedFiles) {
@@ -230,6 +239,26 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     crop: _frame.crop,
     child: _photoPreview(BoxFit.fill),
   );
+
+  /// A foto na posição livre escolhida com os dedos (arrastar, pinçar e
+  /// girar na prévia) — ver [PhotoPlacementView]. [gestures] desliga os
+  /// gestos quando outra coisa usa os toques (aba "Texto").
+  Widget _placedPhoto(Widget photo, {required bool gestures}) =>
+      PhotoPlacementView(
+        placement: _frame.placement,
+        enabled: gestures,
+        // Espelhada por fora (sem moldura de imagem, a aba "Girar" vale
+        // para o resultado todo), o giro dos dedos se inverte para a foto.
+        mirrored:
+            _frame.finalTransform.flipHorizontal !=
+            _frame.finalTransform.flipVertical,
+        onGestureStart: _pushUndoCheckpoint,
+        onChanged: (placement) => _updateFrame(
+          _frame.copyWith(placement: placement),
+          pushUndo: false,
+        ),
+        child: photo,
+      );
 
   _EditStep get _currentStep => (frame: _frame, photo: _photo);
 
@@ -290,7 +319,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       final file = await _writeTempPng(bytes);
       await _output.saveToGallery(file);
       if (!mounted) return;
-      _message('Foto salva na galeria.');
+      await showSavedDialog(context, 'Foto salva na galeria.');
     } on OutputException catch (e) {
       if (!mounted) return;
       _message(e.message);
@@ -382,6 +411,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         value: _frame.contentFit.label,
         builder: (_) => _contentFitSection(),
       ),
+    // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Girar →
+    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Ajustes.
+    EditorSection(
+      icon: Icons.wallpaper_rounded,
+      title: 'Fundo',
+      value: _frame.transparentBackground ? 'Transparente' : 'Cor',
+      builder: (_) => _backgroundSection(),
+    ),
     EditorSection(
       icon: Icons.tune_rounded,
       title: 'Ajustar cor',
@@ -390,16 +427,16 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       builder: (_) => _colorAdjustSection(),
     ),
     EditorSection(
+      icon: Icons.emoji_emotions_outlined,
+      title: 'Stickers',
+      value: _frame.stickers.isEmpty ? 'Nenhum' : '${_frame.stickers.length}',
+      builder: (_) => _stickerSection(),
+    ),
+    EditorSection(
       icon: Icons.text_fields_rounded,
       title: 'Texto',
       value: _frame.texts.isEmpty ? 'Nenhum' : '${_frame.texts.length}',
       builder: (_) => _textSection(),
-    ),
-    EditorSection(
-      icon: Icons.wallpaper_rounded,
-      title: 'Fundo',
-      value: _frame.transparentBackground ? 'Transparente' : 'Cor',
-      builder: (_) => _backgroundSection(),
     ),
     // Última aba da barra nas três telas de edição (vídeo, foto e
     // montagem) — configurações gerais, não deste recorte/moldura em si.
@@ -423,6 +460,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final showCropHandles =
         active != null && sections[active].title == 'Recorte';
     final textTabActive = active != null && sections[active].title == 'Texto';
+    _stickersTabActive = active != null && sections[active].title == 'Stickers';
     final eraserTabActive =
         active != null && sections[active].title == 'Borracha mágica';
     return Scaffold(
@@ -580,6 +618,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
               freeform: _isFreeformAspect,
+              onPinchStart: () {
+                final crop = _frame.crop;
+                if (crop != null) _crop.pinchStart(crop);
+              },
+              onPinch: _pinchCrop,
+              centerGuides: true,
             ),
           ],
         ),
@@ -593,12 +637,17 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final Widget content;
     if (frame.imageFrame != null) {
       aspect = frame.imageFrame!.nativeAspectRatio;
-      content = _imageFramedPreview(frame.imageFrame!);
+      content = _imageFramedPreview(
+        frame.imageFrame!,
+        gestures: !textTabActive && !_stickersTabActive,
+      );
     } else {
       aspect = _photoAspectRatio;
       content = frame.style == FrameStyle.none
-          ? _plainPreview()
-          : _proceduralFramedPreview();
+          ? _plainPreview(gestures: !textTabActive && !_stickersTabActive)
+          : _proceduralFramedPreview(
+              gestures: !textTabActive && !_stickersTabActive,
+            );
     }
 
     return AspectRatio(
@@ -608,6 +657,18 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           fit: StackFit.expand,
           children: [
             content,
+            // Stickers por baixo dos textos.
+            StickerOverlayStack(
+              controller: _stickerOverlay,
+              stickers: _frame.stickers,
+              onChanged: (stickers) => _updateFrame(
+                _frame.copyWith(stickers: stickers),
+                pushUndo: false,
+              ),
+              canvasSize: constraints.biggest,
+              interactive: _stickersTabActive,
+              onGestureStart: _pushUndoCheckpoint,
+            ),
             TextOverlayStack(
               controller: _textOverlay,
               texts: _frame.texts,
@@ -623,7 +684,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     );
   }
 
-  Widget _plainPreview() {
+  Widget _plainPreview({required bool gestures}) {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
@@ -632,11 +693,18 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: _croppedPhotoPreview(),
+      // "Fundo transparente" desligado: a cor aparece atrás da foto, como
+      // na exportação (sem ela, o xadrez continuava à mostra).
+      child: ColoredBox(
+        color: _frame.transparentBackground
+            ? Colors.transparent
+            : _frame.backgroundColor,
+        child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
+      ),
     );
   }
 
-  Widget _proceduralFramedPreview() {
+  Widget _proceduralFramedPreview({required bool gestures}) {
     final frame = _frame;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -645,13 +713,30 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         final outerRadius = frame.cornerRadiusFor(width);
         final innerRadius = (outerRadius - thickness).clamp(0.0, outerRadius);
 
-        final bordered = Container(
-          color: frame.color,
-          padding: EdgeInsets.all(thickness),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(innerRadius),
-            child: _croppedPhotoPreview(),
-          ),
+        // A borda é só o anel em volta: o miolo não é pintado com a cor da
+        // borda, então as partes transparentes da foto continuam
+        // transparentes (ou com a cor do fundo, com ele ligado).
+        final bordered = Stack(
+          fit: StackFit.expand,
+          children: [
+            IgnorePointer(
+              child: CustomPaint(
+                painter: _BorderRingPainter(
+                  color: frame.color,
+                  thickness: thickness,
+                  outerRadius: outerRadius,
+                  innerRadius: innerRadius,
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(thickness),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(innerRadius),
+                child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
+              ),
+            ),
+          ],
         );
 
         final rounded = ClipRRect(
@@ -664,7 +749,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     );
   }
 
-  Widget _imageFramedPreview(ImageFrameAsset asset) {
+  Widget _imageFramedPreview(ImageFrameAsset asset, {required bool gestures}) {
     final preview = AspectRatio(
       aspectRatio: asset.nativeAspectRatio,
       child: LayoutBuilder(
@@ -686,7 +771,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             children: [
               Positioned.fromRect(
                 rect: rect,
-                child: _imageFrameContentPreview(fit),
+                child: _imageFrameContentPreview(fit, gestures: gestures),
               ),
               Positioned.fill(
                 child: IgnorePointer(
@@ -702,7 +787,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     return ColoredBox(color: _frame.backgroundColor, child: preview);
   }
 
-  Widget _imageFrameContentPreview(ContentFitMode fit) {
+  Widget _imageFrameContentPreview(
+    ContentFitMode fit, {
+    required bool gestures,
+  }) {
     // Tamanho de referência qualquer, na proporção certa (a real do recorte
     // não importa aqui — `FittedBox` só olha para a proporção do filho) —
     // mesma técnica de `EditorPage._imageFrameContentPreview`. O giro da
@@ -710,19 +798,22 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     // parada.
     Widget photo(BoxFit boxFit) => FittedBox(
       fit: boxFit,
-      child: applyOutputTransform(
-        _frame.contentTransform,
-        SizedBox(
-          width: 1000,
-          height: 1000 / _photoAspectRatio,
-          child: _croppedPhotoPreview(),
+      child: _placedPhoto(
+        applyOutputTransform(
+          _frame.contentTransform,
+          SizedBox(
+            width: 1000,
+            height: 1000 / _photoAspectRatio,
+            child: _croppedPhotoPreview(),
+          ),
         ),
+        gestures: gestures,
       ),
     );
 
     if (fit != ContentFitMode.expand) {
       return ColoredBox(
-        color: Colors.black,
+        color: _frame.expandBackgroundColor,
         child: ClipRect(
           child: photo(
             fit == ContentFitMode.fill ? BoxFit.cover : BoxFit.contain,
@@ -835,7 +926,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     });
   }
 
-  /// Recorte sem proporção travada: "Personalizado" e "Ajustar ao conteúdo".
+  /// Recorte sem proporção travada: "Personalizado" e "Ajustar".
   bool get _isFreeformAspect =>
       _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
 
@@ -850,7 +941,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final path = _photo.path;
     CropRect? bounds;
     try {
-      bounds = await detectOpaqueBounds(path);
+      bounds = await detectOpaqueBounds(
+        path,
+        width: _photo.width,
+        height: _photo.height,
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _trimming = false);
@@ -956,7 +1051,26 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final next = _crop.moveBy(
       crop: crop,
       sourceDelta: _toSourceDelta(displayDelta, previewSize),
+      // Trava no centro a até ~10 px (na tela) dele.
+      snapDistance: _toSourceDelta(
+        const Offset(_centerSnapDistance, _centerSnapDistance),
+        previewSize,
+      ),
     );
+    if (next == null) return;
+    _updateFrame(_frame.copyWith(crop: next));
+  }
+
+  /// Distância, em pixels da prévia, em que a janela de recorte "gruda" no
+  /// centro horizontal/vertical da foto ao ser movida.
+  static const _centerSnapDistance = 10.0;
+
+  /// Pinça com dois dedos dentro da janela de recorte: redimensiona mantendo
+  /// o formato e o centro.
+  void _pinchCrop(double scale) {
+    final crop = _frame.crop;
+    if (crop == null) return;
+    final next = _crop.pinchTo(scale, crop: crop);
     if (next == null) return;
     _updateFrame(_frame.copyWith(crop: next));
   }
@@ -1036,6 +1150,19 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         // escolhida, não há arte para deitar nem canvas próprio para
         // dimensionar.
         if (_frame.hasFixedAspect) ...[
+          const SizedBox(height: 18),
+          SectionCard(
+            children: [
+              // Fundo de dentro da janela da moldura, em qualquer ajuste
+              // (antes só em "Expandir sem cortar"; nos outros era preto).
+              PanelColorRow(
+                key: const ValueKey('frameWindowColorRow'),
+                label: 'Cor do fundo da moldura',
+                color: _frame.expandBackgroundColor,
+                onTap: _pickExpandBackgroundColor,
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           SectionCard(children: [_frameResolutionSelector()]),
           // O giro da moldura fica por último, sozinho: é um botão só.
@@ -1336,15 +1463,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             ],
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Mais qualidade demora mais. Áreas pequenas saem em resolução '
-          'cheia em qualquer opção.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontSize: 11,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
         divider,
         Row(
           children: [
@@ -1467,21 +1585,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.only(left: 28, top: 2),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Pinte o que quer tirar da foto. Um dedo pinta, dois dão zoom.',
-              maxLines: 1,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 11.5,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -1602,6 +1705,16 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     );
   }
 
+  Widget _stickerSection() {
+    _stickerOverlay.dropSelectionIfGone(_frame.stickers);
+    return StickerOverlayPanel(
+      controller: _stickerOverlay,
+      stickers: _frame.stickers,
+      onChanged: (stickers) =>
+          _updateFrame(_frame.copyWith(stickers: stickers)),
+    );
+  }
+
   Widget _textSection() {
     _textOverlay.dropSelectionIfGone(_frame.texts);
     return TextOverlayPanel(
@@ -1658,4 +1771,41 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // ---------------------------------------------------------------------
   // Utilitários visuais compartilhados
   // ---------------------------------------------------------------------
+}
+
+/// Anel da borda procedural na prévia: o retângulo arredondado de fora menos
+/// o de dentro, sem preencher o miolo — mesmo desenho da exportação
+/// (`photo_frame_compositor.dart` limpa o miolo depois de `paintFrame`).
+class _BorderRingPainter extends CustomPainter {
+  const _BorderRingPainter({
+    required this.color,
+    required this.thickness,
+    required this.outerRadius,
+    required this.innerRadius,
+  });
+
+  final Color color;
+  final double thickness;
+  final double outerRadius;
+  final double innerRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(outerRadius),
+    );
+    final inner = RRect.fromRectAndRadius(
+      (Offset.zero & size).deflate(thickness),
+      Radius.circular(innerRadius),
+    );
+    canvas.drawDRRect(outer, inner, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BorderRingPainter old) =>
+      old.color != color ||
+      old.thickness != thickness ||
+      old.outerRadius != outerRadius ||
+      old.innerRadius != innerRadius;
 }

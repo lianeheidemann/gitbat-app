@@ -1,5 +1,5 @@
 /// As cores que já vêm escolhidas em "Fundo" e em "Moldura"/"Borda" nas três
-/// telas de edição — "Editar GIF", "Colocar moldura" e "Montagem".
+/// telas de edição — "Editar vídeo", "Colocar moldura" e "Montagem".
 ///
 /// Ficam aqui, e não repetidas em cada modelo, porque o ponto delas é
 /// justamente ser a mesma cor nas três telas: mudar de ideia sobre o padrão

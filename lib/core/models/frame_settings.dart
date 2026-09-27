@@ -1,11 +1,13 @@
 import 'dart:ui' show Color;
 
+import 'collage_sticker.dart';
 import 'collage_text.dart';
 import 'color_adjustments.dart';
 import 'crop_rect.dart';
 import 'default_colors.dart';
 import 'image_frame.dart';
 import 'output_transform.dart';
+import 'photo_placement.dart';
 
 /// Estilo da borda (moldura procedural) desenhada ao redor do GIF/foto. Cada
 /// estilo é só um atalho para um par de valores — espessura da borda e
@@ -108,9 +110,11 @@ class FrameSettings {
     this.adjustments = ColorAdjustments.neutral,
     this.crop,
     this.texts = const [],
+    this.stickers = const [],
     this.outputTransform = OutputTransform.identity,
     this.frameQuarterTurns = 0,
     this.expandBackgroundColor = const Color(0xFF000000),
+    this.placement = PhotoPlacement.identity,
   });
 
   final FrameStyle style;
@@ -178,6 +182,11 @@ class FrameSettings {
   /// (incluindo moldura e fundo), não só à foto.
   final List<CollageTextItem> texts;
 
+  /// Stickers sobrepostos (aba "Stickers"), mesmo modelo e mesma
+  /// interação da Montagem, com o centro normalizado ao canvas final — ver
+  /// [texts]. Desenhados por baixo dos textos.
+  final List<CollageSticker> stickers;
+
   /// Giro e espelhamento da aba "Girar" — ver [OutputTransform].
   ///
   /// Sem moldura de imagem, vale para o resultado já composto (a borda
@@ -211,6 +220,11 @@ class FrameSettings {
   /// [ContentFitMode.expand]; as barras de "Ajuste automático"/"Encaixar"
   /// continuam pretas.
   final Color expandBackgroundColor;
+
+  /// Posição livre da foto dentro da janela dela (arrastar, pinçar e girar
+  /// na prévia de "Editar imagem") — ver [PhotoPlacement]. Vale só para a
+  /// foto: moldura, fundo e textos ficam onde estão.
+  final PhotoPlacement placement;
 
   /// O que girar/espelhar só o conteúdo, antes de encaixá-lo na janela da
   /// moldura de imagem: [outputTransform] quando há uma, nada quando não há.
@@ -291,9 +305,11 @@ class FrameSettings {
     CropRect? crop,
     bool clearCrop = false,
     List<CollageTextItem>? texts,
+    List<CollageSticker>? stickers,
     OutputTransform? outputTransform,
     int? frameQuarterTurns,
     Color? expandBackgroundColor,
+    PhotoPlacement? placement,
   }) {
     return FrameSettings(
       style: style ?? this.style,
@@ -310,10 +326,12 @@ class FrameSettings {
       adjustments: adjustments ?? this.adjustments,
       crop: clearCrop ? null : (crop ?? this.crop),
       texts: texts ?? this.texts,
+      stickers: stickers ?? this.stickers,
       outputTransform: outputTransform ?? this.outputTransform,
       frameQuarterTurns: (frameQuarterTurns ?? this.frameQuarterTurns) % 4,
       expandBackgroundColor:
           expandBackgroundColor ?? this.expandBackgroundColor,
+      placement: placement ?? this.placement,
     );
   }
 }

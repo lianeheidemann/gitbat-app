@@ -1,8 +1,11 @@
+import 'dart:convert' show base64Encode;
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/painting.dart';
 import 'package:xml/xml.dart';
 
+import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
@@ -447,6 +450,121 @@ void applyTextsSvg(XmlElement root, List<CollageTextItem> texts) {
   }
 }
 
+/// Arte de um sticker já lida para entrar no SVG exportado: o texto de um
+/// sticker vetorial (que entra como `<svg>` aninhado, continua vetor) ou os
+/// bytes de um importado em PNG/JPG/etc. (que entra como `<image>`).
+class StickerSvgArt {
+  const StickerSvgArt.vector(String this.svgSource)
+    : rasterBytes = null,
+      mimeType = null;
+  const StickerSvgArt.raster(Uint8List this.rasterBytes, String this.mimeType)
+    : svgSource = null;
+
+  final String? svgSource;
+  final Uint8List? rasterBytes;
+  final String? mimeType;
+}
+
+/// Acrescenta os stickers da aba "Stickers" no fim de [root], antes dos
+/// textos ([applyTextsSvg] vem depois) e fora do grupo de conteúdo — como
+/// na prévia, o filtro e a opacidade não valem para eles. Cada um vira um
+/// `<g>` com `translate` + `rotate` em volta do centro e a arte num quadrado
+/// de lado `menor lado × 0,28 × escala` (a mesma conta de
+/// `paintCollageSticker`), centralizada nele sem distorcer. Sticker sem arte
+/// em [art] (arquivo sumiu) fica de fora.
+void applyStickersSvg(
+  XmlElement root,
+  List<CollageSticker> stickers,
+  Map<String, StickerSvgArt> art,
+) {
+  root.children.removeWhere(
+    (node) =>
+        node is XmlElement && node.getAttribute('$_marker-sticker') == '1',
+  );
+  if (stickers.isEmpty) return;
+
+  final (vbX, vbY, vbW, vbH) = _currentViewBox(root);
+  final sorted = [...stickers]..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+  var n = 0;
+  for (final item in sorted) {
+    final a = art[item.id];
+    if (a == null) continue;
+    final side =
+        math.min(vbW, vbH) * CollageSticker.referenceSizeRatio * item.scale;
+    final cx = vbX + item.centerX * vbW;
+    final cy = vbY + item.centerY * vbH;
+    final degrees = item.rotation * 180 / math.pi;
+    final group = XmlElement.tag('g')
+      ..setAttribute('$_marker-sticker', '1')
+      ..setAttribute(
+        'transform',
+        'translate(${_num(cx)} ${_num(cy)})'
+            '${degrees == 0 ? '' : ' rotate(${_num(degrees)})'}',
+      );
+
+    final XmlElement content;
+    if (a.svgSource != null) {
+      final nested = _nestedStickerSvg(a.svgSource!, 'stk${n++}_');
+      if (nested == null) continue;
+      content = nested;
+    } else {
+      content = XmlElement.tag('image')
+        ..setAttribute(
+          'href',
+          'data:${a.mimeType};base64,${base64Encode(a.rasterBytes!)}',
+        );
+    }
+    content
+      ..setAttribute('x', _num(-side / 2))
+      ..setAttribute('y', _num(-side / 2))
+      ..setAttribute('width', _num(side))
+      ..setAttribute('height', _num(side))
+      ..setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    group.children.add(content);
+    root.children.add(group);
+  }
+}
+
+/// O `<svg>` raiz de [source] pronto para entrar aninhado: com `viewBox`
+/// (criado de `width`/`height` quando faltar) e com os `id`s prefixados por
+/// [prefix], para não colidirem com os do SVG principal nem de outro
+/// sticker. `null` se não der para ler.
+XmlElement? _nestedStickerSvg(String source, String prefix) {
+  try {
+    final prefixed = source
+        .replaceAllMapped(
+          RegExp(r'''\bid\s*=\s*(["'])([^"']+)\1'''),
+          (m) => 'id=${m[1]}$prefix${m[2]}${m[1]}',
+        )
+        .replaceAllMapped(
+          RegExp(r'url\(\s*#([^)\s]+)\s*\)'),
+          (m) => 'url(#$prefix${m[1]})',
+        )
+        .replaceAllMapped(
+          RegExp(r'''(href\s*=\s*["'])#'''),
+          (m) => '${m[1]}#$prefix',
+        );
+    final doc = XmlDocument.parse(prefixed);
+    final svg = doc.rootElement.copy();
+    if (svg.name.local != 'svg') return null;
+    if (svg.getAttribute('viewBox') == null) {
+      final w = double.tryParse(
+        (svg.getAttribute('width') ?? '').replaceAll(RegExp(r'[^0-9.]'), ''),
+      );
+      final h = double.tryParse(
+        (svg.getAttribute('height') ?? '').replaceAll(RegExp(r'[^0-9.]'), ''),
+      );
+      if (w == null || h == null || w <= 0 || h <= 0) return null;
+      svg.setAttribute('viewBox', '0 0 ${_num(w)} ${_num(h)}');
+    }
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    return svg;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Aplica [settings] inteiro sobre [originalSource] (sempre a partir do XML
 /// original — nunca reedita um documento já editado numa chamada anterior,
 /// pra desfazer/refazer nunca acumular grupos/transforms obsoletos) e
@@ -456,8 +574,9 @@ void applyTextsSvg(XmlElement root, List<CollageTextItem> texts) {
 String renderEditedSvg(
   String originalSource,
   SvgInfo info,
-  SvgEditSettings settings,
-) {
+  SvgEditSettings settings, {
+  Map<String, StickerSvgArt> stickerArt = const {},
+}) {
   final XmlDocument doc;
   try {
     doc = XmlDocument.parse(originalSource);
@@ -506,6 +625,7 @@ String renderEditedSvg(
     if (settings.opacity < 1) {
       applyOpacitySvg(root, settings.opacity);
     }
+    applyStickersSvg(root, settings.stickers, stickerArt);
     applyTextsSvg(root, settings.texts);
 
     return doc.toXmlString();

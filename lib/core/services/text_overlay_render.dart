@@ -3,7 +3,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
 
+import '../models/collage_sticker.dart';
 import '../models/collage_text.dart';
+import '../../features/collage/services/collage_compositor.dart'
+    show paintCollageSticker;
 import '../../features/collage/painting/collage_painter.dart';
 
 /// Rasteriza só os textos (`CollageTextItem`) num PNG transparente do
@@ -15,14 +18,22 @@ import '../../features/collage/painting/collage_painter.dart';
 /// `dart:ui` puro em `photo_frame_compositor.dart`) desenha os textos direto
 /// no canvas final com [paintCollageTextItem], sem precisar desta camada à
 /// parte.
+///
+/// [stickers] entram na mesma camada, por baixo dos textos.
 Future<Uint8List> renderTextOverlayLayer(
   List<CollageTextItem> texts,
   int width,
-  int height,
-) async {
+  int height, {
+  List<CollageSticker> stickers = const [],
+}) async {
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
   final size = Size(width.toDouble(), height.toDouble());
+  final sortedStickers = [...stickers]
+    ..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+  for (final sticker in sortedStickers) {
+    await paintCollageSticker(canvas, size, sticker);
+  }
   final sorted = [...texts]..sort((a, b) => a.zIndex.compareTo(b.zIndex));
   for (final item in sorted) {
     paintCollageTextItem(canvas, size, item);

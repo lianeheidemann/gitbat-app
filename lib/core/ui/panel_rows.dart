@@ -145,7 +145,7 @@ class PanelColorRow extends StatelessWidget {
 }
 
 /// Controle "Tamanho da fonte" (1 a 80) do texto selecionado — o mesmo nas
-/// abas de texto de "Editar imagem", "Editar GIF" e da Montagem. A unidade
+/// abas de texto de "Editar imagem", "Editar vídeo" e da Montagem. A unidade
 /// é `CollageTextItem.fontSizePoints`: 1 ponto = 1% do menor lado da
 /// imagem, já contando o quanto a alça esticou o texto.
 class TextFontSizeRow extends StatelessWidget {
