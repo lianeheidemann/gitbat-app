@@ -7,6 +7,7 @@ import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../core/services/output_service.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../app/theme.dart';
+import '../../app/app_palette.dart';
 
 /// Tela final: exibe o resumo da conversão e as ações de salvar/compartilhar.
 class ResultPage extends StatefulWidget {
@@ -596,7 +597,13 @@ class _GradientActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const foreground = Color(0xFF25172E);
+    final accent =
+        Theme.of(context).extension<AppAccent>() ??
+        AppAccent(
+          gradient: lavenderPalette.accentGradient,
+          onAccent: lavenderPalette.onAccent,
+        );
+    final foreground = accent.onAccent;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 180),
@@ -606,9 +613,7 @@ class _GradientActionButton extends StatelessWidget {
         child: Ink(
           height: 40,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFD3B4FF), Color(0xFFBC8FFF)],
-            ),
+            gradient: LinearGradient(colors: accent.gradient),
             borderRadius: BorderRadius.circular(16),
           ),
           child: InkWell(
@@ -619,7 +624,7 @@ class _GradientActionButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (isBusy)
-                    const SizedBox(
+                    SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
@@ -640,7 +645,7 @@ class _GradientActionButton extends StatelessWidget {
                         : isDone
                         ? 'Salvo na galeria'
                         : 'Salvar na galeria',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: foreground,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,

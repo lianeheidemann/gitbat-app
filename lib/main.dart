@@ -15,6 +15,7 @@ Future<void> main() async {
   // Exigência da LGPL do FFmpeg: o aviso precisa estar acessível no app.
   registerThirdPartyLicenses();
   await loadThemeMode();
+  await loadPalette();
   await loadPreviewCheckerboardPreference();
   // Registra as fontes de `assets/fonts` antes da primeira tela, para a
   // lista de fontes do texto já nascer completa.
@@ -28,22 +29,23 @@ Future<void> main() async {
   runApp(const VideoToGifApp());
 }
 
-/// Widget raiz do app: configura o MaterialApp com os temas claro/escuro
-/// e define a HomePage como tela inicial.
+/// Widget raiz do app: configura o MaterialApp com os temas claro/escuro na
+/// paleta escolhida e define a HomePage como tela inicial.
 class VideoToGifApp extends StatelessWidget {
   const VideoToGifApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeModeNotifier,
-      builder: (context, mode, _) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([themeModeNotifier, paletteNotifier]),
+      builder: (context, _) {
+        final palette = paletteNotifier.value;
         return MaterialApp(
           title: 'Video to GIF',
           debugShowCheckedModeBanner: false,
-          theme: buildTheme(Brightness.light),
-          darkTheme: buildTheme(Brightness.dark),
-          themeMode: mode,
+          theme: buildTheme(Brightness.light, palette),
+          darkTheme: buildTheme(Brightness.dark, palette),
+          themeMode: themeModeNotifier.value,
           // Todo texto do app um pouco menor ([appTextScale]), por cima da
           // escolha de fonte do sistema — inclusive os tamanhos fixos das
           // telas, que o tema sozinho não alcança.

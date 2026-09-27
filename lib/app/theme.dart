@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 import '../core/models/size_estimate.dart';
-
-const _seed = Color(0xFFC9A8FF);
-const _darkBackground = Color(0xFF101014);
-const _darkCard = Color(0xFF1A191F);
+import 'app_palette.dart';
 
 // Tamanhos padrão do app inteiro, num lugar só — a interface é compacta de
 // propósito (preferência da dona do app). Junto com a escala de texto de
@@ -21,23 +18,31 @@ const _buttonRadius = 14.0;
 const _fieldRadius = 12.0;
 const _dialogRadius = 20.0;
 
-/// Monta o ThemeData do app para o modo claro ou escuro.
+/// Monta o ThemeData do app para o modo claro ou escuro, na [palette]
+/// escolhida nas configurações.
 ///
-/// A partir da cor semente [_seed], gera um ColorScheme via Material 3 e,
-/// no modo escuro, substitui as cores de superfície por tons próprios
-/// (mais neutros que os gerados automaticamente).
-ThemeData buildTheme(Brightness brightness) {
-  final base = ColorScheme.fromSeed(seedColor: _seed, brightness: brightness);
+/// A partir da cor semente da paleta, gera um ColorScheme via Material 3 e,
+/// no modo escuro, substitui as cores de superfície pelos tons próprios da
+/// paleta (mais neutros que os gerados automaticamente).
+ThemeData buildTheme(
+  Brightness brightness, [
+  AppPalette palette = lavenderPalette,
+]) {
+  final base = ColorScheme.fromSeed(
+    seedColor: palette.seed,
+    brightness: brightness,
+  );
   // No escuro, troca as superfícies geradas pelo ColorScheme.fromSeed por
   // tons neutros definidos à mão, mantendo a cor primária.
   final scheme = brightness == Brightness.dark
       ? base.copyWith(
-          primary: _seed,
-          surface: _darkBackground,
-          surfaceContainerLow: _darkCard,
-          surfaceContainer: _darkCard,
-          surfaceContainerHigh: const Color(0xFF211F28),
-          surfaceContainerHighest: const Color(0xFF26232D),
+          primary: palette.seed,
+          tertiary: palette.darkTertiary,
+          surface: palette.darkBackground,
+          surfaceContainerLow: palette.darkCard,
+          surfaceContainer: palette.darkCard,
+          surfaceContainerHigh: palette.darkContainerHigh,
+          surfaceContainerHighest: palette.darkContainerHighest,
         )
       : base;
 
@@ -53,10 +58,13 @@ ThemeData buildTheme(Brightness brightness) {
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
+    extensions: [
+      AppAccent(gradient: palette.accentGradient, onAccent: palette.onAccent),
+    ],
     visualDensity: VisualDensity.compact,
     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     scaffoldBackgroundColor: brightness == Brightness.dark
-        ? _darkBackground
+        ? palette.darkBackground
         : scheme.surface,
     appBarTheme: AppBarTheme(
       // Ícones da barra de status (hora, bateria) escuros no tema claro e
@@ -131,7 +139,7 @@ ThemeData buildTheme(Brightness brightness) {
       elevation: 0,
       margin: EdgeInsets.zero,
       color: brightness == Brightness.dark
-          ? _darkCard
+          ? palette.darkCard
           : scheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
     ),
@@ -139,7 +147,7 @@ ThemeData buildTheme(Brightness brightness) {
       side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.65)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       selectedColor: brightness == Brightness.dark
-          ? const Color(0xFF5D4D72)
+          ? palette.darkChipSelected
           : scheme.primaryContainer,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       // Com a cor explícita: só o tamanho aqui fazia o rótulo herdar a cor
@@ -156,6 +164,35 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     dividerColor: scheme.outlineVariant.withValues(alpha: 0.45),
   );
+}
+
+/// Degradê de destaque da paleta atual (botão principal da tela de
+/// resultado), lido com `Theme.of(context).extension<AppAccent>()`.
+class AppAccent extends ThemeExtension<AppAccent> {
+  const AppAccent({required this.gradient, required this.onAccent});
+
+  final List<Color> gradient;
+  final Color onAccent;
+
+  @override
+  AppAccent copyWith({List<Color>? gradient, Color? onAccent}) => AppAccent(
+    gradient: gradient ?? this.gradient,
+    onAccent: onAccent ?? this.onAccent,
+  );
+
+  @override
+  AppAccent lerp(AppAccent? other, double t) {
+    if (other == null || other.gradient.length != gradient.length) {
+      return t < 0.5 ? this : (other ?? this);
+    }
+    return AppAccent(
+      gradient: [
+        for (var i = 0; i < gradient.length; i++)
+          Color.lerp(gradient[i], other.gradient[i], t)!,
+      ],
+      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
+    );
+  }
 }
 
 /// Cor associada a cada faixa de peso, usada no painel de estimativa.
