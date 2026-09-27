@@ -90,13 +90,14 @@ void main() {
     // O estado da seleção fica no selo do cabeçalho do painel.
     expect(find.text('Nenhuma seleção'), findsOneWidget);
     expect(find.widgetWithText(EraserOptionButton, 'Pincel'), findsOneWidget);
-    // "Apagar seleção" e a nota sobre a qualidade não estão no mockup, mas
-    // continuam no painel.
+    // "Apagar seleção" não está no mockup, mas continua no painel; os textos
+    // de ajuda saíram.
     expect(
       find.widgetWithText(EraserOptionButton, 'Apagar seleção'),
       findsOneWidget,
     );
-    expect(find.textContaining('Mais qualidade demora mais'), findsOneWidget);
+    expect(find.textContaining('Mais qualidade demora mais'), findsNothing);
+    expect(find.textContaining('Pinte o que quer'), findsNothing);
     expect(find.byType(EraserCanvas), findsOneWidget);
     // Fora da aba a prévia é a normal; aqui a foto aparece crua, para a
     // seleção ficar em coordenadas da foto.

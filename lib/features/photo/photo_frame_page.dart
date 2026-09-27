@@ -581,6 +581,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
               freeform: _isFreeformAspect,
+              onPinchStart: () {
+                final crop = _frame.crop;
+                if (crop != null) _crop.pinchStart(crop);
+              },
+              onPinch: _pinchCrop,
+              centerGuides: true,
             ),
           ],
         ),
@@ -961,7 +967,26 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final next = _crop.moveBy(
       crop: crop,
       sourceDelta: _toSourceDelta(displayDelta, previewSize),
+      // Trava no centro a até ~10 px (na tela) dele.
+      snapDistance: _toSourceDelta(
+        const Offset(_centerSnapDistance, _centerSnapDistance),
+        previewSize,
+      ),
     );
+    if (next == null) return;
+    _updateFrame(_frame.copyWith(crop: next));
+  }
+
+  /// Distância, em pixels da prévia, em que a janela de recorte "gruda" no
+  /// centro horizontal/vertical da foto ao ser movida.
+  static const _centerSnapDistance = 10.0;
+
+  /// Pinça com dois dedos dentro da janela de recorte: redimensiona mantendo
+  /// o formato e o centro.
+  void _pinchCrop(double scale) {
+    final crop = _frame.crop;
+    if (crop == null) return;
+    final next = _crop.pinchTo(scale, crop: crop);
     if (next == null) return;
     _updateFrame(_frame.copyWith(crop: next));
   }
@@ -1341,15 +1366,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             ],
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Mais qualidade demora mais. Áreas pequenas saem em resolução '
-          'cheia em qualquer opção.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontSize: 11,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
         divider,
         Row(
           children: [
@@ -1471,21 +1487,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               ),
             ),
           ],
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 28, top: 2),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Pinte o que quer tirar da foto. Um dedo pinta, dois dão zoom.',
-              maxLines: 1,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 11.5,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
         ),
       ],
     );
