@@ -5,6 +5,7 @@ import 'crop_rect.dart';
 import 'frame_settings.dart';
 import 'output_transform.dart';
 import 'video_info.dart';
+import '../../app/translations.dart';
 
 export 'aspect_preset.dart' show AspectPreset;
 export 'crop_rect.dart' show CropRect;
@@ -30,10 +31,11 @@ enum DitherMode {
   /// Difusão clássica. A mais pesada.
   floydSteinberg('floyd_steinberg', 'Máxima');
 
-  const DitherMode(this.ffmpegValue, this.label);
+  const DitherMode(this.ffmpegValue, this.labelPt);
 
   final String ffmpegValue;
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 }
 
 /// Estratégia de construção da paleta de cores.
@@ -49,10 +51,11 @@ enum PaletteMode {
   /// Uma paleta nova por quadro. Melhor cor, arquivo bem maior.
   perFrame('single', 'Paleta por quadro');
 
-  const PaletteMode(this.statsMode, this.label);
+  const PaletteMode(this.statsMode, this.labelPt);
 
   final String statsMode;
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 }
 
 /// Formato de arquivo do resultado final.
@@ -68,7 +71,7 @@ enum OutputFormat {
   const OutputFormat(
     this.extension,
     this.mimeType,
-    this.label,
+    this.labelPt,
     this.shortLabel,
   );
 
@@ -79,7 +82,8 @@ enum OutputFormat {
   final String mimeType;
 
   /// Texto completo, usado no seletor de formato.
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 
   /// Texto curto, usado em mensagens ("GIF salvo...", "WebP pronto").
   final String shortLabel;

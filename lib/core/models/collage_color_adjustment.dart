@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 // ColorAdjustments vem reexportado por collage_cell.dart.
 import '../../features/collage/models/collage_cell.dart';
+import '../../app/translations.dart';
 
 /// Os ajustes de cor oferecidos na folha "Ajustar cor" de uma foto da
 /// montagem, na ordem em que aparecem na fileira de bolinhas. Cada um sabe
@@ -20,9 +21,10 @@ enum CollageColorAdjustment {
   hue('Matiz', Icons.palette_outlined),
   temperature('Temperatura', Icons.thermostat);
 
-  const CollageColorAdjustment(this.label, this.icon);
+  const CollageColorAdjustment(this.labelPt, this.icon);
 
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
   final IconData icon;
 
   double valueOf(CollageCellSettings cell) => switch (this) {

@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:convert' show utf8;
 import 'dart:io';
 import 'dart:math' as math;
@@ -48,12 +49,16 @@ import '../../app/editor_defaults.dart';
 /// de verdade (`ratio: -1`), só um valor que não bate com nenhum preset de
 /// [AspectPreset.presets], usado pra saber quando mostrar os campos de
 /// largura/altura em vez de travar a uma proporção fixa.
-const _customAspectPreset = AspectPreset('Personalizado', -1);
+const _customAspectPreset = AspectPreset(
+  'Personalizado',
+  -1,
+  labelEn: 'Custom',
+);
 
 /// "Ajustar": encosta o recorte no desenho, cortando só a margem totalmente
 /// transparente — a mesma opção de "Editar imagem" (ver
 /// `opaque_bounds.dart`). Como "Personalizado", o -2 nunca vira razão.
-const _trimAspectPreset = AspectPreset('Ajustar', -2);
+const _trimAspectPreset = AspectPreset('Ajustar', -2, labelEn: 'Fit');
 
 /// Tela de recorte/edição de um SVG — mantém o arquivo como vetor o tempo
 /// todo: a prévia é só composição de widgets (nunca mexe no XML), e o XML só
@@ -203,14 +208,14 @@ class _SvgEditPageState extends State<SvgEditPage> {
   List<EditorSection> get _sections => [
     EditorSection(
       icon: Icons.crop_rounded,
-      title: 'Recorte',
+      title: tr('Recorte', 'Crop'),
       value: _cropLabel,
       builder: (_) => _cropSection(),
     ),
     EditorSection(
       icon: Icons.rotate_90_degrees_ccw_rounded,
-      title: 'Girar/Espelhar',
-      label: 'Girar',
+      title: tr('Girar/Espelhar', 'Rotate/Flip'),
+      label: tr('Girar', 'Rotate'),
       value: _rotateFlipLabel,
       builder: (_) => RotateFlipPanel(
         transform: _transform,
@@ -225,55 +230,61 @@ class _SvgEditPageState extends State<SvgEditPage> {
     ),
     EditorSection(
       icon: Icons.check_box_outline_blank_rounded,
-      title: 'Borda',
+      title: tr('Borda', 'Border'),
       value: _settings.border.style.label,
       builder: (_) => _borderSection(),
     ),
     EditorSection(
       icon: Icons.wallpaper_rounded,
-      title: 'Fundo',
-      value: _settings.transparentBackground ? 'Transparente' : 'Cor',
+      title: tr('Fundo', 'Background'),
+      value: _settings.transparentBackground
+          ? tr('Transparente', 'Transparent')
+          : tr('Cor', 'Color'),
       builder: (_) => _backgroundSection(),
     ),
     EditorSection(
       icon: Icons.filter_b_and_w_rounded,
-      title: 'Filtro',
+      title: tr('Filtro', 'Filter'),
       value: _settings.filterType.label,
       builder: (_) => _filterSection(),
     ),
     EditorSection(
       icon: Icons.tune_rounded,
-      title: 'Ajustar cor',
-      label: 'Cor',
-      value: _settings.adjustments.hasAdjustments ? 'Ajustada' : 'Original',
+      title: tr('Ajustar cor', 'Adjust color'),
+      label: tr('Cor', 'Color'),
+      value: _settings.adjustments.hasAdjustments
+          ? tr('Ajustada', 'Adjusted')
+          : tr('Original', 'Original'),
       builder: (_) => _colorAdjustSection(),
     ),
     EditorSection(
       icon: Icons.opacity_rounded,
-      title: 'Opacidade',
+      title: tr('Opacidade', 'Opacity'),
       value: '${(_settings.opacity * 100).round()}%',
       builder: (_) => _opacitySection(),
     ),
     EditorSection(
       icon: Icons.emoji_emotions_outlined,
-      title: 'Stickers',
+      title: tr('Stickers', 'Stickers'),
       value: _settings.stickers.isEmpty
-          ? 'Nenhum'
+          ? tr('Nenhum', 'None')
           : '${_settings.stickers.length}',
       builder: (_) => _stickerSection(),
     ),
     EditorSection(
       icon: Icons.text_fields_rounded,
-      title: 'Texto',
-      value: _settings.texts.isEmpty ? 'Nenhum' : '${_settings.texts.length}',
+      title: tr('Texto', 'Text'),
+      value: _settings.texts.isEmpty
+          ? tr('Nenhum', 'None')
+          : '${_settings.texts.length}',
       builder: (_) => _textSection(),
     ),
     // Última aba da barra nas três telas de edição (vídeo, foto e montagem)
     // — configurações gerais, não deste SVG em si.
     EditorSection(
       icon: Icons.settings_rounded,
-      title: 'Configurações',
-      label: 'Configurações',
+      title: tr('Configurações', 'Settings'),
+      label: tr('Configurações', 'Settings'),
       builder: (_) => const PreviewSettingsPanel(),
     ),
   ];
@@ -289,9 +300,11 @@ class _SvgEditPageState extends State<SvgEditPage> {
     // a prévia já mostra o resultado recortado, igual ao vídeo em
     // `EditorPage`.
     final showCropHandles =
-        active != null && sections[active].title == 'Recorte';
-    final textTabActive = active != null && sections[active].title == 'Texto';
-    _stickersTabActive = active != null && sections[active].title == 'Stickers';
+        active != null && sections[active].title == tr('Recorte', 'Crop');
+    final textTabActive =
+        active != null && sections[active].title == tr('Texto', 'Text');
+    _stickersTabActive =
+        active != null && sections[active].title == tr('Stickers', 'Stickers');
     // Arrastar/pinçar/girar o desenho vale fora das abas que usam o toque
     // para outra coisa (Recorte, Texto e Stickers).
     _placementGestures =
@@ -299,20 +312,22 @@ class _SvgEditPageState extends State<SvgEditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitle('Editar SVG'),
+        title: AppBarTitle(tr('Editar SVG', 'Edit SVG')),
         actions: [
           IconButton(
-            tooltip: 'Desfazer',
+            tooltip: tr('Desfazer', 'Undo'),
             onPressed: _undoStack.isEmpty ? null : _undo,
             icon: const Icon(Icons.undo_rounded),
           ),
           IconButton(
-            tooltip: 'Refazer',
+            tooltip: tr('Refazer', 'Redo'),
             onPressed: _redoStack.isEmpty ? null : _redo,
             icon: const Icon(Icons.redo_rounded),
           ),
           IconButton(
-            tooltip: _saving ? 'Salvando…' : 'Salvar',
+            tooltip: _saving
+                ? tr('Salvando…', 'Saving…')
+                : tr('Salvar', 'Save'),
             onPressed: busy ? null : _save,
             icon: _saving
                 ? const SizedBox(
@@ -323,7 +338,9 @@ class _SvgEditPageState extends State<SvgEditPage> {
                 : const Icon(Icons.save_alt_rounded),
           ),
           IconButton(
-            tooltip: _sharing ? 'Preparando…' : 'Compartilhar',
+            tooltip: _sharing
+                ? tr('Preparando…', 'Preparing…')
+                : tr('Compartilhar', 'Share'),
             onPressed: busy ? null : _share,
             icon: _sharing
                 ? const SizedBox(
@@ -589,10 +606,10 @@ class _SvgEditPageState extends State<SvgEditPage> {
           SectionCard(
             children: [
               PanelColorRow(
-                label: 'Cor da borda',
+                label: tr('Cor da borda', 'Border color'),
                 color: border.color,
                 onTap: () => _pickColor(
-                  title: 'Cor da borda',
+                  title: tr('Cor da borda', 'Border color'),
                   selectedColor: border.color,
                   onSelected: (color) => set(
                     _settings.border.copyWith(color: color),
@@ -682,7 +699,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
             child: TextButton.icon(
               onPressed: _centerCurrentCrop,
               icon: const Icon(Icons.center_focus_strong_rounded),
-              label: const Text('Centralizar'),
+              label: Text(tr('Centralizar', 'Center')),
             ),
           ),
         ],
@@ -741,20 +758,27 @@ class _SvgEditPageState extends State<SvgEditPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _trimming = false);
-      _message('Não foi possível ler o SVG.');
+      _message(tr('Não foi possível ler o SVG.', 'Could not read the SVG.'));
       return;
     }
     if (!mounted) return;
     setState(() => _trimming = false);
     if (bounds == null) {
-      _message('O SVG está todo transparente.');
+      _message(
+        tr('O SVG está todo transparente.', 'The SVG is fully transparent.'),
+      );
       return;
     }
     if (bounds.x == 0 &&
         bounds.y == 0 &&
         bounds.width == _sourceWidth &&
         bounds.height == _sourceHeight) {
-      _message('O SVG não tem bordas transparentes para remover.');
+      _message(
+        tr(
+          'O SVG não tem bordas transparentes para remover.',
+          'The SVG has no transparent edges to remove.',
+        ),
+      );
       return;
     }
     _aspect = _trimAspectPreset;
@@ -765,9 +789,14 @@ class _SvgEditPageState extends State<SvgEditPage> {
     final parsed = int.tryParse(value.trim());
     if (parsed == null) return;
     if (parsed > _sourceWidth) {
-      _message('Largura máxima é $_sourceWidth (tamanho original do SVG).');
+      _message(
+        tr(
+          'Largura máxima é $_sourceWidth (tamanho original do SVG).',
+          'Maximum width is $_sourceWidth (original SVG size).',
+        ),
+      );
     } else if (parsed < 1) {
-      _message('A largura mínima é 1.');
+      _message(tr('A largura mínima é 1.', 'Minimum width is 1.'));
     }
     final crop = _settings.crop;
     if (crop == null) return;
@@ -782,9 +811,14 @@ class _SvgEditPageState extends State<SvgEditPage> {
     final parsed = int.tryParse(value.trim());
     if (parsed == null) return;
     if (parsed > _sourceHeight) {
-      _message('Altura máxima é $_sourceHeight (tamanho original do SVG).');
+      _message(
+        tr(
+          'Altura máxima é $_sourceHeight (tamanho original do SVG).',
+          'Maximum height is $_sourceHeight (original SVG size).',
+        ),
+      );
     } else if (parsed < 1) {
-      _message('A altura mínima é 1.');
+      _message(tr('A altura mínima é 1.', 'Minimum height is 1.'));
     }
     final crop = _settings.crop;
     if (crop == null) return;
@@ -992,7 +1026,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
 
   String get _rotateFlipLabel {
     final transform = _transform;
-    return transform.isIdentity ? 'Nenhum' : transform.label;
+    return transform.isIdentity ? tr('Nenhum', 'None') : transform.label;
   }
 
   // ---------------------------------------------------------------------
@@ -1008,7 +1042,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
           children: [
             Expanded(
               child: Text(
-                'Fundo transparente',
+                tr('Fundo transparente', 'Transparent background'),
                 style: theme.textTheme.bodyMedium,
               ),
             ),
@@ -1025,7 +1059,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
           ),
           PanelColorRow(
-            label: 'Cor do fundo',
+            label: tr('Cor do fundo', 'Background color'),
             color: _settings.backgroundColor,
             onTap: _pickBackgroundColor,
           ),
@@ -1035,7 +1069,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
   }
 
   void _pickBackgroundColor() => _pickColor(
-    title: 'Cor do fundo',
+    title: tr('Cor do fundo', 'Background color'),
     selectedColor: _settings.backgroundColor,
     onSelected: (color) =>
         _update(_settings.copyWith(backgroundColor: color), pushUndo: false),
@@ -1123,7 +1157,10 @@ class _SvgEditPageState extends State<SvgEditPage> {
         Row(
           children: [
             Expanded(
-              child: Text('Opacidade', style: theme.textTheme.bodyMedium),
+              child: Text(
+                tr('Opacidade', 'Opacity'),
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
             Text(
               '$percent%',
@@ -1179,18 +1216,20 @@ class _SvgEditPageState extends State<SvgEditPage> {
         fileName: _suggestedFileName(),
         bytes: Uint8List.fromList(utf8.encode(xml)),
         mimeType: 'image/svg+xml',
-        dialogTitle: 'Salvar SVG editado',
+        dialogTitle: tr('Salvar SVG editado', 'Save edited SVG'),
         type: FileType.custom,
         allowedExtensions: ['svg'],
       );
       if (!mounted) return;
-      if (uri != null) await showSavedDialog(context, 'SVG salvo.');
+      if (uri != null) {
+        await showSavedDialog(context, tr('SVG salvo.', 'SVG saved.'));
+      }
     } on SvgEditException catch (e) {
       if (!mounted) return;
       _message(e.message);
     } catch (_) {
       if (!mounted) return;
-      _message('Não foi possível salvar o SVG.');
+      _message(tr('Não foi possível salvar o SVG.', 'Could not save the SVG.'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1208,14 +1247,19 @@ class _SvgEditPageState extends State<SvgEditPage> {
       await _output.share(
         file,
         mimeType: 'image/svg+xml',
-        text: 'SVG editado com o app GitBat',
+        text: tr(
+          'SVG editado com o app GitBat',
+          'SVG edited with the GitBat app',
+        ),
       );
     } on SvgEditException catch (e) {
       if (!mounted) return;
       _message(e.message);
     } catch (_) {
       if (!mounted) return;
-      _message('Não foi possível gerar o SVG.');
+      _message(
+        tr('Não foi possível gerar o SVG.', 'Could not create the SVG.'),
+      );
     } finally {
       if (mounted) setState(() => _sharing = false);
     }

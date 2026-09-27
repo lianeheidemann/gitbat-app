@@ -1,3 +1,5 @@
+import '../../../app/translations.dart';
+
 /// Em que formato a montagem é exportada. [png] é a montagem parada (o único
 /// formato que existia antes); [gif] e [webp] só fazem sentido quando alguma
 /// foto da montagem é animada — aí a montagem inteira vira animação, com as
@@ -8,14 +10,16 @@ enum CollageExportFormat {
   webp('WebP', 'Animado, arquivo menor', 'webp', 'image/webp');
 
   const CollageExportFormat(
-    this.label,
-    this.subtitle,
+    this.labelPt,
+    this.subtitlePt,
     this.extension,
     this.mimeType,
   );
 
-  final String label;
-  final String subtitle;
+  final String labelPt;
+  String get label => trKey(labelPt);
+  final String subtitlePt;
+  String get subtitle => trKey(subtitlePt);
   final String extension;
   final String mimeType;
 
@@ -32,9 +36,10 @@ enum CollageExportSize {
   large('Grande', 1.5),
   extraLarge('Extra grande', 2);
 
-  const CollageExportSize(this.label, this.multiplier);
+  const CollageExportSize(this.labelPt, this.multiplier);
 
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
   final double multiplier;
 }
 
@@ -46,8 +51,10 @@ enum CollageDurationRule {
   longest('A mais longa', 'Quem acabar antes segura o último quadro'),
   shortest('A mais curta', 'A montagem termina com a animação mais curta');
 
-  const CollageDurationRule(this.label, this.subtitle);
+  const CollageDurationRule(this.labelPt, this.subtitlePt);
 
-  final String label;
-  final String subtitle;
+  final String labelPt;
+  String get label => trKey(labelPt);
+  final String subtitlePt;
+  String get subtitle => trKey(subtitlePt);
 }

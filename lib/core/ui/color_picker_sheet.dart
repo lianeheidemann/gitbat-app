@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -105,9 +106,12 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Não foi possível preparar a prévia para o conta-gotas.',
+                  tr(
+                    'Não foi possível preparar a prévia para o conta-gotas.',
+                    'Could not prepare the preview for the eyedropper.',
+                  ),
                 ),
               ),
             );
@@ -404,7 +408,12 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: DialogTitle('Toque na imagem para escolher a cor'),
+      title: DialogTitle(
+        tr(
+          'Toque na imagem para escolher a cor',
+          'Tap the image to pick the color',
+        ),
+      ),
       content: SizedBox(
         width: double.maxFinite,
         child: AspectRatio(
@@ -441,7 +450,7 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_preview),
-          child: const Text('Usar esta cor'),
+          child: Text(tr('Usar esta cor', 'Use this color')),
         ),
       ],
     );

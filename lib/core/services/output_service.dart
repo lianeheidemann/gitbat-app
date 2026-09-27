@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:io';
 
 import 'package:gal/gal.dart';
@@ -50,8 +51,10 @@ class OutputService {
       final granted = await Gal.requestAccess();
       if (!granted) {
         throw OutputException(
-          'Sem permissão para salvar na galeria. Você pode liberar em '
-          'Ajustes > Apps > GitBat > Permissões.',
+          tr(
+            'Sem permissão para salvar na galeria. Você pode liberar em Ajustes > Apps > GitBat > Permissões.',
+            'No permission to save to the gallery. You can allow it in Settings > Apps > GitBat > Permissions.',
+          ),
         );
       }
     }
@@ -65,7 +68,10 @@ class OutputService {
       }
     } on GalException catch (e) {
       throw OutputException(
-        'Não foi possível salvar na galeria: ${e.type.message}',
+        tr(
+          'Não foi possível salvar na galeria: ${e.type.message}',
+          'Could not save to the gallery: ${e.type.message}',
+        ),
       );
     } finally {
       // A galeria guarda a própria cópia; a nossa já não serve para nada.
@@ -85,13 +91,15 @@ class OutputService {
   Future<void> share(
     File file, {
     String mimeType = 'image/gif',
-    String text = 'GIF feito com o app GitBat',
+    String? text,
   }) async {
     final branded = await brandedCopy(file);
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(branded.path, mimeType: mimeType)],
-        text: text,
+        text:
+            text ??
+            tr('GIF feito com o app GitBat', 'GIF made with the GitBat app'),
       ),
     );
   }

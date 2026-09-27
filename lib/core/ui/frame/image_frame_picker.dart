@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -79,7 +80,7 @@ class NoImageFrameThumb extends StatelessWidget {
     final theme = Theme.of(context);
     return FrameThumbShell(
       key: const ValueKey('imageFrameThumb_none'),
-      label: 'Sem moldura',
+      label: tr('Sem moldura', 'No frame'),
       selected: selected,
       padding: const EdgeInsets.all(8),
       onTap: onTap,
@@ -157,7 +158,7 @@ class ImportFrameThumb extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Importar',
+              tr('Importar', 'Import'),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -206,12 +207,17 @@ Future<bool> confirmRemoveImportedFrame(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: DialogTitle('Remover moldura?'),
-      content: Text('"${asset.label}" vai ser removida da lista.'),
+      title: DialogTitle(tr('Remover moldura?', 'Remove frame?')),
+      content: Text(
+        tr(
+          '"${asset.label}" vai ser removida da lista.',
+          '"${asset.label}" will be removed from the list.',
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Remover'),
+          child: Text(tr('Remover', 'Remove')),
         ),
       ],
     ),

@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../models/output_transform.dart';
@@ -69,7 +70,7 @@ class RotateFlipPanel extends StatelessWidget {
                 onPressed: () => onChanged(transform.rotatedBy(-1)),
                 style: _buttonStyle,
                 icon: const Icon(Icons.rotate_left_rounded),
-                label: _label('90° à esquerda'),
+                label: _label(tr('90° à esquerda', '90° left')),
               ),
             ),
             const SizedBox(width: 12),
@@ -78,7 +79,7 @@ class RotateFlipPanel extends StatelessWidget {
                 onPressed: () => onChanged(transform.rotatedBy(1)),
                 style: _buttonStyle,
                 icon: const Icon(Icons.rotate_right_rounded),
-                label: _label('90° à direita'),
+                label: _label(tr('90° à direita', '90° right')),
               ),
             ),
           ],
@@ -88,7 +89,7 @@ class RotateFlipPanel extends StatelessWidget {
           children: [
             Expanded(
               child: _flipButton(
-                label: 'Horizontal',
+                label: tr('Horizontal', 'Horizontal'),
                 icon: Icons.swap_horiz_rounded,
                 selected: transform.flipHorizontal,
                 onTap: () => onChanged(
@@ -99,7 +100,7 @@ class RotateFlipPanel extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _flipButton(
-                label: 'Vertical',
+                label: tr('Vertical', 'Vertical'),
                 icon: Icons.swap_vert_rounded,
                 selected: transform.flipVertical,
                 onTap: () => onChanged(

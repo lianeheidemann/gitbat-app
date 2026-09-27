@@ -1,3 +1,4 @@
+import '../../../../app/language_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -100,7 +101,7 @@ class CollageBorderPanel extends StatelessWidget {
         // cima (a montagem inteira ou todas as fotos), então ficam dentro da
         // caixa dele — ver [TargetSubPanel].
         TargetSubPanel(
-          options: const ['Montagem', 'Fotos'],
+          options: [tr('Montagem', 'Collage'), tr('Fotos', 'Photos')],
           selectedIndex: targetsPhotos ? 1 : 0,
           onSelected: (index) => onTargetChanged(index == 1),
           child: Column(
@@ -108,7 +109,7 @@ class CollageBorderPanel extends StatelessWidget {
             children: [
               PanelSliderRow(
                 onChangeStart: actions.pushUndoCheckpoint,
-                label: 'Espessura da borda',
+                label: tr('Espessura da borda', 'Border thickness'),
                 value: thickness,
                 min: 0,
                 max: maxThickness,
@@ -118,7 +119,7 @@ class CollageBorderPanel extends StatelessWidget {
               const SizedBox(height: 12),
               PanelSliderRow(
                 onChangeStart: actions.pushUndoCheckpoint,
-                label: 'Arredondamento dos cantos',
+                label: tr('Arredondamento dos cantos', 'Corner rounding'),
                 value: cornerRatio,
                 min: 0,
                 max: maxCornerRatio,
@@ -133,7 +134,7 @@ class CollageBorderPanel extends StatelessWidget {
                   ),
                 ),
                 PanelColorRow(
-                  label: 'Cor da borda',
+                  label: tr('Cor da borda', 'Border color'),
                   color: borderColor,
                   onTap: () => _pickBorderColor(
                     context,
@@ -163,7 +164,7 @@ class CollageBorderPanel extends StatelessWidget {
     var checkpointPushed = false;
     showCollageColorPickerSheet(
       context: context,
-      title: 'Cor da borda',
+      title: tr('Cor da borda', 'Border color'),
       initialColor: current,
       onColorSelected: (color) {
         if (!checkpointPushed) {

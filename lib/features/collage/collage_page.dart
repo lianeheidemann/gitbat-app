@@ -1,3 +1,5 @@
+import '../../app/language_controller.dart';
+import '../../app/translations.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -279,8 +281,14 @@ class _CollagePageState extends State<CollagePage> {
         if (!mounted) return;
         _message(
           ignored == 1
-              ? 'A última foto escolhida não coube na montagem.'
-              : 'As últimas $ignored fotos escolhidas não couberam na montagem.',
+              ? tr(
+                  'A última foto escolhida não coube na montagem.',
+                  'The last chosen photo did not fit in the collage.',
+                )
+              : tr(
+                  'As últimas $ignored fotos escolhidas não couberam na montagem.',
+                  'The last $ignored chosen photos did not fit in the collage.',
+                ),
         );
       });
     }
@@ -459,20 +467,22 @@ class _CollagePageState extends State<CollagePage> {
     final busy = _saving || _sharing;
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitle('Montagem'),
+        title: AppBarTitle(tr('Montagem', 'Collage')),
         actions: [
           IconButton(
-            tooltip: 'Desfazer',
+            tooltip: tr('Desfazer', 'Undo'),
             onPressed: _undoStack.isEmpty ? null : _undo,
             icon: const Icon(Icons.undo_rounded),
           ),
           IconButton(
-            tooltip: 'Refazer',
+            tooltip: tr('Refazer', 'Redo'),
             onPressed: _redoStack.isEmpty ? null : _redo,
             icon: const Icon(Icons.redo_rounded),
           ),
           IconButton(
-            tooltip: _saving ? 'Salvando…' : 'Salvar na galeria',
+            tooltip: _saving
+                ? tr('Salvando…', 'Saving…')
+                : tr('Salvar na galeria', 'Save to gallery'),
             onPressed: busy ? null : _save,
             icon: _saving
                 ? const SizedBox(
@@ -483,7 +493,9 @@ class _CollagePageState extends State<CollagePage> {
                 : const Icon(Icons.download_rounded),
           ),
           IconButton(
-            tooltip: _sharing ? 'Preparando…' : 'Compartilhar',
+            tooltip: _sharing
+                ? tr('Preparando…', 'Preparing…')
+                : tr('Compartilhar', 'Share'),
             onPressed: busy ? null : _share,
             icon: _sharing
                 ? const SizedBox(
@@ -790,16 +802,16 @@ class _CollagePageState extends State<CollagePage> {
   };
 
   String _tabLabel(_CollageTab tab) => switch (tab) {
-    _CollageTab.layout => 'Layout',
-    _CollageTab.areas => 'Áreas',
-    _CollageTab.aspect => 'Proporção',
-    _CollageTab.margin => 'Margem',
-    _CollageTab.border => 'Borda',
-    _CollageTab.background => 'Fundo',
-    _CollageTab.color => 'Cor',
-    _CollageTab.stickers => 'Stickers',
-    _CollageTab.text => 'Texto',
-    _CollageTab.settings => 'Configurações',
+    _CollageTab.layout => tr('Layout', 'Layout'),
+    _CollageTab.areas => tr('Áreas', 'Areas'),
+    _CollageTab.aspect => tr('Proporção', 'Aspect'),
+    _CollageTab.margin => tr('Margem', 'Margin'),
+    _CollageTab.border => tr('Borda', 'Border'),
+    _CollageTab.background => tr('Fundo', 'Background'),
+    _CollageTab.color => tr('Cor', 'Color'),
+    _CollageTab.stickers => tr('Stickers', 'Stickers'),
+    _CollageTab.text => tr('Texto', 'Text'),
+    _CollageTab.settings => tr('Configurações', 'Settings'),
   };
 
   // ---------------------------------------------------------------------
@@ -1538,33 +1550,33 @@ class _CollagePageState extends State<CollagePage> {
         children: [
           if (isText)
             IconButton(
-              tooltip: 'Editar',
+              tooltip: tr('Editar', 'Edit'),
               onPressed: () => _editSelectedText(id),
               icon: const Icon(Icons.edit_outlined, size: 20),
             ),
           if (isText)
             IconButton(
-              tooltip: 'Fonte',
+              tooltip: tr('Fonte', 'Font'),
               onPressed: () => _pickTextFont(id),
               icon: const Icon(Icons.font_download_outlined, size: 20),
             ),
           IconButton(
-            tooltip: 'Duplicar',
+            tooltip: tr('Duplicar', 'Duplicate'),
             onPressed: () => _duplicateSelected(id, isText),
             icon: const Icon(Icons.copy_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Frente',
+            tooltip: tr('Frente', 'Front'),
             onPressed: () => _bringToFront(id, isText),
             icon: const Icon(Icons.flip_to_front_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Trás',
+            tooltip: tr('Trás', 'Back'),
             onPressed: () => _sendToBack(id, isText),
             icon: const Icon(Icons.flip_to_back_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Remover',
+            tooltip: tr('Remover', 'Remove'),
             onPressed: () => _removeSelected(id, isText),
             icon: const Icon(Icons.delete_outline, size: 20),
           ),
@@ -1682,12 +1694,19 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: DialogTitle('Remover imagem de fundo?'),
-        content: Text('"${asset.label}" vai ser removida da lista.'),
+        title: DialogTitle(
+          tr('Remover imagem de fundo?', 'Remove background image?'),
+        ),
+        content: Text(
+          tr(
+            '"${asset.label}" vai ser removida da lista.',
+            '"${asset.label}" will be removed from the list.',
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Remover'),
+            child: Text(tr('Remover', 'Remove')),
           ),
         ],
       ),
@@ -1755,7 +1774,7 @@ class _CollagePageState extends State<CollagePage> {
   Future<void> _createStickerFolder() async {
     final name = await _promptTextInput(
       initial: '',
-      title: 'Nova pasta',
+      title: tr('Nova pasta', 'New folder'),
       maxLines: 1,
     );
     if (name == null) return; // Cancelado — nada a avisar.
@@ -1763,7 +1782,9 @@ class _CollagePageState extends State<CollagePage> {
       // Sem isto, um nome que não chegou a registrar (ex.: o teclado ainda
       // compondo o texto no instante do toque) fazia "Nova pasta" parecer
       // não fazer nada.
-      _message('Digite um nome para a pasta.');
+      _message(
+        tr('Digite um nome para a pasta.', 'Type a name for the folder.'),
+      );
       return;
     }
     try {
@@ -1782,7 +1803,9 @@ class _CollagePageState extends State<CollagePage> {
       // Uma pasta que falha ao salvar não pode desaparecer em silêncio —
       // sem isto, tocar "Nova pasta" simplesmente não fazia nada visível.
       if (!mounted) return;
-      _message('Não deu para criar a pasta: $e');
+      _message(
+        tr('Não deu para criar a pasta: $e', 'Could not create the folder: $e'),
+      );
     }
   }
 
@@ -1799,7 +1822,7 @@ class _CollagePageState extends State<CollagePage> {
           children: [
             ListTile(
               leading: const Icon(Icons.drive_file_rename_outline),
-              title: const Text('Renomear'),
+              title: Text(tr('Renomear', 'Rename')),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _renameStickerFolder(folder);
@@ -1807,7 +1830,7 @@ class _CollagePageState extends State<CollagePage> {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
-              title: const Text('Apagar'),
+              title: Text(tr('Apagar', 'Delete')),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _confirmRemoveStickerFolder(folder);
@@ -1822,7 +1845,7 @@ class _CollagePageState extends State<CollagePage> {
   Future<void> _renameStickerFolder(StickerFolder folder) async {
     final name = await _promptTextInput(
       initial: folder.name,
-      title: 'Renomear pasta',
+      title: tr('Renomear pasta', 'Rename folder'),
       maxLines: 1,
     );
     if (name == null || name.trim().isEmpty) return;
@@ -1846,18 +1869,26 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: DialogTitle('Apagar pasta?'),
+        title: DialogTitle(tr('Apagar pasta?', 'Delete folder?')),
         content: Text(
           inFolder == 0
-              ? '"${folder.name}" vai ser apagada.'
-              : '"${folder.name}" vai ser apagada. '
-                    '${inFolder == 1 ? 'O sticker que está' : 'Os $inFolder stickers que estão'} '
-                    'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
+              ? tr(
+                  '"${folder.name}" vai ser apagada.',
+                  '"${folder.name}" will be deleted.',
+                )
+              : tr(
+                  '"${folder.name}" vai ser apagada. '
+                      '${inFolder == 1 ? 'O sticker que está' : 'Os $inFolder stickers que estão'} '
+                      'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
+                  '"${folder.name}" will be deleted. '
+                      '${inFolder == 1 ? 'The sticker in it goes' : 'The $inFolder stickers in it go'} '
+                      'back to "Imported".',
+                ),
         ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Apagar'),
+            child: Text(tr('Apagar', 'Delete')),
           ),
         ],
       ),
@@ -1932,18 +1963,26 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: DialogTitle('Remover sticker?'),
+        title: DialogTitle(tr('Remover sticker?', 'Remove sticker?')),
         content: Text(
           inUse.isEmpty
-              ? '"${asset.label}" vai ser removido da lista.'
-              : '"${asset.label}" vai ser removido da lista e também da '
-                    'montagem, onde está usado ${inUse.length} '
-                    '${inUse.length == 1 ? 'vez' : 'vezes'}.',
+              ? tr(
+                  '"${asset.label}" vai ser removido da lista.',
+                  '"${asset.label}" will be removed from the list.',
+                )
+              : tr(
+                  '"${asset.label}" vai ser removido da lista e também da '
+                      'montagem, onde está usado ${inUse.length} '
+                      '${inUse.length == 1 ? 'vez' : 'vezes'}.',
+                  '"${asset.label}" will be removed from the list and also '
+                      'from the collage, where it is used ${inUse.length} '
+                      '${inUse.length == 1 ? 'time' : 'times'}.',
+                ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Remover'),
+            child: Text(tr('Remover', 'Remove')),
           ),
         ],
       ),
@@ -2022,12 +2061,15 @@ class _CollagePageState extends State<CollagePage> {
 
   Future<String?> _promptTextInput({
     required String initial,
-    String title = 'Texto',
+    String? title,
     int maxLines = 3,
   }) => showDialog<String>(
     context: context,
-    builder: (dialogContext) =>
-        TextInputDialog(initial: initial, title: title, maxLines: maxLines),
+    builder: (dialogContext) => TextInputDialog(
+      initial: initial,
+      title: title ?? tr('Texto', 'Text'),
+      maxLines: maxLines,
+    ),
   );
 
   /// Folha com as [bundledCollageFonts] em miniaturas "Aa", cada uma
@@ -2048,7 +2090,7 @@ class _CollagePageState extends State<CollagePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Fonte',
+                tr('Fonte', 'Font'),
                 style: Theme.of(sheetContext).textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
@@ -2059,7 +2101,7 @@ class _CollagePageState extends State<CollagePage> {
                   for (final font in bundledCollageFonts)
                     CollageFontThumb(
                       family: font.$1,
-                      label: font.$2,
+                      label: trKey(font.$2),
                       selected: item.fontFamily == font.$1,
                       onTap: () {
                         Navigator.of(sheetContext).pop();
@@ -2084,7 +2126,7 @@ class _CollagePageState extends State<CollagePage> {
                     ),
                   CollageFontThumb(
                     family: null,
-                    label: 'Importar',
+                    label: tr('Importar', 'Import'),
                     selected: false,
                     icon: Icons.font_download_outlined,
                     onTap: () {
@@ -2138,18 +2180,26 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: DialogTitle('Remover fonte?'),
+        title: DialogTitle(tr('Remover fonte?', 'Remove font?')),
         content: Text(
           inUse.isEmpty
-              ? '"${font.label}" vai sair da lista de fontes.'
-              : '"${font.label}" vai sair da lista de fontes, e '
-                    '${inUse.length == 1 ? 'o texto que a usa volta' : 'os ${inUse.length} textos que a usam voltam'} '
-                    'para a fonte padrão.',
+              ? tr(
+                  '"${font.label}" vai sair da lista de fontes.',
+                  '"${font.label}" will leave the font list.',
+                )
+              : tr(
+                  '"${font.label}" vai sair da lista de fontes, e '
+                      '${inUse.length == 1 ? 'o texto que a usa volta' : 'os ${inUse.length} textos que a usam voltam'} '
+                      'para a fonte padrão.',
+                  '"${font.label}" will leave the font list, and '
+                      '${inUse.length == 1 ? 'the text using it goes' : 'the ${inUse.length} texts using it go'} '
+                      'back to the default font.',
+                ),
         ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Remover'),
+            child: Text(tr('Remover', 'Remove')),
           ),
         ],
       ),
@@ -2327,15 +2377,22 @@ class _CollagePageState extends State<CollagePage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Exportar', style: theme.textTheme.titleMedium),
+                    Text(
+                      tr('Exportar', 'Export'),
+                      style: theme.textTheme.titleMedium,
+                    ),
                     if (info.hasAnimation) ...[
                       const SizedBox(height: 4),
                       Text(
                         info.animatedCount == 1
-                            ? 'Uma das fotos é animada — a montagem pode '
-                                  'sair animada também.'
-                            : '${info.animatedCount} fotos são animadas — '
-                                  'a montagem pode sair animada também.',
+                            ? tr(
+                                'Uma das fotos é animada — a montagem pode sair animada também.',
+                                'One of the photos is animated — the collage can be animated too.',
+                              )
+                            : tr(
+                                '${info.animatedCount} fotos são animadas — a montagem pode sair animada também.',
+                                '${info.animatedCount} photos are animated — the collage can be animated too.',
+                              ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -2366,7 +2423,7 @@ class _CollagePageState extends State<CollagePage> {
                           info.animatedCount > 1) ...[
                         const Divider(height: 24),
                         Text(
-                          'Duração',
+                          tr('Duração', 'Duration'),
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -2398,7 +2455,7 @@ class _CollagePageState extends State<CollagePage> {
                     ] else
                       const SizedBox(height: 12),
                     Text(
-                      'Tamanho',
+                      tr('Tamanho', 'Size'),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -2421,7 +2478,7 @@ class _CollagePageState extends State<CollagePage> {
                     FilledButton(
                       onPressed: () =>
                           Navigator.of(sheetContext).pop(selectedFormat),
-                      child: const Text('Continuar'),
+                      child: Text(tr('Continuar', 'Continue')),
                     ),
                   ],
                 ),
@@ -2461,8 +2518,10 @@ class _CollagePageState extends State<CollagePage> {
     );
     final diagnostics = await ExportDiagnostics.open();
     diagnostics?.start(
-      '${format.label} $width×$height, ${_settings.cells.length} áreas, '
-      '${_exportSize.label}',
+      tr(
+        '${format.label} $width×$height, ${_settings.cells.length} áreas, ${_exportSize.label}',
+        '${format.label} $width×$height, ${_settings.cells.length} areas, ${_exportSize.label}',
+      ),
     );
     if (!mounted) return null;
     final navigator = Navigator.of(context, rootNavigator: true);
@@ -2545,15 +2604,22 @@ class _CollagePageState extends State<CollagePage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         key: const ValueKey('interruptedExportDialog'),
-        title: const DialogTitle('A última exportação foi interrompida'),
+        title: DialogTitle(
+          tr(
+            'A última exportação foi interrompida',
+            'The last export was interrupted',
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'O app fechou enquanto salvava a montagem. Se acontecer de '
-                'novo, toque em "Copiar" e mande este texto para o suporte.',
+              Text(
+                tr(
+                  'O app fechou enquanto salvava a montagem. Se acontecer de novo, toque em "Copiar" e mande este texto para o suporte.',
+                  'The app closed while saving the collage. If it happens again, tap "Copy" and send this text to support.',
+                ),
               ),
               const SizedBox(height: 12),
               SelectableText(
@@ -2570,10 +2636,10 @@ class _CollagePageState extends State<CollagePage> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: text));
               Navigator.of(dialogContext).pop();
-              _message('Relatório copiado.');
+              _message(tr('Relatório copiado.', 'Report copied.'));
             },
             icon: const Icon(Icons.copy_rounded, size: 18),
-            label: const Text('Copiar'),
+            label: Text(tr('Copiar', 'Copy')),
           ),
         ],
       ),
@@ -2611,12 +2677,15 @@ class _CollagePageState extends State<CollagePage> {
     try {
       final file = await _exportWithProgress(format);
       if (file == null) {
-        if (mounted) _message('Exportação cancelada.');
+        if (mounted) _message(tr('Exportação cancelada.', 'Export cancelled.'));
         return;
       }
       await _output.saveToGallery(file);
       if (!mounted) return;
-      await showSavedDialog(context, 'Montagem salva na galeria.');
+      await showSavedDialog(
+        context,
+        tr('Montagem salva na galeria.', 'Collage saved to the gallery.'),
+      );
     } on OutputException catch (e) {
       if (!mounted) return;
       _message(e.message);
@@ -2625,7 +2694,9 @@ class _CollagePageState extends State<CollagePage> {
       _message(e.message);
     } catch (_) {
       if (!mounted) return;
-      _message('Não foi possível gerar a imagem.');
+      _message(
+        tr('Não foi possível gerar a imagem.', 'Could not create the image.'),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -2638,20 +2709,25 @@ class _CollagePageState extends State<CollagePage> {
     try {
       final file = await _exportWithProgress(format);
       if (file == null) {
-        if (mounted) _message('Exportação cancelada.');
+        if (mounted) _message(tr('Exportação cancelada.', 'Export cancelled.'));
         return;
       }
       await _output.share(
         file,
         mimeType: format.mimeType,
-        text: 'Montagem de fotos feita com o app GitBat',
+        text: tr(
+          'Montagem de fotos feita com o app GitBat',
+          'Photo collage made with the GitBat app',
+        ),
       );
     } on FfmpegException catch (e) {
       if (!mounted) return;
       _message(e.message);
     } catch (_) {
       if (!mounted) return;
-      _message('Não foi possível gerar a imagem.');
+      _message(
+        tr('Não foi possível gerar a imagem.', 'Could not create the image.'),
+      );
     } finally {
       if (mounted) setState(() => _sharing = false);
     }

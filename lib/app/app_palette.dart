@@ -1,3 +1,4 @@
+import 'translations.dart';
 import 'package:flutter/material.dart';
 
 import '../core/models/default_colors.dart';
@@ -10,7 +11,7 @@ import '../core/models/default_colors.dart';
 class AppPalette {
   const AppPalette({
     required this.id,
-    required this.label,
+    required this._label,
     required this.seed,
     required this.darkBackground,
     required this.darkCard,
@@ -29,7 +30,10 @@ class AppPalette {
 
   /// Identificador salvo nas preferências — não mudar depois de publicado.
   final String id;
-  final String label;
+  final String _label;
+
+  /// Nome da paleta no idioma atual.
+  String get label => trKey(_label);
   final Color seed;
   final Color darkBackground;
   final Color darkCard;

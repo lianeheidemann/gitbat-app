@@ -7,6 +7,7 @@ import 'core/services/bundled_font_store.dart';
 import 'core/services/bundled_frame_store.dart';
 import 'core/services/bundled_sticker_store.dart';
 import 'app/theme.dart';
+import 'app/language_controller.dart';
 import 'app/theme_controller.dart';
 import 'features/home/home_page.dart';
 
@@ -16,6 +17,7 @@ Future<void> main() async {
   registerThirdPartyLicenses();
   await loadThemeMode();
   await loadPalette();
+  await loadLanguage();
   await loadPreviewCheckerboardPreference();
   // Registra as fontes de `assets/fonts` antes da primeira tela, para a
   // lista de fontes do texto já nascer completa.
@@ -37,10 +39,19 @@ class GitBatApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([themeModeNotifier, paletteNotifier]),
+      listenable: Listenable.merge([
+        themeModeNotifier,
+        paletteNotifier,
+        languageNotifier,
+      ]),
       builder: (context, _) {
         final palette = paletteNotifier.value;
+        final language = languageNotifier.value;
         return MaterialApp(
+          // Os textos vêm de `tr()`, lido na hora do build: trocar de idioma
+          // recria o app inteiro (a troca só é oferecida na tela inicial,
+          // então não se perde nenhuma edição em andamento).
+          key: ValueKey(language),
           title: 'GitBat',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(Brightness.light, palette),

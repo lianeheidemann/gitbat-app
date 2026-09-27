@@ -7,6 +7,7 @@ import '../../../core/models/crop_rect.dart';
 import '../../../core/models/default_colors.dart';
 import '../../../core/models/frame_settings.dart';
 import '../../../core/models/photo_placement.dart';
+import '../../../app/translations.dart';
 
 /// Filtro de cor aplicado ao SVG inteiro — via `ColorFiltered` na prévia e
 /// via `<feColorMatrix>` (nativo do SVG, sem rasterizar) na exportação.
@@ -15,9 +16,10 @@ enum SvgFilterType {
   grayscale('Preto e branco'),
   invert('Inverter');
 
-  const SvgFilterType(this.label);
+  const SvgFilterType(this.labelPt);
 
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 }
 
 /// Configurações da tela "Editar SVG": tudo imutável, num objeto só, para o

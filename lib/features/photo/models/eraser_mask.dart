@@ -1,3 +1,4 @@
+import '../../../app/translations.dart';
 import 'dart:math' as math;
 import 'dart:ui'
     show
@@ -19,9 +20,10 @@ enum EraserTool {
   lasso('Laço'),
   rectangle('Retângulo');
 
-  const EraserTool(this.label);
+  const EraserTool(this.labelPt);
 
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 
   /// As duas que desenham área fechada — o gesto delas é o mesmo (arrastar e
   /// soltar fecha a forma), só muda o contorno resultante.
@@ -43,9 +45,10 @@ enum EraserQuality {
   normal('Normal', 768),
   high('Alta', 1024);
 
-  const EraserQuality(this.label, this.maxWorkingSide);
+  const EraserQuality(this.labelPt, this.maxWorkingSide);
 
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 
   /// Maior lado, em pixels, da janela entregue ao algoritmo.
   final int maxWorkingSide;

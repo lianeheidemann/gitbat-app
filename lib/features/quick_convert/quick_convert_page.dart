@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -158,7 +159,7 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: quickConvertSourceExtensions,
-        dialogTitle: 'Escolha um arquivo',
+        dialogTitle: tr('Escolha um arquivo', 'Choose a file'),
       );
 
       final path = picked?.path;
@@ -170,9 +171,10 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
       if (await _isStaticImage(path)) {
         if (mounted) setState(() => _loading = false);
         _showPickError(
-          'Essa é uma foto parada, sem vídeo ou animação. '
-          '"Converter formato" é para vídeos, GIF ou WebP animado — '
-          'para fotos, use "Colocar moldura" na tela inicial.',
+          tr(
+            'Essa é uma foto parada, sem vídeo ou animação. "Converter formato" é para vídeos, GIF ou WebP animado — para fotos, use "Colocar moldura" na tela inicial.',
+            'This is a still photo, with no video or animation. "Convert format" is for videos, GIFs or animated WebPs — for photos, use "Edit image" on the home screen.',
+          ),
         );
         return;
       }
@@ -207,7 +209,9 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
       _showPickError(e.message);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
-      _showPickError('Não foi possível abrir este arquivo.');
+      _showPickError(
+        tr('Não foi possível abrir este arquivo.', 'Could not open this file.'),
+      );
     }
   }
 
@@ -220,12 +224,14 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Não é possível usar este arquivo'),
+        title: Text(
+          tr('Não é possível usar este arquivo', 'This file cannot be used'),
+        ),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Entendi'),
+            child: Text(tr('Entendi', 'Got it')),
           ),
         ],
       ),
@@ -238,7 +244,9 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
     final video = _video;
 
     return Scaffold(
-      appBar: AppBar(title: const AppBarTitle('Converter formato')),
+      appBar: AppBar(
+        title: AppBarTitle(tr('Converter formato', 'Convert format')),
+      ),
       body: SafeArea(
         // Os dois estados têm a mesma estrutura, alinhada ao topo: anexar um
         // arquivo troca só o bloco de cima e liga os controles de baixo, que
@@ -267,7 +275,11 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.folder_open_outlined),
-                label: Text(_loading ? 'Abrindo…' : 'Escolher outro arquivo'),
+                label: Text(
+                  _loading
+                      ? tr('Abrindo…', 'Opening…')
+                      : tr('Escolher outro arquivo', 'Choose another file'),
+                ),
               ),
               const SizedBox(height: 28),
               _resolutionSection(video),
@@ -276,7 +288,7 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
             // de um vão maior para o miolo não subir.
             SizedBox(height: video == null ? 40 : 28),
             Text(
-              'Formato de saída',
+              tr('Formato de saída', 'Output format'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -323,7 +335,7 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
                       ),
                     ),
               icon: const Icon(Icons.auto_fix_high_rounded),
-              label: const Text('Converter'),
+              label: Text(tr('Converter', 'Convert')),
             ),
           ],
         ),
@@ -349,7 +361,7 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Resolução',
+              tr('Resolução', 'Resolution'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -442,7 +454,9 @@ class _PickDropzone extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        loading ? 'Abrindo…' : 'Escolher arquivo',
+                        loading
+                            ? tr('Abrindo…', 'Opening…')
+                            : tr('Escolher arquivo', 'Choose file'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: scheme.primary,
@@ -450,7 +464,7 @@ class _PickDropzone extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Vídeo, GIF ou WebP',
+                        tr('Vídeo, GIF ou WebP', 'Video, GIF or WebP'),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -602,7 +616,10 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
     } catch (_) {
       if (!mounted || _cancelling) return;
       setState(() {
-        _error = 'Algo deu errado durante a conversão.';
+        _error = tr(
+          'Algo deu errado durante a conversão.',
+          'Something went wrong during the conversion.',
+        );
         _phase = _ConvertPhase.failed;
       });
     }
@@ -633,7 +650,10 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
         _saving = false;
         _saved = true;
       });
-      await showSavedDialog(context, 'Arquivo salvo na galeria.');
+      await showSavedDialog(
+        context,
+        tr('Arquivo salvo na galeria.', 'File saved to the gallery.'),
+      );
     } on OutputException catch (e) {
       if (!mounted) return;
       // Dentro de um popup o SnackBar sairia atrás do véu do diálogo, por
@@ -706,7 +726,12 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
       ),
       const SizedBox(height: 28),
       Text(
-        _cancelling ? 'Cancelando…' : 'Convertendo para ${widget.format.label}',
+        _cancelling
+            ? tr('Cancelando…', 'Cancelling…')
+            : tr(
+                'Convertendo para ${widget.format.label}',
+                'Converting to ${widget.format.label}',
+              ),
         textAlign: TextAlign.center,
         style: theme.textTheme.titleLarge,
       ),
@@ -714,7 +739,7 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
       TextButton.icon(
         onPressed: _cancelling ? null : _cancel,
         icon: const Icon(Icons.close),
-        label: const Text('Cancelar'),
+        label: Text(tr('Cancelar', 'Cancel')),
       ),
     ];
   }
@@ -724,7 +749,7 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
       Icon(Icons.error_outline, size: 56, color: theme.colorScheme.error),
       const SizedBox(height: 16),
       Text(
-        'Não deu certo',
+        tr('Não deu certo', 'It did not work'),
         textAlign: TextAlign.center,
         style: theme.textTheme.titleLarge,
       ),
@@ -737,12 +762,12 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
       if (_errorLogs != null)
         TextButton(
           onPressed: () => _showLogs(context),
-          child: const Text('Ver detalhes técnicos'),
+          child: Text(tr('Ver detalhes técnicos', 'See technical details')),
         ),
       const SizedBox(height: 12),
       FilledButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Fechar'),
+        child: Text(tr('Fechar', 'Close')),
       ),
     ];
   }
@@ -753,7 +778,7 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
 
     return [
       Text(
-        '${widget.format.label} pronto',
+        tr('${widget.format.label} pronto', '${widget.format.label} ready'),
         textAlign: TextAlign.center,
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w700,
@@ -813,10 +838,10 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
             : Icon(_saved ? Icons.check_rounded : Icons.download_rounded),
         label: Text(
           _saving
-              ? 'Salvando…'
+              ? tr('Salvando…', 'Saving…')
               : _saved
-              ? 'Salvo na galeria'
-              : 'Salvar na galeria',
+              ? tr('Salvo na galeria', 'Saved to gallery')
+              : tr('Salvar na galeria', 'Save to gallery'),
         ),
       ),
       const SizedBox(height: 12),
@@ -824,15 +849,18 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
         onPressed: () => _output.share(
           _file!,
           mimeType: widget.format.mimeType,
-          text: '${widget.format.label} feito com o app GitBat',
+          text: tr(
+            '${widget.format.label} feito com o app GitBat',
+            '${widget.format.label} made with the GitBat app',
+          ),
         ),
         icon: const Icon(Icons.share_outlined),
-        label: const Text('Compartilhar'),
+        label: Text(tr('Compartilhar', 'Share')),
       ),
       const SizedBox(height: 4),
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Fechar'),
+        child: Text(tr('Fechar', 'Close')),
       ),
     ];
   }
@@ -842,7 +870,7 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Detalhes técnicos'),
+        title: Text(tr('Detalhes técnicos', 'Technical details')),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
@@ -857,16 +885,16 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: logs));
               if (dialogContext.mounted) {
-                ScaffoldMessenger.of(
-                  dialogContext,
-                ).showSnackBar(const SnackBar(content: Text('Log copiado.')));
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text(tr('Log copiado.', 'Log copied.'))),
+                );
               }
             },
-            child: const Text('Copiar'),
+            child: Text(tr('Copiar', 'Copy')),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Fechar'),
+            child: Text(tr('Fechar', 'Close')),
           ),
         ],
       ),

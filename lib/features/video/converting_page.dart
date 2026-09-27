@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
@@ -75,7 +76,12 @@ class _ConvertingPageState extends State<ConvertingPage> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Algo deu errado durante a conversão.');
+      setState(
+        () => _error = tr(
+          'Algo deu errado durante a conversão.',
+          'Something went wrong during the conversion.',
+        ),
+      );
     }
   }
 
@@ -138,8 +144,11 @@ class _ConvertingPageState extends State<ConvertingPage> {
         const SizedBox(height: 28),
         Text(
           _cancelling
-              ? 'Cancelando…'
-              : 'Convertendo em ${widget.settings.format.shortLabel}',
+              ? tr('Cancelando…', 'Cancelling…')
+              : tr(
+                  'Convertendo em ${widget.settings.format.shortLabel}',
+                  'Converting to ${widget.settings.format.shortLabel}',
+                ),
           style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 8),
@@ -149,8 +158,10 @@ class _ConvertingPageState extends State<ConvertingPage> {
           // "Peso previsto" com esse número para uma exportação em WebP
           // seria enganoso, então a linha some nesse caso.
           widget.settings.format == OutputFormat.gif
-              ? '${widget.estimate.width}×${widget.estimate.height} px\n'
-                    'Peso previsto: ${widget.estimate.formatted}'
+              ? tr(
+                  '${widget.estimate.width}×${widget.estimate.height} px\nPeso previsto: ${widget.estimate.formatted}',
+                  '${widget.estimate.width}×${widget.estimate.height} px\nEstimated size: ${widget.estimate.formatted}',
+                )
               : '${widget.estimate.width}×${widget.estimate.height} px',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -161,7 +172,7 @@ class _ConvertingPageState extends State<ConvertingPage> {
         TextButton.icon(
           onPressed: _cancelling ? null : _cancel,
           icon: const Icon(Icons.close),
-          label: const Text('Cancelar'),
+          label: Text(tr('Cancelar', 'Cancel')),
         ),
       ],
     );
@@ -174,7 +185,10 @@ class _ConvertingPageState extends State<ConvertingPage> {
       children: [
         Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
         const SizedBox(height: 20),
-        Text('Não deu certo', style: theme.textTheme.titleLarge),
+        Text(
+          tr('Não deu certo', 'It did not work'),
+          style: theme.textTheme.titleLarge,
+        ),
         const SizedBox(height: 8),
         Text(
           _error!,
@@ -185,13 +199,13 @@ class _ConvertingPageState extends State<ConvertingPage> {
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => _showLogs(context),
-            child: const Text('Ver detalhes técnicos'),
+            child: Text(tr('Ver detalhes técnicos', 'See technical details')),
           ),
         ],
         const SizedBox(height: 16),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Voltar e ajustar'),
+          child: Text(tr('Voltar e ajustar', 'Go back and adjust')),
         ),
       ],
     );
@@ -205,7 +219,7 @@ class _ConvertingPageState extends State<ConvertingPage> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Detalhes técnicos'),
+        title: Text(tr('Detalhes técnicos', 'Technical details')),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
@@ -220,16 +234,16 @@ class _ConvertingPageState extends State<ConvertingPage> {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: logs));
               if (dialogContext.mounted) {
-                ScaffoldMessenger.of(
-                  dialogContext,
-                ).showSnackBar(const SnackBar(content: Text('Log copiado.')));
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text(tr('Log copiado.', 'Log copied.'))),
+                );
               }
             },
-            child: const Text('Copiar'),
+            child: Text(tr('Copiar', 'Copy')),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Fechar'),
+            child: Text(tr('Fechar', 'Close')),
           ),
         ],
       ),

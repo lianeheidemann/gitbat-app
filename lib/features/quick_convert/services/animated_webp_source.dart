@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -152,7 +153,11 @@ Future<VideoInfo> probeAnimatedWebp(
     final codec = await openCodec();
     try {
       for (var i = 0; i < frameCount; i++) {
-        if (ffmpeg.isCancelled) throw FfmpegException('Conversão cancelada.');
+        if (ffmpeg.isCancelled) {
+          throw FfmpegException(
+            tr('Conversão cancelada.', 'Conversion cancelled.'),
+          );
+        }
         final frame = await codec.getNextFrame();
         // Cru (sem codificar PNG no Flutter, que era o lento), com alfa
         // "reto", que é o que o FFmpeg espera em rgba.

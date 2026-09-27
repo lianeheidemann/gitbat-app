@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../models/collage_text.dart';
@@ -165,7 +166,7 @@ class TextFontSizeRow extends StatelessWidget {
     final points = item.fontSizePoints;
     return PanelSliderRow(
       sliderKey: const ValueKey('textFontSizeSlider'),
-      label: 'Tamanho da fonte',
+      label: tr('Tamanho da fonte', 'Font size'),
       valueLabel: '$points',
       value: points.toDouble(),
       min: CollageTextItem.minFontSizePoints.toDouble(),

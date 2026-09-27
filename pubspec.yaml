@@ -61,7 +61,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/icon/icon-v2/morceguinho-icone-simples.png
+    - recursos/marca/gitbat-logo.png
     - assets/background/
     - assets/fonts/
     - assets/frame/

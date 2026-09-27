@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show Size;
@@ -87,15 +88,19 @@ class FfmpegService {
   Future<VideoInfo> probe(String path) async {
     final file = File(path);
     if (!file.existsSync()) {
-      throw FfmpegException('Arquivo não encontrado: $path');
+      throw FfmpegException(
+        tr('Arquivo não encontrado: $path', 'File not found: $path'),
+      );
     }
 
     final session = await FFprobeKit.getMediaInformation(path);
     final info = session.getMediaInformation();
     if (info == null) {
       throw FfmpegException(
-        'Não foi possível ler este arquivo. Ele pode estar corrompido ou em '
-        'um formato não suportado.',
+        tr(
+          'Não foi possível ler este arquivo. Ele pode estar corrompido ou em um formato não suportado.',
+          'Could not read this file. It may be corrupted or in an unsupported format.',
+        ),
         logs: await session.getAllLogsAsString() ?? '',
       );
     }
@@ -106,19 +111,34 @@ class FfmpegService {
       orElse: () => null,
     );
     if (video == null) {
-      throw FfmpegException('Este arquivo não tem faixa de vídeo.');
+      throw FfmpegException(
+        tr(
+          'Este arquivo não tem faixa de vídeo.',
+          'This file has no video track.',
+        ),
+      );
     }
 
     final width = video.getWidth() ?? 0;
     final height = video.getHeight() ?? 0;
     if (width <= 0 || height <= 0) {
-      throw FfmpegException('Não foi possível descobrir o tamanho do vídeo.');
+      throw FfmpegException(
+        tr(
+          'Não foi possível descobrir o tamanho do vídeo.',
+          'Could not find out the video size.',
+        ),
+      );
     }
 
     final duration =
         double.tryParse(info.getDuration() ?? '') ?? durationFrom(video) ?? 0;
     if (duration <= 0) {
-      throw FfmpegException('Não foi possível descobrir a duração do vídeo.');
+      throw FfmpegException(
+        tr(
+          'Não foi possível descobrir a duração do vídeo.',
+          'Could not find out the video duration.',
+        ),
+      );
     }
 
     // Desempate, não substituto: quando o FFprobe informa uma rotação, ela
@@ -289,12 +309,21 @@ class FfmpegService {
               '-an',
               mergedPath,
             ];
-      await _run(args, step: 'texto sobre o ${settings.format.shortLabel}');
+      await _run(
+        args,
+        step: tr(
+          'texto sobre o ${settings.format.shortLabel}',
+          'text over the ${settings.format.shortLabel}',
+        ),
+      );
 
       final merged = File(mergedPath);
       if (!merged.existsSync() || merged.lengthSync() == 0) {
         throw FfmpegException(
-          'Não foi possível desenhar o texto sobre o resultado.',
+          tr(
+            'Não foi possível desenhar o texto sobre o resultado.',
+            'Could not draw the text over the result.',
+          ),
         );
       }
       await merged.copy(outputPath);
@@ -423,13 +452,18 @@ class FfmpegService {
                   outputPath: outputPath,
                 ),
           onTimeMs: (ms) => onProgress?.call(_ratio(ms, totalMs)),
-          step:
-              'montagem do ${settings.format.shortLabel} com moldura de imagem',
+          step: tr(
+            'montagem do ${settings.format.shortLabel} com moldura de imagem',
+            'assembly of the ${settings.format.shortLabel} with an image frame',
+          ),
         );
         var output = File(outputPath);
         if (!output.existsSync() || output.lengthSync() == 0) {
           throw FfmpegException(
-            'O arquivo saiu vazio. Tente outro trecho do vídeo.',
+            tr(
+              'O arquivo saiu vazio. Tente outro trecho do vídeo.',
+              'The file came out empty. Try another part of the video.',
+            ),
           );
         }
         await _applyTextOverlay(
@@ -470,7 +504,7 @@ class FfmpegService {
             maskPath: maskPath,
           ),
           onTimeMs: (ms) => onProgress?.call(_ratio(ms, totalMs)),
-          step: 'montagem do WebP',
+          step: tr('montagem do WebP', 'WebP assembly'),
         );
       } else if (maskPath != null && settings.frame.transparentBackground) {
         await _run(
@@ -481,7 +515,7 @@ class FfmpegService {
             outputPath: outputPath,
           ),
           onTimeMs: (ms) => onProgress?.call(_ratio(ms, totalMs)),
-          step: 'montagem do GIF transparente',
+          step: tr('montagem do GIF transparente', 'transparent GIF assembly'),
         );
       } else {
         await _run(
@@ -492,10 +526,14 @@ class FfmpegService {
             maskPath: maskPath,
           ),
           onTimeMs: (ms) => onProgress?.call(_ratio(ms, totalMs) * 0.35),
-          step: 'geração da paleta',
+          step: tr('geração da paleta', 'palette generation'),
         );
 
-        if (_cancelled) throw FfmpegException('Conversão cancelada.');
+        if (_cancelled) {
+          throw FfmpegException(
+            tr('Conversão cancelada.', 'Conversion cancelled.'),
+          );
+        }
 
         await _run(
           paletteUseArgs(
@@ -506,14 +544,17 @@ class FfmpegService {
             maskPath: maskPath,
           ),
           onTimeMs: (ms) => onProgress?.call(0.35 + _ratio(ms, totalMs) * 0.65),
-          step: 'montagem do GIF',
+          step: tr('montagem do GIF', 'GIF assembly'),
         );
       }
 
       var output = File(outputPath);
       if (!output.existsSync() || output.lengthSync() == 0) {
         throw FfmpegException(
-          'O arquivo saiu vazio. Tente outro trecho do vídeo.',
+          tr(
+            'O arquivo saiu vazio. Tente outro trecho do vídeo.',
+            'The file came out empty. Try another part of the video.',
+          ),
         );
       }
       await _applyTextOverlay(
@@ -600,13 +641,18 @@ class FfmpegService {
           outputPath: outputPath,
         ),
         onTimeMs: (ms) => onProgress?.call(_ratio(ms, totalMs)),
-        step: 'conversão para ${format.label}',
+        step: tr(
+          'conversão para ${format.label}',
+          'conversion to ${format.label}',
+        ),
       );
       onProgress?.call(1.0);
 
       final output = File(outputPath);
       if (!output.existsSync() || output.lengthSync() == 0) {
-        throw FfmpegException('O arquivo saiu vazio.');
+        throw FfmpegException(
+          tr('O arquivo saiu vazio.', 'The file came out empty.'),
+        );
       }
       return output;
     } finally {
@@ -678,11 +724,18 @@ class FfmpegService {
         if (ReturnCode.isSuccess(code)) {
           completer.complete();
         } else if (ReturnCode.isCancel(code)) {
-          completer.completeError(FfmpegException('Conversão cancelada.'));
+          completer.completeError(
+            FfmpegException(
+              tr('Conversão cancelada.', 'Conversion cancelled.'),
+            ),
+          );
         } else {
           completer.completeError(
             FfmpegException(
-              'O FFmpeg falhou durante a $step.',
+              tr(
+                'O FFmpeg falhou durante a $step.',
+                'FFmpeg failed during $step.',
+              ),
               logs: await session.getAllLogsAsString() ?? '',
             ),
           );
@@ -721,7 +774,7 @@ class FfmpegService {
   }) async {
     // Sem zerar `_cancelled`: um Cancelar tocado enquanto os quadros ainda
     // eram preparados tem que valer aqui também.
-    const step = 'leitura do WebP animado';
+    final step = tr('leitura do WebP animado', 'animated WebP reading');
     List<String> args(String input) => rawRgbaToMovArgs(
       input: input,
       width: width,
@@ -757,7 +810,11 @@ class FfmpegService {
       } catch (_) {
         // Cancelado: nada de recomeçar pelo arquivo abaixo (era o que
         // deixava o app parado depois do Cancelar).
-        if (_cancelled) throw FfmpegException('Conversão cancelada.');
+        if (_cancelled) {
+          throw FfmpegException(
+            tr('Conversão cancelada.', 'Conversion cancelled.'),
+          );
+        }
         // Senão, cai para o arquivo abaixo.
       } finally {
         unawaited(FFmpegKitConfig.closeFFmpegPipe(pipePath).catchError((_) {}));
@@ -819,7 +876,7 @@ class FfmpegService {
           palettePath: palettePath,
           colors: colors,
         ),
-        step: 'paleta da montagem',
+        step: tr('paleta da montagem', 'collage palette'),
         onTimeMs: onProgress == null || totalMs <= 0
             ? null
             : (ms) => onProgress(_ratio(ms, totalMs) * paletteShare),
@@ -835,7 +892,7 @@ class FfmpegService {
           loop: loop,
           palettePath: palettePath,
         ),
-        step: 'exportação da montagem',
+        step: tr('exportação da montagem', 'collage export'),
         // Mesmo teto de [_ratio] usado por [convert] — sem ele a barra
         // também parece travar perto do fim no WebP da montagem, pelo mesmo
         // motivo (a montagem do contêiner WebPAnimEncoderAssemble roda numa
@@ -854,7 +911,9 @@ class FfmpegService {
 
     final output = File(outputPath);
     if (!output.existsSync() || output.lengthSync() == 0) {
-      throw FfmpegException('O arquivo saiu vazio.');
+      throw FfmpegException(
+        tr('O arquivo saiu vazio.', 'The file came out empty.'),
+      );
     }
     return output;
   }
@@ -1024,7 +1083,7 @@ class FfmpegService {
                 artPath: frameArtPath,
                 outputPath: gifPath,
               ),
-              step: 'medição',
+              step: tr('medição', 'measurement'),
             );
             await _run(
               imageFramedGifArgs(
@@ -1034,7 +1093,7 @@ class FfmpegService {
                 outputPath: firstFramePath,
                 frameLimit: 1,
               ),
-              step: 'medição',
+              step: tr('medição', 'measurement'),
             );
           } else if (maskPath != null && sample.frame.transparentBackground) {
             await _run(
@@ -1044,7 +1103,7 @@ class FfmpegService {
                 maskPath: maskPath,
                 outputPath: gifPath,
               ),
-              step: 'medição',
+              step: tr('medição', 'measurement'),
             );
             await _run(
               transparentGifArgs(
@@ -1054,7 +1113,7 @@ class FfmpegService {
                 outputPath: firstFramePath,
                 frameLimit: 1,
               ),
-              step: 'medição',
+              step: tr('medição', 'measurement'),
             );
           } else {
             await _run(
@@ -1064,7 +1123,7 @@ class FfmpegService {
                 palettePath: palettePath,
                 maskPath: maskPath,
               ),
-              step: 'medição',
+              step: tr('medição', 'measurement'),
             );
             await _run(
               paletteUseArgs(
@@ -1074,7 +1133,7 @@ class FfmpegService {
                 outputPath: gifPath,
                 maskPath: maskPath,
               ),
-              step: 'medição',
+              step: tr('medição', 'measurement'),
             );
             await _run(
               paletteUseArgs(
@@ -1085,7 +1144,7 @@ class FfmpegService {
                 maskPath: maskPath,
                 frameLimit: 1,
               ),
-              step: 'medição',
+              step: tr('medição', 'measurement'),
             );
           }
 
@@ -1168,7 +1227,7 @@ class FfmpegService {
         '-q:v',
         '3',
         path,
-      ], step: 'extração de quadro');
+      ], step: tr('extração de quadro', 'frame extraction'));
     } on FfmpegException {
       return null;
     } finally {

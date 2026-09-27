@@ -30,7 +30,10 @@ PASTAS_DE_CONTEUDO = ['assets/background', 'assets/fonts', 'assets/frame',
                       'assets/sticker']
 
 # Arquivos avulsos que continuam declarados um a um.
-AVULSOS = ['assets/icon/icon-v2/morceguinho-icone-simples.png']
+# `recursos/` guarda cópias estáveis da arte que o app usa, separadas de
+# `assets/` (pasta de trabalho): a logo da tela inicial é uma cópia de
+# assets/readme/gitbat-logo.png.
+AVULSOS = ['recursos/marca/gitbat-logo.png']
 
 IGNORADOS = {'.ds_store', 'thumbs.db'}
 

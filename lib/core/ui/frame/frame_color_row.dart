@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -43,7 +44,12 @@ Future<ui.Image> renderPreviewImage(
 ) async {
   final renderObject = previewKey.currentContext?.findRenderObject();
   if (renderObject is! RenderRepaintBoundary) {
-    throw StateError('Prévia indisponível para o conta-gotas.');
+    throw StateError(
+      tr(
+        'Prévia indisponível para o conta-gotas.',
+        'Preview unavailable for the eyedropper.',
+      ),
+    );
   }
   return renderObject.toImage(
     pixelRatio: MediaQuery.of(context).devicePixelRatio,

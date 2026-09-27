@@ -1,3 +1,4 @@
+import '../../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/collage_settings.dart';
@@ -47,7 +48,7 @@ class CollageMarginPanel extends StatelessWidget {
                   _marginRow(
                     context,
                     icon: Icons.border_all_rounded,
-                    label: 'Tudo',
+                    label: tr('Tudo', 'All'),
                     // Valor próprio (ver [marginAllValue]) — não recalcula
                     // a média a cada rebuild, então arrastar "Externa"/
                     // "Entre fotos" não move este slider.
@@ -57,7 +58,7 @@ class CollageMarginPanel extends StatelessWidget {
                   _marginRow(
                     context,
                     icon: Icons.border_outer_rounded,
-                    label: 'Externa',
+                    label: tr('Externa', 'Outer'),
                     value: outer,
                     onChanged: (v) => actions.update(
                       settings.copyWith(outerMarginRatio: v),
@@ -67,7 +68,7 @@ class CollageMarginPanel extends StatelessWidget {
                   _marginRow(
                     context,
                     icon: Icons.border_inner_rounded,
-                    label: 'Entre fotos',
+                    label: tr('Entre fotos', 'Between photos'),
                     value: inner,
                     onChanged: (v) => actions.update(
                       settings.copyWith(innerMarginRatio: v),
@@ -78,7 +79,7 @@ class CollageMarginPanel extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Zerar margens',
+              tooltip: tr('Zerar margens', 'Clear margins'),
               onPressed: outer == 0 && inner == 0 ? null : onResetMargins,
               icon: const Icon(Icons.refresh_rounded),
             ),

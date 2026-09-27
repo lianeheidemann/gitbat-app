@@ -1,3 +1,4 @@
+import '../../../../app/language_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -58,7 +59,7 @@ class CollageBackgroundPanel extends StatelessWidget {
         // cantos". Transparente/Cor/Imagem valem para o alvo escolhido, por
         // isso ficam dentro da caixa dele (ver [TargetSubPanel]).
         TargetSubPanel(
-          options: const ['Montagem', 'Fotos'],
+          options: [tr('Montagem', 'Collage'), tr('Fotos', 'Photos')],
           selectedIndex: targetsPhotos ? 1 : 0,
           onSelected: (index) => onTargetChanged(index == 1),
           child: Column(
@@ -73,20 +74,20 @@ class CollageBackgroundPanel extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  for (final entry in const [
+                  for (final entry in [
                     (
                       CollageBackgroundMode.transparent,
-                      'Transparente',
+                      tr('Transparente', 'Transparent'),
                       Icons.check_box_outline_blank_rounded,
                     ),
                     (
                       CollageBackgroundMode.color,
-                      'Cor',
+                      tr('Cor', 'Color'),
                       Icons.palette_outlined,
                     ),
                     (
                       CollageBackgroundMode.image,
-                      'Imagem',
+                      tr('Imagem', 'Image'),
                       Icons.image_outlined,
                     ),
                   ])
@@ -104,7 +105,7 @@ class CollageBackgroundPanel extends StatelessWidget {
               if (background.mode == CollageBackgroundMode.color) ...[
                 const SizedBox(height: 8),
                 PanelColorRow(
-                  label: 'Cor do fundo',
+                  label: tr('Cor do fundo', 'Background color'),
                   color: background.color,
                   onTap: () => _openBackgroundColorPicker(context),
                 ),
@@ -154,7 +155,10 @@ class CollageBackgroundPanel extends StatelessWidget {
 
           final importedIndex = index - bundled.length;
           if (importedIndex == importedBackgrounds.length) {
-            return ImportAssetTile(onTap: onImport, label: 'Importar');
+            return ImportAssetTile(
+              onTap: onImport,
+              label: tr('Importar', 'Import'),
+            );
           }
           final asset = importedBackgrounds[importedIndex];
           final selected = targetBackground.imagePath == asset.filePath;
@@ -178,7 +182,7 @@ class CollageBackgroundPanel extends StatelessWidget {
     var checkpointPushed = false;
     showCollageColorPickerSheet(
       context: context,
-      title: 'Cor do fundo',
+      title: tr('Cor do fundo', 'Background color'),
       initialColor: targetBackground.color,
       onColorSelected: (color) {
         if (!checkpointPushed) {

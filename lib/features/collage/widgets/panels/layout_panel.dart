@@ -1,3 +1,4 @@
+import '../../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/collage_layout.dart';
@@ -190,7 +191,7 @@ class CollageLayoutPanel extends StatelessWidget {
         Expanded(
           child: _stepperRow(
             context,
-            'Colunas',
+            tr('Colunas', 'Columns'),
             layout.columns < 1 ? 2 : layout.columns,
             min: CollageLayout.minFreeGridSpan,
             max: CollageLayout.maxFreeGridSpan,
@@ -201,7 +202,7 @@ class CollageLayoutPanel extends StatelessWidget {
         Expanded(
           child: _stepperRow(
             context,
-            'Linhas',
+            tr('Linhas', 'Rows'),
             layout.rows < 1 ? 2 : layout.rows,
             min: CollageLayout.minFreeGridSpan,
             max: CollageLayout.maxFreeGridSpan,
@@ -222,7 +223,7 @@ class CollageLayoutPanel extends StatelessWidget {
         : layout.cellCount;
     return _stepperRow(
       context,
-      'Fotos',
+      tr('Fotos', 'Photos'),
       count,
       min: CollageLayout.minRowColumnCount,
       max: CollageLayout.maxRowColumnCount,

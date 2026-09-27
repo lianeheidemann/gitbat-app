@@ -1,3 +1,4 @@
+import '../../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/collage_layout.dart';
@@ -45,7 +46,7 @@ class CollageAreasPanel extends StatelessWidget {
     final resetAll = OutlinedButton.icon(
       onPressed: layout.hasCustomSizes ? onReset : null,
       icon: const Icon(Icons.filter_none_rounded, size: 16),
-      label: const Text('Tamanhos iguais'),
+      label: Text(tr('Tamanhos iguais', 'Equal sizes')),
     );
     if (cell == null) {
       return Align(alignment: Alignment.centerRight, child: resetAll);
@@ -57,7 +58,7 @@ class CollageAreasPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Área selecionada',
+          tr('Área selecionada', 'Selected area'),
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -76,7 +77,7 @@ class CollageAreasPanel extends StatelessWidget {
               _AreaSliderRow(
                 sliderKey: const ValueKey('areaWidthSlider'),
                 icon: Icons.swap_horiz_rounded,
-                label: 'Largura',
+                label: tr('Largura', 'Width'),
                 value: layout.widthFractionOf(cell),
                 min: wLo,
                 max: wHi,
@@ -87,7 +88,7 @@ class CollageAreasPanel extends StatelessWidget {
               _AreaSliderRow(
                 sliderKey: const ValueKey('areaHeightSlider'),
                 icon: Icons.swap_vert_rounded,
-                label: 'Altura',
+                label: tr('Altura', 'Height'),
                 value: layout.heightFractionOf(cell),
                 min: hLo,
                 max: hHi,
@@ -116,7 +117,7 @@ class CollageAreasPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Travar área',
+                        tr('Travar área', 'Lock area'),
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -132,8 +133,10 @@ class CollageAreasPanel extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
-                    'Área travada: o tamanho dela não muda. Destrave para '
-                    'redimensionar.',
+                    tr(
+                      'Área travada: o tamanho dela não muda. Destrave para redimensionar.',
+                      'Area locked: its size does not change. Unlock to resize.',
+                    ),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -149,7 +152,7 @@ class CollageAreasPanel extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: lockAspect ? null : onResetArea,
                 icon: const Icon(Icons.restart_alt_rounded, size: 18),
-                label: const Text('Redefinir área'),
+                label: Text(tr('Redefinir área', 'Reset area')),
               ),
             ),
             const SizedBox(width: 8),

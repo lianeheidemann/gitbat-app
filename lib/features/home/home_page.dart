@@ -10,6 +10,7 @@ import '../../core/models/photo_info.dart';
 import '../svg/models/svg_info.dart';
 import '../svg/services/svg_source_fixer.dart';
 import '../../core/ffmpeg/ffmpeg_service.dart';
+import '../../app/language_controller.dart';
 import '../../app/theme_controller.dart';
 import 'widgets/gif_weight_help_sheet.dart';
 import '../collage/collage_page.dart';
@@ -46,7 +47,7 @@ class _HomePageState extends State<HomePage> {
       // o app não precisa de permissão de leitura de mídia.
       final picked = await FilePicker.pickFile(
         type: FileType.video,
-        dialogTitle: 'Escolha um vídeo',
+        dialogTitle: tr('Escolha um vídeo', 'Choose a video'),
       );
 
       final path = picked?.path;
@@ -80,7 +81,10 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = 'Não foi possível abrir este vídeo.';
+          _error = tr(
+            'Não foi possível abrir este vídeo.',
+            'Could not open this video.',
+          );
         });
       }
     }
@@ -98,7 +102,7 @@ class _HomePageState extends State<HomePage> {
     try {
       final picked = await FilePicker.pickFile(
         type: FileType.image,
-        dialogTitle: 'Escolha uma foto',
+        dialogTitle: tr('Escolha uma foto', 'Choose a photo'),
       );
 
       final path = picked?.path;
@@ -119,9 +123,10 @@ class _HomePageState extends State<HomePage> {
         if (mounted) {
           setState(() {
             _loading = false;
-            _error =
-                'Essa imagem é animada (GIF/WebP). "Editar imagem" só '
-                'aceita fotos paradas.';
+            _error = tr(
+              'Essa imagem é animada (GIF/WebP). "Editar imagem" só aceita fotos paradas.',
+              'This image is animated (GIF/WebP). "Edit image" only accepts still photos.',
+            );
           });
         }
         return;
@@ -143,7 +148,10 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = 'Não foi possível abrir esta foto.';
+          _error = tr(
+            'Não foi possível abrir esta foto.',
+            'Could not open this photo.',
+          );
         });
       }
     }
@@ -165,7 +173,7 @@ class _HomePageState extends State<HomePage> {
       final picked = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['svg'],
-        dialogTitle: 'Escolha um SVG',
+        dialogTitle: tr('Escolha um SVG', 'Choose an SVG'),
       );
 
       final pickedPath = picked?.path;
@@ -204,7 +212,10 @@ class _HomePageState extends State<HomePage> {
         if (mounted) {
           setState(() {
             _loading = false;
-            _error = 'Este SVG não tem um tamanho válido.';
+            _error = tr(
+              'Este SVG não tem um tamanho válido.',
+              'This SVG has no valid size.',
+            );
           });
         }
         return;
@@ -221,7 +232,10 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = 'Não foi possível abrir este SVG.';
+          _error = tr(
+            'Não foi possível abrir este SVG.',
+            'Could not open this SVG.',
+          );
         });
       }
     }
@@ -232,15 +246,27 @@ class _HomePageState extends State<HomePage> {
   static String _svgErrorMessage(Object error) {
     final text = error.toString();
     if (text.contains('did not specify dimensions')) {
-      return 'Este SVG não informa o tamanho (width/height ou viewBox).';
+      return tr(
+        'Este SVG não informa o tamanho (width/height ou viewBox).',
+        'This SVG does not declare its size (width/height or viewBox).',
+      );
     }
     if (text.contains('Invalid double') || text.contains('FormatException')) {
-      return 'Este SVG tem um número ou medida que o app não entende.';
+      return tr(
+        'Este SVG tem um número ou medida que o app não entende.',
+        'This SVG has a number or unit the app does not understand.',
+      );
     }
     if (text.contains('decode') || text.contains('Decode')) {
-      return 'Este SVG traz uma imagem embutida que não deu para ler.';
+      return tr(
+        'Este SVG traz uma imagem embutida que não deu para ler.',
+        'This SVG has an embedded image that could not be read.',
+      );
     }
-    return 'Não foi possível ler este arquivo como SVG.';
+    return tr(
+      'Não foi possível ler este arquivo como SVG.',
+      'Could not read this file as an SVG.',
+    );
   }
 
   /// Abre o seletor de arquivos permitindo escolher várias fotos de uma vez
@@ -257,7 +283,10 @@ class _HomePageState extends State<HomePage> {
     try {
       final picked = await FilePicker.pickFiles(
         type: FileType.image,
-        dialogTitle: 'Escolha as fotos da montagem',
+        dialogTitle: tr(
+          'Escolha as fotos da montagem',
+          'Choose the collage photos',
+        ),
       );
 
       if (picked.length < 2) {
@@ -266,7 +295,10 @@ class _HomePageState extends State<HomePage> {
             _loading = false;
             _error = picked.isEmpty
                 ? null
-                : 'Escolha pelo menos duas fotos para montar uma colagem.';
+                : tr(
+                    'Escolha pelo menos duas fotos para montar uma colagem.',
+                    'Choose at least two photos to make a collage.',
+                  );
           });
         }
         return;
@@ -293,7 +325,10 @@ class _HomePageState extends State<HomePage> {
       if (photos.length < 2) {
         setState(() {
           _loading = false;
-          _error = 'Escolha pelo menos duas fotos para montar uma colagem.';
+          _error = tr(
+            'Escolha pelo menos duas fotos para montar uma colagem.',
+            'Choose at least two photos to make a collage.',
+          );
         });
         return;
       }
@@ -306,7 +341,10 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = 'Não foi possível abrir essas fotos.';
+          _error = tr(
+            'Não foi possível abrir essas fotos.',
+            'Could not open these photos.',
+          );
         });
       }
     }
@@ -320,8 +358,21 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         actions: [
+          // Troca português ⇄ inglês; mostra o idioma atual.
+          TextButton.icon(
+            key: const ValueKey('languageToggle'),
+            onPressed: toggleLanguage,
+            icon: const Icon(Icons.translate, size: 20),
+            label: Text(languageNotifier.value.code),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurface,
+            ),
+          ),
           IconButton(
-            tooltip: 'Como deixar o GIF mais leve',
+            tooltip: tr(
+              'Como deixar o GIF mais leve',
+              'How to make the GIF lighter',
+            ),
             icon: const Icon(Icons.help_outline),
             onPressed: () => showGifWeightHelpSheet(context),
           ),
@@ -330,7 +381,9 @@ class _HomePageState extends State<HomePage> {
             builder: (context, mode, _) {
               final isDark = mode == ThemeMode.dark;
               return IconButton(
-                tooltip: isDark ? 'Ativar modo claro' : 'Ativar modo escuro',
+                tooltip: isDark
+                    ? tr('Ativar modo claro', 'Switch to light mode')
+                    : tr('Ativar modo escuro', 'Switch to dark mode'),
                 icon: Icon(
                   isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
                 ),
@@ -339,15 +392,16 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           IconButton(
-            tooltip: 'Sobre e licenças',
+            tooltip: tr('Sobre e licenças', 'About and licenses'),
             icon: const Icon(Icons.info_outline),
             onPressed: () => showAboutDialog(
               context: context,
               applicationName: 'GitBat',
               applicationVersion: '1.0.0',
-              applicationLegalese:
-                  'Conversão feita no próprio aparelho com FFmpeg (LGPL). '
-                  'Nenhum vídeo é enviado para a internet.',
+              applicationLegalese: tr(
+                'Conversão feita no próprio aparelho com FFmpeg (LGPL). Nenhum vídeo é enviado para a internet.',
+                'Conversion runs on the device with FFmpeg (LGPL). No video is sent to the internet.',
+              ),
             ),
           ),
         ],
@@ -361,12 +415,13 @@ class _HomePageState extends State<HomePage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
                 Image.asset(
-                  'assets/icon/icon-v2/morceguinho-icone-simples.png',
-                  width: 96,
+                  'recursos/marca/gitbat-logo.png',
+                  key: const ValueKey('homeLogo'),
                   height: 96,
                   fit: BoxFit.contain,
-                  semanticLabel: 'Ícone do GitBat',
+                  semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -378,8 +433,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Corte, ajuste o tamanho e a velocidade — e veja quanto o '
-                  'GIF vai pesar antes de converter.',
+                  tr(
+                    'Corte, ajuste o tamanho e a velocidade — e veja quanto o GIF vai pesar antes de converter.',
+                    'Trim, resize and change the speed — and see how big the GIF will be before converting.',
+                  ),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -421,7 +478,11 @@ class _HomePageState extends State<HomePage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.video_library_outlined),
-                  label: Text(_loading ? 'Abrindo…' : 'Escolher vídeo'),
+                  label: Text(
+                    _loading
+                        ? tr('Abrindo…', 'Opening…')
+                        : tr('Escolher vídeo', 'Choose video'),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -430,7 +491,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   onPressed: _loading ? null : _pickPhoto,
                   icon: const Icon(Icons.photo_filter_outlined),
-                  label: const Text('Editar imagem'),
+                  label: Text(tr('Editar imagem', 'Edit image')),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -439,7 +500,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   onPressed: _loading ? null : _pickSvg,
                   icon: const Icon(Icons.polyline_outlined),
-                  label: const Text('Editar SVG'),
+                  label: Text(tr('Editar SVG', 'Edit SVG')),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -448,7 +509,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   onPressed: _loading ? null : _pickPhotosForCollage,
                   icon: const Icon(Icons.dashboard_customize_outlined),
-                  label: const Text('Montagem'),
+                  label: Text(tr('Montagem', 'Collage')),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -463,7 +524,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                   icon: const Icon(Icons.cached_outlined),
-                  label: const Text('Converter formato'),
+                  label: Text(tr('Converter formato', 'Convert format')),
                 ),
                 const SizedBox(height: 16),
                 const _StepsCard(),
@@ -482,10 +543,13 @@ const _kStepCircleSize = 44.0;
 class _StepsCard extends StatelessWidget {
   const _StepsCard();
 
-  static const _steps = [
-    (icon: Icons.folder_open_outlined, label: 'Selecionar vídeo'),
-    (icon: Icons.tune_rounded, label: 'Ajustar'),
-    (icon: Icons.auto_fix_high_rounded, label: 'Converter'),
+  static List<({IconData icon, String label})> get _steps => [
+    (
+      icon: Icons.folder_open_outlined,
+      label: tr('Selecionar vídeo', 'Select video'),
+    ),
+    (icon: Icons.tune_rounded, label: tr('Ajustar', 'Adjust')),
+    (icon: Icons.auto_fix_high_rounded, label: tr('Converter', 'Convert')),
   ];
 
   @override

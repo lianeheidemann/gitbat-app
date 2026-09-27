@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 /// Aviso de "salvo" do app inteiro (Editar imagem, Editar SVG, Montagem,
@@ -13,7 +14,7 @@ Future<void> showSavedDialog(BuildContext context, String message) {
         Icons.check_circle_rounded,
         color: Theme.of(dialogContext).colorScheme.primary,
       ),
-      title: const Text('Salvo!'),
+      title: Text(tr('Salvo!', 'Saved!')),
       content: Text(message, textAlign: TextAlign.center),
       actionsAlignment: MainAxisAlignment.center,
       actions: [

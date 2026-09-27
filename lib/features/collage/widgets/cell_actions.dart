@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -35,7 +36,7 @@ void openCollageCellMenu(
   Widget removeSlotTile(BuildContext sheetContext) => ListTile(
     key: const ValueKey('removeCollageSlot'),
     leading: const Icon(Icons.remove_circle_outline_rounded),
-    title: const Text('Remover espaço'),
+    title: Text(tr('Remover espaço', 'Remove area')),
     onTap: () {
       Navigator.of(sheetContext).pop();
       removeCollageSlot(index, settings: settings, actions: actions);
@@ -57,7 +58,7 @@ void openCollageCellMenu(
           children: [
             ListTile(
               leading: const Icon(Icons.add_photo_alternate_outlined),
-              title: const Text('Escolher foto'),
+              title: Text(tr('Escolher foto', 'Choose photo')),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 pickPhotoForCell(
@@ -94,7 +95,7 @@ void openCollageCellMenu(
             children: [
               ListTile(
                 leading: const Icon(Icons.image_outlined),
-                title: const Text('Substituir foto'),
+                title: Text(tr('Substituir foto', 'Replace photo')),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   pickPhotoForCell(
@@ -108,7 +109,7 @@ void openCollageCellMenu(
               if (settings().cells.where((c) => c.hasPhoto).length > 1)
                 ListTile(
                   leading: const Icon(Icons.swap_horiz_rounded),
-                  title: const Text('Trocar com…'),
+                  title: Text(tr('Trocar com…', 'Swap with…')),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     openSwapPicker(
@@ -121,7 +122,7 @@ void openCollageCellMenu(
                 ),
               ListTile(
                 leading: const Icon(Icons.crop_rounded),
-                title: const Text('Recortar'),
+                title: Text(tr('Recortar', 'Crop')),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   openCropTool(
@@ -134,7 +135,7 @@ void openCollageCellMenu(
               ),
               ListTile(
                 leading: const Icon(Icons.tune_rounded),
-                title: const Text('Ajustar cor'),
+                title: Text(tr('Ajustar cor', 'Adjust color')),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   openCellColorAdjust(
@@ -147,7 +148,7 @@ void openCollageCellMenu(
               ),
               ListTile(
                 leading: const Icon(Icons.rotate_90_degrees_ccw_rounded),
-                title: const Text('Girar 90°'),
+                title: Text(tr('Girar 90°', 'Rotate 90°')),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   rotateCell(
@@ -160,7 +161,7 @@ void openCollageCellMenu(
               ),
               ListTile(
                 leading: const Icon(Icons.flip_rounded),
-                title: const Text('Espelhar horizontal'),
+                title: Text(tr('Espelhar horizontal', 'Flip horizontally')),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   flipCell(
@@ -174,7 +175,7 @@ void openCollageCellMenu(
               ),
               ListTile(
                 leading: const Icon(Icons.flip_rounded),
-                title: const Text('Espelhar vertical'),
+                title: Text(tr('Espelhar vertical', 'Flip vertically')),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   flipCell(
@@ -188,7 +189,7 @@ void openCollageCellMenu(
               ),
               ListTile(
                 leading: const Icon(Icons.center_focus_strong_outlined),
-                title: const Text('Recentralizar'),
+                title: Text(tr('Recentralizar', 'Recenter')),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   recenterCell(
@@ -208,7 +209,7 @@ void openCollageCellMenu(
                   color: Theme.of(sheetContext).colorScheme.error,
                 ),
                 title: Text(
-                  'Remover foto',
+                  tr('Remover foto', 'Remove photo'),
                   style: TextStyle(
                     color: Theme.of(sheetContext).colorScheme.error,
                   ),
@@ -249,7 +250,7 @@ Future<void> pickPhotoForCell(
   try {
     final picked = await FilePicker.pickFile(
       type: FileType.image,
-      dialogTitle: 'Escolha uma foto',
+      dialogTitle: tr('Escolha uma foto', 'Choose a photo'),
     );
     final path = picked?.path;
     if (path == null) return;
@@ -283,7 +284,9 @@ Future<void> pickPhotoForCell(
     );
     actions.update(settings().replacingCell(index, replaced));
   } catch (_) {
-    actions.message('Não foi possível abrir esta foto.');
+    actions.message(
+      tr('Não foi possível abrir esta foto.', 'Could not open this photo.'),
+    );
   }
 }
 
@@ -309,7 +312,7 @@ void openSwapPicker(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Trocar com qual foto?',
+                tr('Trocar com qual foto?', 'Swap with which photo?'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 14),
@@ -375,7 +378,7 @@ void openCellColorAdjust(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: ColorAdjustPanel(
-                title: 'Ajustar cor',
+                title: tr('Ajustar cor', 'Adjust color'),
                 hasAdjustments: cell.hasColorAdjustments,
                 valueOf: (adjustment) => adjustment.valueOf(cell),
                 onChangeStart: actions.pushUndoCheckpoint,

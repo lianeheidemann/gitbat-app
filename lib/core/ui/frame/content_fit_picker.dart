@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/frame_settings.dart';
@@ -163,7 +164,7 @@ class ExpandFitOptions extends StatelessWidget {
         ),
         PanelColorRow(
           key: const ValueKey('expandBackgroundColorRow'),
-          label: 'Cor do fundo da moldura',
+          label: tr('Cor do fundo da moldura', 'Frame background color'),
           color: frame.expandBackgroundColor,
           onTap: onPickColor,
         ),

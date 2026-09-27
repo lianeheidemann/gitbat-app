@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/services.dart';
 
 /// Lê o que foi empacotado no APK, para o app montar as listas de fontes,
@@ -64,6 +65,6 @@ String labelFromFileName(String path) {
   );
   name = name.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-  if (name.isEmpty) return 'Sem nome';
+  if (name.isEmpty) return tr('Sem nome', 'Untitled');
   return name[0].toUpperCase() + name.substring(1);
 }

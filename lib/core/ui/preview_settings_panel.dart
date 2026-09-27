@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_palette.dart';
@@ -28,7 +29,10 @@ class PreviewSettingsPanel extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text('Tema escuro', style: theme.textTheme.bodyMedium),
+                child: Text(
+                  tr('Tema escuro', 'Dark theme'),
+                  style: theme.textTheme.bodyMedium,
+                ),
               ),
               Switch(
                 key: const ValueKey('darkThemeSwitch'),
@@ -50,7 +54,10 @@ class PreviewSettingsPanel extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Fundo quadriculado na prévia',
+                  tr(
+                    'Fundo quadriculado na prévia',
+                    'Checkerboard preview background',
+                  ),
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
@@ -73,7 +80,7 @@ class PreviewSettingsPanel extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Paleta de cores',
+                      tr('Paleta de cores', 'Color palette'),
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
@@ -126,7 +133,7 @@ class _PaletteSwatch extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Paleta ${palette.label}',
+      label: tr('Paleta ${palette.label}', 'Palette ${palette.label}'),
       child: Tooltip(
         message: palette.label,
         child: InkResponse(

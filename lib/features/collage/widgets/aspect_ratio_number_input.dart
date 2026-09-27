@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 /// Campos "Largura : Altura" com um botão de confirmar, para digitar uma
@@ -40,8 +41,8 @@ class _CustomAspectRatioInputState extends State<CustomAspectRatioInput> {
           child: TextField(
             controller: _widthController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Largura',
+            decoration: InputDecoration(
+              labelText: tr('Largura', 'Width'),
               hintText: 'X',
               isDense: true,
             ),
@@ -55,8 +56,8 @@ class _CustomAspectRatioInputState extends State<CustomAspectRatioInput> {
           child: TextField(
             controller: _heightController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Altura',
+            decoration: InputDecoration(
+              labelText: tr('Altura', 'Height'),
               hintText: 'Y',
               isDense: true,
             ),
@@ -64,7 +65,7 @@ class _CustomAspectRatioInputState extends State<CustomAspectRatioInput> {
         ),
         const SizedBox(width: 8),
         IconButton.filled(
-          tooltip: 'Aplicar proporção',
+          tooltip: tr('Aplicar proporção', 'Apply aspect ratio'),
           onPressed: _apply,
           icon: const Icon(Icons.check_rounded),
         ),

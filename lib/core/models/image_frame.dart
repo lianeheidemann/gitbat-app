@@ -1,3 +1,5 @@
+import '../../app/translations.dart';
+
 /// Retângulo fracionário (0..1) relativo ao tamanho da própria arte de uma
 /// moldura de imagem — independe de `dart:ui`, no mesmo espírito minimalista
 /// dos outros modelos deste diretório.
@@ -35,7 +37,7 @@ enum ImageFrameSource {
 class ImageFrameAsset {
   const ImageFrameAsset({
     required this.id,
-    required this.label,
+    required this._label,
     required this.source,
     required this.contentRect,
     required this.nativeAspectRatio,
@@ -54,7 +56,10 @@ class ImageFrameAsset {
   /// Estável entre execuções para as artes empacotadas; gerado a partir do
   /// timestamp da importação para as artes do usuário.
   final String id;
-  final String label;
+  final String _label;
+
+  /// Nome mostrado na lista (as molduras embutidas são traduzidas).
+  String get label => trKey(_label);
   final ImageFrameSource source;
 
   /// Onde o vídeo deve aparecer, como fração do tamanho da própria arte.

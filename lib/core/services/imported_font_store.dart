@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -57,11 +58,13 @@ class ImportedFontStore {
     final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['ttf', 'otf'],
-      dialogTitle: 'Escolha um arquivo de fonte',
+      dialogTitle: tr('Escolha um arquivo de fonte', 'Choose a font file'),
     );
     final path = picked?.path;
     if (path == null) {
-      throw ImportedFontException('Nenhum arquivo selecionado.');
+      throw ImportedFontException(
+        tr('Nenhum arquivo selecionado.', 'No file selected.'),
+      );
     }
 
     final supportDir = await getApplicationSupportDirectory();
@@ -79,7 +82,7 @@ class ImportedFontStore {
     final font = ImportedFont(
       id: 'font_$stamp',
       family: 'ImportedFont$stamp',
-      label: label.isEmpty ? 'Fonte importada' : label,
+      label: label.isEmpty ? tr('Fonte importada', 'Imported font') : label,
       filePath: destPath,
     );
 
@@ -89,7 +92,10 @@ class ImportedFontStore {
     if (!registered) {
       await File(destPath).delete();
       throw ImportedFontException(
-        'Não foi possível ler este arquivo como fonte.',
+        tr(
+          'Não foi possível ler este arquivo como fonte.',
+          'Could not read this file as a font.',
+        ),
       );
     }
 

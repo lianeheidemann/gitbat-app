@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 /// Painel final do editor quando o formato escolhido é WebP — equivalente
@@ -53,7 +54,7 @@ class WebpConvertPanel extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Pronto para converter',
+                        tr('Pronto para converter', 'Ready to convert'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -63,9 +64,10 @@ class WebpConvertPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'A estimativa de tamanho ainda não está disponível para '
-                  'WebP nesta versão — o peso final aparece na tela de '
-                  'resultado, logo após a conversão.',
+                  tr(
+                    'A estimativa de tamanho ainda não está disponível para WebP nesta versão — o peso final aparece na tela de resultado, logo após a conversão.',
+                    'The size estimate is not available for WebP in this version yet — the final size shows on the result screen right after converting.',
+                  ),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
