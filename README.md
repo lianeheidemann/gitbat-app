@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="200" src="assets/video-to-gif-logo-adaptive.svg"/>
+<img width="120" src="assets/icon/icon-v2/morceguinho-icone-simples.png" alt="GitBat"/>
 
 # GitBat
 
