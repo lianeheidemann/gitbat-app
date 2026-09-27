@@ -164,7 +164,9 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
 - Per-photo replace, crop, rotate and flip from the cell menu; color
   adjustment for one photo or for all of them at once
 - Stickers (bundled or your own, organized in folders) and text with
-  imported fonts
+  imported fonts — the same "Stickers" tab is also in Editar imagem, Editar
+  vídeo and Editar SVG (exported into the photo, onto every video/GIF frame,
+  and into the SVG as a nested vector `<svg>` or an embedded `<image>`)
 - Animated export (PNG, GIF or WebP) whenever a photo in the collage is
   itself animated
 

@@ -209,10 +209,16 @@ class FfmpegService {
     required String stamp,
   }) async {
     final texts = settings.frame.texts;
-    if (texts.isEmpty) return;
+    final stickers = settings.frame.stickers;
+    if (texts.isEmpty && stickers.isEmpty) return;
 
     final (width, height) = settings.outputDimensions(video);
-    final layerBytes = await renderTextOverlayLayer(texts, width, height);
+    final layerBytes = await renderTextOverlayLayer(
+      texts,
+      width,
+      height,
+      stickers: stickers,
+    );
     final layerPath = '${dir.path}/texto_$stamp.png';
     await File(layerPath).writeAsBytes(layerBytes);
 

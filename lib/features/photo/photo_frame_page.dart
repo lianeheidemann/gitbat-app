@@ -41,6 +41,7 @@ import 'widgets/photo_placement_view.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
+import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import '../../core/ui/saved_dialog.dart';
 
@@ -153,6 +154,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   final _heightFocus = FocusNode();
 
   final _textOverlay = TextOverlayController();
+  final _stickerOverlay = StickerOverlayController();
+
+  /// Aba "Stickers" aberta — atualizado a cada build, antes da prévia.
+  bool _stickersTabActive = false;
 
   /// Aba aberta no rodapé (índice em [_sections]) — `null` fecha o painel e
   /// deixa a prévia com o máximo de espaço.
@@ -177,6 +182,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     super.initState();
     _loadImportedFrames();
     _textOverlay.loadFonts();
+    _stickerOverlay.load();
   }
 
   @override
@@ -186,6 +192,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     _widthFocus.dispose();
     _heightFocus.dispose();
     _textOverlay.dispose();
+    _stickerOverlay.dispose();
     // Os PNGs da borracha só existem para esta edição: quem quis guardar já
     // salvou ou compartilhou.
     for (final path in _erasedFiles) {
@@ -420,6 +427,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       builder: (_) => _colorAdjustSection(),
     ),
     EditorSection(
+      icon: Icons.emoji_emotions_outlined,
+      title: 'Stickers',
+      value: _frame.stickers.isEmpty ? 'Nenhum' : '${_frame.stickers.length}',
+      builder: (_) => _stickerSection(),
+    ),
+    EditorSection(
       icon: Icons.text_fields_rounded,
       title: 'Texto',
       value: _frame.texts.isEmpty ? 'Nenhum' : '${_frame.texts.length}',
@@ -447,6 +460,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final showCropHandles =
         active != null && sections[active].title == 'Recorte';
     final textTabActive = active != null && sections[active].title == 'Texto';
+    _stickersTabActive = active != null && sections[active].title == 'Stickers';
     final eraserTabActive =
         active != null && sections[active].title == 'Borracha mágica';
     return Scaffold(
@@ -625,13 +639,15 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       aspect = frame.imageFrame!.nativeAspectRatio;
       content = _imageFramedPreview(
         frame.imageFrame!,
-        gestures: !textTabActive,
+        gestures: !textTabActive && !_stickersTabActive,
       );
     } else {
       aspect = _photoAspectRatio;
       content = frame.style == FrameStyle.none
-          ? _plainPreview(gestures: !textTabActive)
-          : _proceduralFramedPreview(gestures: !textTabActive);
+          ? _plainPreview(gestures: !textTabActive && !_stickersTabActive)
+          : _proceduralFramedPreview(
+              gestures: !textTabActive && !_stickersTabActive,
+            );
     }
 
     return AspectRatio(
@@ -641,6 +657,18 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           fit: StackFit.expand,
           children: [
             content,
+            // Stickers por baixo dos textos.
+            StickerOverlayStack(
+              controller: _stickerOverlay,
+              stickers: _frame.stickers,
+              onChanged: (stickers) => _updateFrame(
+                _frame.copyWith(stickers: stickers),
+                pushUndo: false,
+              ),
+              canvasSize: constraints.biggest,
+              interactive: _stickersTabActive,
+              onGestureStart: _pushUndoCheckpoint,
+            ),
             TextOverlayStack(
               controller: _textOverlay,
               texts: _frame.texts,
@@ -1637,6 +1665,16 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           pushUndo: false,
         );
       },
+    );
+  }
+
+  Widget _stickerSection() {
+    _stickerOverlay.dropSelectionIfGone(_frame.stickers);
+    return StickerOverlayPanel(
+      controller: _stickerOverlay,
+      stickers: _frame.stickers,
+      onChanged: (stickers) =>
+          _updateFrame(_frame.copyWith(stickers: stickers)),
     );
   }
 

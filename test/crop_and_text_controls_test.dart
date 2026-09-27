@@ -157,6 +157,10 @@ void main() {
 
     testWidgets('"Tamanho da fonte" no Texto', (tester) async {
       await pumpPage(tester);
+      // Com a aba "Stickers" a barra ficou mais longa: "Texto" pode estar
+      // fora da tela.
+      await tester.ensureVisible(find.text('Texto').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Texto').last);
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'oi');

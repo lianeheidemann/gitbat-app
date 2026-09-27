@@ -34,6 +34,7 @@ import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import 'widgets/size_panel.dart';
+import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import 'widgets/webp_convert_panel.dart';
 
@@ -119,6 +120,10 @@ class _EditorPageState extends State<EditorPage> {
   final _heightFocus = FocusNode();
 
   final _textOverlay = TextOverlayController();
+  final _stickerOverlay = StickerOverlayController();
+
+  /// Aba "Stickers" aberta — atualizado a cada build, antes da prévia.
+  bool _stickersTabActive = false;
 
   VideoInfo get _video => widget.video;
 
@@ -136,6 +141,7 @@ class _EditorPageState extends State<EditorPage> {
     _initPlayer();
     _loadImportedFrames();
     _textOverlay.loadFonts();
+    _stickerOverlay.load();
   }
 
   /// Carrega as molduras de imagem importadas em sessões anteriores, para
@@ -176,6 +182,7 @@ class _EditorPageState extends State<EditorPage> {
     _widthFocus.dispose();
     _heightFocus.dispose();
     _textOverlay.dispose();
+    _stickerOverlay.dispose();
     super.dispose();
   }
 
@@ -325,6 +332,14 @@ class _EditorPageState extends State<EditorPage> {
         builder: (_) => _colorAdjustSection(),
       ),
       EditorSection(
+        icon: Icons.emoji_emotions_outlined,
+        title: 'Stickers',
+        value: _settings.frame.stickers.isEmpty
+            ? 'Nenhum'
+            : '${_settings.frame.stickers.length}',
+        builder: (_) => _stickerSection(),
+      ),
+      EditorSection(
         icon: Icons.text_fields_rounded,
         title: 'Texto',
         value: _settings.frame.texts.isEmpty
@@ -375,6 +390,8 @@ class _EditorPageState extends State<EditorPage> {
         active != null && sections[active].barLabel == 'Recorte';
     final textTabActive =
         active != null && sections[active].barLabel == 'Texto';
+    _stickersTabActive =
+        active != null && sections[active].barLabel == 'Stickers';
 
     return Scaffold(
       appBar: AppBar(
@@ -607,6 +624,24 @@ class _EditorPageState extends State<EditorPage> {
     return Stack(
       children: [
         content,
+        // Stickers por baixo dos textos.
+        Positioned.fill(
+          child: LayoutBuilder(
+            builder: (context, constraints) => StickerOverlayStack(
+              controller: _stickerOverlay,
+              stickers: _settings.frame.stickers,
+              onChanged: (stickers) => _update(
+                _settings.copyWith(
+                  frame: _settings.frame.copyWith(stickers: stickers),
+                ),
+                pushUndo: false,
+              ),
+              canvasSize: constraints.biggest,
+              interactive: _stickersTabActive,
+              onGestureStart: _pushUndoCheckpoint,
+            ),
+          ),
+        ),
         Positioned.fill(
           child: LayoutBuilder(
             builder: (context, constraints) => TextOverlayStack(
@@ -980,6 +1015,17 @@ class _EditorPageState extends State<EditorPage> {
           pushUndo: false,
         );
       },
+    );
+  }
+
+  Widget _stickerSection() {
+    _stickerOverlay.dropSelectionIfGone(_settings.frame.stickers);
+    return StickerOverlayPanel(
+      controller: _stickerOverlay,
+      stickers: _settings.frame.stickers,
+      onChanged: (stickers) => _update(
+        _settings.copyWith(frame: _settings.frame.copyWith(stickers: stickers)),
+      ),
     );
   }
 

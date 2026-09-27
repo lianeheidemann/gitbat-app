@@ -16,6 +16,7 @@ import '../../core/models/output_transform.dart';
 import 'models/svg_edit_settings.dart';
 import 'models/svg_info.dart';
 import '../../core/services/output_service.dart';
+import 'services/svg_sticker_art.dart';
 import 'services/svg_xml_editor.dart';
 import '../../core/ui/app_bar_title.dart';
 import '../../core/ui/checkerboard_background.dart';
@@ -30,6 +31,7 @@ import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
+import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/services/opaque_bounds.dart';
@@ -101,11 +103,16 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// Seleção, edição e fontes da aba "Texto" — o mesmo controlador de
   /// "Editar imagem"/"Editar vídeo".
   final _textOverlay = TextOverlayController();
+  final _stickerOverlay = StickerOverlayController();
+
+  /// Aba "Stickers" aberta — atualizado a cada build, antes da prévia.
+  bool _stickersTabActive = false;
 
   @override
   void initState() {
     super.initState();
     _textOverlay.loadFonts();
+    _stickerOverlay.load();
   }
 
   int get _sourceWidth => widget.svg.width.round();
@@ -133,6 +140,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     _widthFocus.dispose();
     _heightFocus.dispose();
     _textOverlay.dispose();
+    _stickerOverlay.dispose();
     super.dispose();
   }
 
@@ -228,6 +236,14 @@ class _SvgEditPageState extends State<SvgEditPage> {
       builder: (_) => _opacitySection(),
     ),
     EditorSection(
+      icon: Icons.emoji_emotions_outlined,
+      title: 'Stickers',
+      value: _settings.stickers.isEmpty
+          ? 'Nenhum'
+          : '${_settings.stickers.length}',
+      builder: (_) => _stickerSection(),
+    ),
+    EditorSection(
       icon: Icons.text_fields_rounded,
       title: 'Texto',
       value: _settings.texts.isEmpty ? 'Nenhum' : '${_settings.texts.length}',
@@ -256,6 +272,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     final showCropHandles =
         active != null && sections[active].title == 'Recorte';
     final textTabActive = active != null && sections[active].title == 'Texto';
+    _stickersTabActive = active != null && sections[active].title == 'Stickers';
 
     return Scaffold(
       appBar: AppBar(
@@ -346,6 +363,22 @@ class _SvgEditPageState extends State<SvgEditPage> {
   Widget _withTextOverlay(Widget content, bool textTabActive) => Stack(
     children: [
       content,
+      // Stickers por baixo dos textos, como na exportação.
+      Positioned.fill(
+        child: LayoutBuilder(
+          builder: (context, constraints) => StickerOverlayStack(
+            controller: _stickerOverlay,
+            stickers: _settings.stickers,
+            onChanged: (stickers) => _update(
+              _settings.copyWith(stickers: stickers),
+              pushUndo: false,
+            ),
+            canvasSize: constraints.biggest,
+            interactive: _stickersTabActive,
+            onGestureStart: _pushUndoCheckpoint,
+          ),
+        ),
+      ),
       Positioned.fill(
         child: LayoutBuilder(
           builder: (context, constraints) => TextOverlayStack(
@@ -361,6 +394,15 @@ class _SvgEditPageState extends State<SvgEditPage> {
       ),
     ],
   );
+
+  Widget _stickerSection() {
+    _stickerOverlay.dropSelectionIfGone(_settings.stickers);
+    return StickerOverlayPanel(
+      controller: _stickerOverlay,
+      stickers: _settings.stickers,
+      onChanged: (stickers) => _update(_settings.copyWith(stickers: stickers)),
+    );
+  }
 
   Widget _textSection() {
     _textOverlay.dropSelectionIfGone(_settings.texts);
@@ -1017,7 +1059,13 @@ class _SvgEditPageState extends State<SvgEditPage> {
 
   Future<String> _buildEditedSvg() async {
     final source = await File(widget.svg.path).readAsString();
-    return renderEditedSvg(source, widget.svg, _settings);
+    final stickerArt = await loadStickerSvgArt(_settings.stickers);
+    return renderEditedSvg(
+      source,
+      widget.svg,
+      _settings,
+      stickerArt: stickerArt,
+    );
   }
 
   String _suggestedFileName() {
