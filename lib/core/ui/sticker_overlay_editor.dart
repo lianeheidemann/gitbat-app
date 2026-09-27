@@ -11,6 +11,7 @@ import '../services/imported_asset_store.dart';
 import '../services/sticker_folder_store.dart';
 import 'collage_overlay_view.dart';
 import 'text_input_dialog.dart';
+import 'dialog_title.dart';
 
 /// Stickers arrastáveis sobre uma prévia — a mesma aba "Stickers" da
 /// Montagem (mesmas pastas, mesma arte, mesmos gestos), generalizada para
@@ -484,7 +485,7 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Apagar pasta?'),
+        title: DialogTitle('Apagar pasta?'),
         content: Text(
           inFolder == 0
               ? '"${folder.name}" vai ser apagada.'
@@ -493,10 +494,6 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
                     'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Apagar'),
@@ -535,7 +532,7 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remover sticker?'),
+        title: DialogTitle('Remover sticker?'),
         content: Text(
           inUse.isEmpty
               ? '"${asset.label}" vai ser removido da lista.'
@@ -544,10 +541,6 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
                     '${inUse.length == 1 ? 'vez' : 'vezes'}.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Remover'),

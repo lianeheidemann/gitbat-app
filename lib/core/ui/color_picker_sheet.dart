@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'dialog_title.dart';
 
 /// Swatches rápidos oferecidos antes da roda HSV completa — os mesmos em
 /// toda tela que escolhe cor (Montagem, Editar e Moldura em foto), para o
@@ -13,7 +14,8 @@ const collageColorSwatches = <Color>[
   Color(0xFFC9A8FF),
   Color(0xFFE57373),
   Color(0xFF58C78C),
-  Color(0xFFB8B36A),
+  // Amarelo vivo (antes, um amarelo-oliva apagado).
+  Color(0xFFFFD54F),
   Color(0xFF64B5F6),
   Color(0xFFE6A15D),
 ];
@@ -394,7 +396,7 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Toque na imagem para escolher a cor'),
+      title: DialogTitle('Toque na imagem para escolher a cor'),
       content: SizedBox(
         width: double.maxFinite,
         child: AspectRatio(
@@ -428,10 +430,6 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
           ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_preview),

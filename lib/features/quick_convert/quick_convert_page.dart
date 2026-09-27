@@ -123,6 +123,15 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
   /// Extrai um quadro do começo do arquivo (FFmpeg, pequeno) para a
   /// miniatura do cartão. Melhor esforço: sem ele, fica o ícone.
   Future<void> _loadThumbnail(VideoInfo video) async {
+    // GIF/WebP: o próprio arquivo serve de miniatura (o Flutter mostra na
+    // hora), sem esperar o FFmpeg.
+    final ext = video.path.split('.').last.toLowerCase();
+    if (ext == 'webp' || ext == 'gif') {
+      if (mounted && identical(_video, video)) {
+        setState(() => _thumbnail = File(video.path));
+      }
+      return;
+    }
     final at = video.durationSeconds > 1 ? 0.5 : 0.0;
     File? frame;
     try {
@@ -167,11 +176,14 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
         return;
       }
 
-      // WebP animado: o FFmpeg do app não decodifica, então os quadros
-      // passam pelo Flutter antes (ver `animated_webp_source.dart`).
-      final video = await isAnimatedWebp(path)
-          ? await probeAnimatedWebp(path, _ffmpeg)
-          : await _ffmpeg.probe(path);
+      // WebP animado: o FFmpeg do app não decodifica. Aqui só lemos o
+      // cabeçalho (instantâneo); a conversão pesada para o intermediário
+      // fica para quando tocar "Converter" (ver `animated_webp_source.dart`).
+      final video =
+          await readAnimatedWebpInfo(path) ??
+          (await isAnimatedWebp(path)
+              ? await probeAnimatedWebp(path, _ffmpeg)
+              : await _ffmpeg.probe(path));
       if (!mounted) return;
 
       setState(() {
@@ -545,8 +557,14 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
 
   Future<void> _start() async {
     try {
+      // WebP animado: o intermediário que o FFmpeg entende só é gerado
+      // agora, e não ao escolher o arquivo.
+      final video = needsWebpIntermediate(widget.video)
+          ? await probeAnimatedWebp(widget.video.path, _ffmpeg)
+          : widget.video;
+      if (!mounted) return;
       final file = await _ffmpeg.quickConvert(
-        video: widget.video,
+        video: video,
         format: widget.format,
         targetWidth: widget.targetWidth,
         onProgress: (value) {

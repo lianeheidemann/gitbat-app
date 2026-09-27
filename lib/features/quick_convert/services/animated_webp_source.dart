@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:path_provider/path_provider.dart';
@@ -29,6 +30,70 @@ Future<bool> isAnimatedWebp(String path) async {
     return false;
   }
 }
+
+/// Canvas, número de quadros e duração de um WebP animado, lidos direto do
+/// cabeçalho do arquivo (chunks `VP8X` e `ANMF`) — sem decodificar nenhum
+/// quadro, então é instantâneo mesmo num arquivo grande. `null` se o
+/// arquivo não tiver essa estrutura.
+({int width, int height, int frames, int durationMs})? parseAnimatedWebp(
+  Uint8List bytes,
+) {
+  if (bytes.length < 30) return null;
+  String tag(int at) => String.fromCharCodes(bytes.sublist(at, at + 4));
+  int u24(int at) => bytes[at] | (bytes[at + 1] << 8) | (bytes[at + 2] << 16);
+  int u32(int at) => u24(at) | (bytes[at + 3] << 24);
+  if (tag(0) != 'RIFF' || tag(8) != 'WEBP') return null;
+
+  int? width;
+  int? height;
+  var frames = 0;
+  var durationMs = 0;
+  var at = 12;
+  while (at + 8 <= bytes.length) {
+    final fourcc = tag(at);
+    final size = u32(at + 4);
+    final payload = at + 8;
+    if (payload + size > bytes.length) break;
+    if (fourcc == 'VP8X' && size >= 10) {
+      width = u24(payload + 4) + 1;
+      height = u24(payload + 7) + 1;
+    } else if (fourcc == 'ANMF' && size >= 16) {
+      frames++;
+      final ms = u24(payload + 12);
+      durationMs += ms <= 0 ? 100 : ms;
+    }
+    at = payload + size + (size.isOdd ? 1 : 0);
+  }
+  if (width == null || height == null || frames < 2) return null;
+  return (width: width, height: height, frames: frames, durationMs: durationMs);
+}
+
+/// [VideoInfo] de um WebP animado sem convertê-lo: o cartão da tela aparece
+/// na hora. O `path` continua sendo o `.webp` — a conversão para o `.mov`
+/// intermediário ([probeAnimatedWebp]) só acontece ao tocar "Converter".
+Future<VideoInfo?> readAnimatedWebpInfo(String path) async {
+  final file = File(path);
+  final bytes = await file.readAsBytes();
+  final info = parseAnimatedWebp(bytes);
+  if (info == null) return null;
+  final seconds = info.durationMs / 1000;
+  return VideoInfo(
+    path: path,
+    fileName: file.uri.pathSegments.last,
+    rawWidth: info.width,
+    rawHeight: info.height,
+    durationSeconds: seconds,
+    frameRate: seconds <= 0 ? 10 : info.frames / seconds,
+    bitrateBps: seconds <= 0 ? 0 : (bytes.length * 8 / seconds).round(),
+    fileSizeBytes: bytes.length,
+    codec: 'webp',
+  );
+}
+
+/// `true` quando [video] ainda aponta para o `.webp` original (lido por
+/// [readAnimatedWebpInfo]) e precisa virar `.mov` antes de converter.
+bool needsWebpIntermediate(VideoInfo video) =>
+    video.codec == 'webp' && video.path.toLowerCase().endsWith('.webp');
 
 /// Converte o WebP animado em [path] num `.mov` temporário e devolve o
 /// [VideoInfo] dele — com o nome e o tamanho do arquivo **original**, para
