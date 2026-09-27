@@ -18,6 +18,8 @@ import 'package:video_to_gif/core/ui/color_adjust_controls.dart';
 import 'package:video_to_gif/features/collage/widgets/folder_tab.dart';
 import 'package:video_to_gif/features/collage/widgets/target_sub_panel.dart';
 
+import 'helpers/animated_gif.dart';
+
 Future<void> _writeSolidPng(String path, int width, int height) async {
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
@@ -1555,5 +1557,32 @@ void main() {
     expect(lockedAfter.width, closeTo(lockedBefore.width, 0.1));
     expect(lockedAfter.height, closeTo(lockedBefore.height, 0.1));
     expect(lockedAfter.left, greaterThan(lockedBefore.left + 10));
+  });
+
+  testWidgets('duas fotos animadas: a folha de exportar pergunta a duração '
+      'mesmo com durações iguais', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final gifs = <PhotoInfo>[];
+    await tester.runAsync(() async {
+      for (var i = 0; i < 2; i++) {
+        final path = '${tempDir.path}/anim_$i.gif';
+        await writeAnimatedGif(path, frames: 4, delayCentiseconds: 10);
+        gifs.add(PhotoInfo(path: path, width: 40, height: 40));
+      }
+    });
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: gifs)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.download_rounded));
+    await _pumpUntilFound(tester, find.text('Exportar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('GIF'));
+    await tester.pumpAndSettle();
+    expect(find.text('Duração'), findsOneWidget);
+    expect(find.textContaining('A mais longa'), findsOneWidget);
+    expect(find.textContaining('A mais curta'), findsOneWidget);
   });
 }
