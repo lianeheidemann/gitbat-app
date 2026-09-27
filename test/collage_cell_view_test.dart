@@ -338,4 +338,103 @@ void main() {
       expect(menus, 0);
     },
   );
+
+  Future<ValueNotifier<CollageCellSettings>> pumpLiveCell(
+    WidgetTester tester,
+    CollageCellSettings initial,
+  ) async {
+    final cell = ValueNotifier(initial);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox.fromSize(
+              size: cellSize,
+              child: ValueListenableBuilder<CollageCellSettings>(
+                valueListenable: cell,
+                builder: (context, value, _) => CollageCellView(
+                  cell: value,
+                  cellSize: cellSize,
+                  onChanged: (updated) => cell.value = updated,
+                  onMenu: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return cell;
+  }
+
+  testWidgets('tocar na foto mostra as alças; elas ampliam e giram', (
+    tester,
+  ) async {
+    final cell = await pumpLiveCell(
+      tester,
+      CollageCellSettings(
+        photoPath: photoPath,
+        photoWidth: 100,
+        photoHeight: 100,
+      ),
+    );
+    expect(find.byKey(const ValueKey('cellResizeHandle')), findsNothing);
+
+    await tester.tap(find.byType(CollageCellView));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    final resize = find.byKey(const ValueKey('cellResizeHandle'));
+    final rotate = find.byKey(const ValueKey('cellRotateHandle'));
+    expect(resize, findsOneWidget);
+    expect(rotate, findsOneWidget);
+
+    final zoomBefore = cell.value.zoom;
+    final g = await tester.startGesture(tester.getCenter(resize));
+    for (var i = 0; i < 5; i++) {
+      await g.moveBy(const Offset(10, 10));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(cell.value.zoom, greaterThan(zoomBefore));
+
+    final r = await tester.startGesture(tester.getCenter(rotate));
+    for (var i = 0; i < 5; i++) {
+      await r.moveBy(const Offset(0, -12));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await r.up();
+    await tester.pumpAndSettle();
+    expect(cell.value.rotation, isNot(0));
+  });
+
+  testWidgets('arrastar perto do centro mostra a guia e encaixa', (
+    tester,
+  ) async {
+    final cell = await pumpLiveCell(
+      tester,
+      CollageCellSettings(
+        photoPath: photoPath,
+        photoWidth: 100,
+        photoHeight: 100,
+        zoom: 2,
+      ),
+    );
+    final g = await tester.startGesture(
+      tester.getCenter(find.byType(CollageCellView)),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    await g.moveBy(const Offset(20, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    await g.moveBy(const Offset(-19, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(
+      find.byKey(const ValueKey('cellCenterGuideVertical')),
+      findsOneWidget,
+    );
+    expect(cell.value.offsetX, 0);
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('cellCenterGuideVertical')), findsNothing);
+  });
 }
