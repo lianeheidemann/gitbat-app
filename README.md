@@ -4,7 +4,7 @@
 
 # Video to GIF
 
-<img width="460" src="assets/video-to-gif-badges-adaptive-v9.svg"/><br>
+<img width="460" src="assets/video-to-gif-badges-adaptive-v9.svg"/>
 
 <p align="center"><a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a>&nbsp;<a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a></p>
 
