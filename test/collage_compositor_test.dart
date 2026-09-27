@@ -832,4 +832,32 @@ void main() {
       }
     },
   );
+
+  test('espaço sem foto, só com fundo próprio, sai sem borda', () async {
+    final settings = CollageSettings(
+      layout: CollageLayout.row(1),
+      aspectRatio: 1,
+      outerMarginRatio: 0,
+      innerMarginRatio: 0,
+      cells: const [
+        CollageCellSettings(
+          borderThicknessAtReference: 24,
+          borderColor: Color(0xFF00FF00),
+          background: CollageBackground(
+            mode: CollageBackgroundMode.color,
+            color: Color(0xFFFF0000),
+          ),
+        ),
+      ],
+    );
+    const outputWidth = 200;
+    final bytes = await composeCollage(
+      settings: settings,
+      outputWidth: outputWidth,
+    );
+    // Rente à beirada: com borda seria verde.
+    final edge = await _decodePixel(bytes, outputWidth, 3, 100);
+    expect(edge[0], greaterThan(200));
+    expect(edge[1], lessThan(60));
+  });
 }

@@ -260,7 +260,11 @@ class _CollageCellViewState extends State<CollageCellView> {
     final outerRadius =
         widget.cellSize.shortestSide *
         cell.cornerRatio.clamp(0.0, CollageCellSettings.maxCornerRatio);
-    final borderThickness = cell.borderThicknessFor(widget._borderCanvasWidth);
+    // Sem foto não há borda (a exportação também não desenha): o recorte
+    // usa o canto de fora inteiro.
+    final borderThickness = cell.hasPhoto
+        ? cell.borderThicknessFor(widget._borderCanvasWidth)
+        : 0.0;
     final innerRadius = (outerRadius - borderThickness).clamp(0.0, outerRadius);
     final contentSize = _contentSize;
 
