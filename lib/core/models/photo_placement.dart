@@ -24,7 +24,7 @@ class PhotoPlacement {
 
   static const identity = PhotoPlacement();
 
-  static const minScale = 0.1;
+  static const minScale = 0.2;
   static const maxScale = 8.0;
 
   bool get isIdentity => dx == 0 && dy == 0 && scale == 1 && rotation == 0;

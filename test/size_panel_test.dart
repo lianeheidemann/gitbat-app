@@ -108,7 +108,7 @@ void main() {
 
       expect(find.textContaining('Faixa provável: '), findsOneWidget);
 
-      await tester.tap(find.text('Recalcular'));
+      await tester.tap(find.byTooltip('Recalcular'));
       expect(chamou, isTrue);
     });
 
@@ -126,7 +126,9 @@ void main() {
         expect(find.textContaining('Faixa medida: '), findsOneWidget);
         expect(find.text('Medir'), findsNothing);
         expect(find.text('Medir novamente'), findsNothing);
-        expect(find.text('Recalcular'), findsOneWidget);
+        expect(find.byTooltip('Recalcular'), findsOneWidget);
+        // Só o ícone, sem o texto.
+        expect(find.text('Recalcular'), findsNothing);
       },
     );
 
@@ -155,8 +157,8 @@ void main() {
         onMeasure: () => chamou = true,
       );
 
-      expect(find.text('Medindo…'), findsOneWidget);
-      await tester.tap(find.text('Medindo…'));
+      expect(find.byTooltip('Medindo…'), findsOneWidget);
+      await tester.tap(find.byTooltip('Medindo…'));
       expect(chamou, isFalse);
     });
 

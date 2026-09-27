@@ -74,7 +74,7 @@ class CollageTextItem {
   /// obrigava a esticar a alça logo depois de escrever. Continua sendo só o
   /// ponto de partida: a pinça e a alça mexem em [scale] a partir daí.
   static const defaultFontSizeRatio = 0.35;
-  static const minScale = 0.3;
+  static const minScale = 0.6;
   static const maxScale = 4.0;
   static const defaultBackgroundCornerRatio = 0.3;
   static const maxBackgroundCornerRatio = 0.5;

@@ -57,7 +57,7 @@ class CollageSticker {
   final int zIndex;
 
   static const referenceSizeRatio = 0.28;
-  static const minScale = 0.2;
+  static const minScale = 0.4;
   static const maxScale = 3.0;
 
   CollageSticker copyWith({
