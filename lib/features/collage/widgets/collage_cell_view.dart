@@ -319,21 +319,21 @@ class _CollageCellViewState extends State<CollageCellView> {
                       // que mostrar o fundo real da montagem pelos buracos,
                       // como a exportação faz — antes o cinza só sumia ao
                       // trocar para "contain" com o duplo toque.
-                      // Com contorno: no tema claro o cinza do espaço vazio
-                      // quase some contra o fundo da prévia.
+                      // Só a cor de fundo, sem contorno: um contorno reto
+                      // aparecia quebrado nos cantos arredondados. No tema
+                      // claro o tom é mais escuro para o espaço não sumir
+                      // contra o fundo da prévia.
                       if (!cell.hasPhoto)
-                        DecoratedBox(
+                        ColoredBox(
                           key: const ValueKey('emptyCellPlaceholder'),
-                          decoration: BoxDecoration(
-                            color: theme.brightness == Brightness.light
-                                ? theme.colorScheme.surfaceContainerHighest
-                                : theme.colorScheme.surfaceContainerHigh,
-                            border: Border.all(
-                              color: theme.colorScheme.outline.withValues(
-                                alpha: 0.55,
-                              ),
-                            ),
-                          ),
+                          color: theme.brightness == Brightness.light
+                              ? Color.alphaBlend(
+                                  theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  theme.colorScheme.surfaceContainerHighest,
+                                )
+                              : theme.colorScheme.surfaceContainerHigh,
                         ),
                       // Fundo próprio da foto, por baixo dela e por cima do
                       // placeholder — mesma camada que `paintCollageCell`
@@ -474,8 +474,16 @@ class _CollageCellViewState extends State<CollageCellView> {
       Positioned.fill(
         child: IgnorePointer(
           child: DecoratedBox(
+            // Acompanha o arredondamento da própria área.
             decoration: BoxDecoration(
               border: Border.all(color: theme.colorScheme.primary, width: 1.5),
+              borderRadius: BorderRadius.circular(
+                size.shortestSide *
+                    widget.cell.cornerRatio.clamp(
+                      0.0,
+                      CollageCellSettings.maxCornerRatio,
+                    ),
+              ),
             ),
           ),
         ),
