@@ -154,7 +154,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(_previewQuarterTurns(tester), 1);
 
-    await _openTab(tester, 'Janela');
+    await _openTab(tester, 'Recorte');
     expect(_previewQuarterTurns(tester), 0);
 
     // E ao sair da aba de recorte o giro reaparece — ele continua guardado.

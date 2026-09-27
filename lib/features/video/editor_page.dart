@@ -283,9 +283,19 @@ class _EditorPageState extends State<EditorPage> {
         '${_settings.outputDurationSeconds.toStringAsFixed(1)} s';
 
     return [
+      // Mesma ordem nas quatro telas de edição: primeiro o que é só deste
+      // modo (aqui, o formato e o tempo do vídeo), depois Recorte → Girar →
+      // Borda → Moldura → Fundo → Cor → Stickers → Texto, e Ajustes no fim.
       EditorSection.fromLabeled(_formatSection(), label: 'Formato'),
       EditorSection.fromLabeled(_durationSection(), label: 'Duração'),
-      EditorSection.fromLabeled(_aspectSection(), label: 'Janela'),
+      EditorSection.fromLabeled(_speedSection(), label: 'Velocidade'),
+      EditorSection.fromLabeled(_fpsSection(), label: 'FPS'),
+      EditorSection.fromLabeled(_resolutionSection(), label: 'Resolução'),
+      if (isWebp)
+        EditorSection.fromLabeled(_webpQualitySection(), label: 'Qualidade')
+      else
+        EditorSection.fromLabeled(_colorSection(), label: 'Cores'),
+      EditorSection.fromLabeled(_aspectSection(), label: 'Recorte'),
       EditorSection(
         icon: Icons.rotate_90_degrees_ccw_rounded,
         title: 'Girar',
@@ -299,13 +309,14 @@ class _EditorPageState extends State<EditorPage> {
           ),
         ),
       ),
-      EditorSection.fromLabeled(_speedSection(), label: 'Velocidade'),
-      EditorSection.fromLabeled(_fpsSection(), label: 'FPS'),
-      EditorSection.fromLabeled(_resolutionSection(), label: 'Resolução'),
-      if (isWebp)
-        EditorSection.fromLabeled(_webpQualitySection(), label: 'Qualidade')
-      else
-        EditorSection.fromLabeled(_colorSection(), label: 'Cores'),
+      EditorSection.fromLabeled(_frameStyleSection(), label: 'Borda'),
+      EditorSection.fromLabeled(_imageFrameSection(), label: 'Moldura'),
+      EditorSection(
+        icon: Icons.wallpaper_rounded,
+        title: 'Fundo',
+        value: _settings.frame.transparentBackground ? 'Transparente' : 'Cor',
+        builder: (_) => _backgroundSection(),
+      ),
       EditorSection(
         icon: Icons.tune_rounded,
         title: 'Ajustar cor',
@@ -320,14 +331,6 @@ class _EditorPageState extends State<EditorPage> {
             ? 'Nenhum'
             : '${_settings.frame.texts.length}',
         builder: (_) => _textSection(),
-      ),
-      EditorSection.fromLabeled(_frameStyleSection(), label: 'Borda'),
-      EditorSection.fromLabeled(_imageFrameSection(), label: 'Moldura'),
-      EditorSection(
-        icon: Icons.wallpaper_rounded,
-        title: 'Fundo',
-        value: _settings.frame.transparentBackground ? 'Transparente' : 'Cor',
-        builder: (_) => _backgroundSection(),
       ),
       // Penúltima aba: fecha os ajustes de conteúdo com o resultado (tamanho
       // estimado), depois de todos os ajustes, formato/moldura incluídos.
@@ -369,7 +372,7 @@ class _EditorPageState extends State<EditorPage> {
     // a janela; em qualquer outra aba a prévia já mostra o corte aplicado
     // (ver _previewArea), como o resultado final vai sair.
     final isCropTabActive =
-        active != null && sections[active].barLabel == 'Janela';
+        active != null && sections[active].barLabel == 'Recorte';
     final textTabActive =
         active != null && sections[active].barLabel == 'Texto';
 

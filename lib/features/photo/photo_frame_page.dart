@@ -404,6 +404,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         value: _frame.contentFit.label,
         builder: (_) => _contentFitSection(),
       ),
+    // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Girar →
+    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Ajustes.
+    EditorSection(
+      icon: Icons.wallpaper_rounded,
+      title: 'Fundo',
+      value: _frame.transparentBackground ? 'Transparente' : 'Cor',
+      builder: (_) => _backgroundSection(),
+    ),
     EditorSection(
       icon: Icons.tune_rounded,
       title: 'Ajustar cor',
@@ -416,12 +424,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       title: 'Texto',
       value: _frame.texts.isEmpty ? 'Nenhum' : '${_frame.texts.length}',
       builder: (_) => _textSection(),
-    ),
-    EditorSection(
-      icon: Icons.wallpaper_rounded,
-      title: 'Fundo',
-      value: _frame.transparentBackground ? 'Transparente' : 'Cor',
-      builder: (_) => _backgroundSection(),
     ),
     // Última aba da barra nas três telas de edição (vídeo, foto e
     // montagem) — configurações gerais, não deste recorte/moldura em si.

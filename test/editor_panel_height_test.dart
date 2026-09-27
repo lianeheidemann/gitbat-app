@@ -22,7 +22,7 @@ const _video = VideoInfo(
 );
 
 Future<void> _openTab(WidgetTester tester, String tab) async {
-  // Largura de celular estreito: com 400 de largura os chips de "Janela"
+  // Largura de celular estreito: com 400 de largura os chips de "Recorte"
   // ainda cabiam com folga de poucos pixels (frágil entre plataformas);
   // 320 força mais quebra de linha e deixa uma margem de sobra confortável.
   tester.view.physicalSize = const Size(320, 900);
@@ -63,15 +63,15 @@ double _panelHeight(WidgetTester tester) => tester
     .height;
 
 void main() {
-  testWidgets('"Janela" mostra as primeiras linhas e rola o resto', (
+  testWidgets('"Recorte" mostra as primeiras linhas e rola o resto', (
     tester,
   ) async {
     // "Resolução" virou um slider (uma linha só, nunca estoura o teto) desde
     // que passou a mostrar porcentagem em vez de uma lista de larguras fixas
-    // — "Janela" tem a lista mais longa que sobra no editor (12 proporções +
+    // — "Recorte" tem a lista mais longa que sobra no editor (12 proporções +
     // "Personalizados"), sempre habilitada por inteiro, sem depender da
     // largura do vídeo de teste.
-    await _openTab(tester, 'Janela');
+    await _openTab(tester, 'Recorte');
 
     expect(_panelHeight(tester), lessThanOrEqualTo(200));
 
