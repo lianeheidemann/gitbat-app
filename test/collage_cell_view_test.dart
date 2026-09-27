@@ -216,6 +216,11 @@ void main() {
     // Toque com duração de verdade: o `GestureDetector` da célula tem
     // `onDoubleTap`, então o toque do botão só é entregue depois que a arena
     // desiste do duplo toque — um `tester.tap()` instantâneo não chega lá.
+    // O "..." só aparece com a foto selecionada (tocada).
+    expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
+    await tester.tap(find.byType(CollageCellView));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
     final gesture = await tester.startGesture(
       tester.getCenter(find.byIcon(Icons.more_horiz_rounded)),
     );
@@ -333,8 +338,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(changes, 0);
 
-      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
-      await tester.pumpAndSettle();
+      // Sem gestos, a foto não é selecionada e o "..." nem aparece.
+      expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
       expect(menus, 0);
     },
   );

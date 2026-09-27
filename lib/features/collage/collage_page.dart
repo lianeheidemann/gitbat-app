@@ -168,6 +168,10 @@ class _CollagePageState extends State<CollagePage> {
   /// `null` = a primeira foto (a aba já abre com ela selecionada).
   int? _selectedAreaCell;
 
+  /// Foto tocada na prévia (alças de girar/redimensionar e o "..."). Só uma
+  /// por vez; tocar em outra troca, tocar fora das fotos solta.
+  int? _selectedPhotoCell;
+
   /// Divisor sendo arrastado agora na aba "Áreas", para destacar as fotos
   /// que ele está redimensionando.
   CollageDivider? _draggingDivider;
@@ -311,7 +315,13 @@ class _CollagePageState extends State<CollagePage> {
       _undoStack.add(_settings);
       _redoStack.clear();
     }
-    setState(() => _settings = settings);
+    setState(() {
+      // Espaço tirado ou layout trocado: os índices mudam de foto.
+      if (settings.cells.length != _settings.cells.length) {
+        _selectedPhotoCell = null;
+      }
+      _settings = settings;
+    });
   }
 
   /// As três ações que as abas e as ações de célula devolvem para a tela.
@@ -439,8 +449,16 @@ class _CollagePageState extends State<CollagePage> {
         child: Column(
           children: [
             Expanded(
-              child: PreviewAreaBackground(
-                child: Center(child: MediaCheckerboard(child: _preview())),
+              child: GestureDetector(
+                // Toque fora das fotos solta a selecionada — as fotos têm
+                // o próprio toque e ganham a disputa quando o dedo cai nelas.
+                behavior: HitTestBehavior.opaque,
+                onTap: _selectedPhotoCell == null
+                    ? null
+                    : () => setState(() => _selectedPhotoCell = null),
+                child: PreviewAreaBackground(
+                  child: Center(child: MediaCheckerboard(child: _preview())),
+                ),
               ),
             ),
             ?toolbar,
@@ -799,6 +817,10 @@ class _CollagePageState extends State<CollagePage> {
                                   interactive:
                                       _activeTab != _CollageTab.stickers &&
                                       _activeTab != _CollageTab.text,
+                                  selected: _selectedPhotoCell == i,
+                                  onSelectedChanged: (v) => setState(
+                                    () => _selectedPhotoCell = v ? i : null,
+                                  ),
                                   onGestureStart: _pushUndoCheckpoint,
                                   onChanged: (cell) => _update(
                                     _settings.replacingCell(i, cell),

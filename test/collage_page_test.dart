@@ -53,6 +53,14 @@ Future<void> _pumpUntilFound(
   }
 }
 
+/// O "..." só aparece com a foto selecionada: toca na primeira e espera o
+/// tempo do duplo toque passar.
+Future<void> _selectFirstPhoto(WidgetTester tester) async {
+  await tester.tap(find.byType(CollageCellView).first);
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late Directory tempDir;
   late List<PhotoInfo> photos;
@@ -430,6 +438,7 @@ void main() {
     // Toque com duração de verdade: o `GestureDetector` da célula tem
     // `onDoubleTap`, então o toque do "..." só é entregue depois que a arena
     // de gestos desiste do duplo toque.
+    await _selectFirstPhoto(tester);
     final gesture = await tester.startGesture(
       tester.getCenter(find.byIcon(Icons.more_horiz_rounded).first),
     );
@@ -467,6 +476,7 @@ void main() {
 
     // Toque com duração de verdade: o "..." só é entregue depois que a arena
     // desiste do duplo toque da célula.
+    await _selectFirstPhoto(tester);
     final gesture = await tester.startGesture(
       tester.getCenter(find.byIcon(Icons.more_horiz_rounded).first),
     );
@@ -498,6 +508,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
     await tester.pumpAndSettle();
 
+    await _selectFirstPhoto(tester);
     final gesture = await tester.startGesture(
       tester.getCenter(find.byIcon(Icons.more_horiz_rounded).first),
     );
@@ -1320,6 +1331,7 @@ void main() {
     expect(cells().first.hasPhoto, isTrue);
     final count = cells().length;
 
+    await _selectFirstPhoto(tester);
     await tester.tap(find.byIcon(Icons.more_horiz_rounded).first);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
@@ -1413,5 +1425,45 @@ void main() {
     await tester.tap(find.byIcon(Icons.undo_rounded).first);
     await tester.pumpAndSettle();
     expect(cells(), 9);
+  });
+
+  testWidgets('só uma foto selecionada por vez, e tocar fora solta', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    final handles = find.byKey(const ValueKey('cellRotateHandle'));
+    final menus = find.byIcon(Icons.more_horiz_rounded);
+    expect(menus, findsNothing);
+
+    await _selectFirstPhoto(tester);
+    expect(handles, findsOneWidget);
+    expect(menus, findsOneWidget);
+
+    await tester.tap(find.byType(CollageCellView).at(1));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(handles, findsOneWidget, reason: 'trocou de foto, não somou');
+    expect(
+      find.descendant(
+        of: find.byType(CollageCellView).at(1),
+        matching: handles,
+      ),
+      findsOneWidget,
+    );
+
+    // Toque na área cinza da prévia, fora da montagem.
+    final preview = tester.getRect(
+      find.byKey(const ValueKey('collageAreaOutline')),
+    );
+    await tester.tapAt(Offset(preview.center.dx, preview.top - 10));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(handles, findsNothing);
+    expect(menus, findsNothing);
   });
 }
