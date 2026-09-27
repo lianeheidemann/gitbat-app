@@ -1,5 +1,9 @@
 import 'dart:ui' show Offset, Rect, Size;
 
+import 'collage_split.dart';
+
+export 'collage_split.dart' show CollageSide, CollageSplit;
+
 /// Como as células de uma montagem estão organizadas: modelos prontos (linha,
 /// coluna, grades fixas) ou uma grade livre com número de linhas/colunas
 /// escolhido pelo usuário.
@@ -9,7 +13,8 @@ enum CollageLayoutKind {
   grid2x2('Grade 2x2'),
   grid2x3('Grade 2x3'),
   grid3x3('Grade 3x3'),
-  freeGrid('Grade livre');
+  freeGrid('Grade livre'),
+  custom('Personalizada');
 
   const CollageLayoutKind(this.label);
 
@@ -37,7 +42,20 @@ class CollageLayout {
     this.rows = 1,
     this.columnWeights,
     this.rowWeights,
+    this.split,
   });
+
+  /// Árvore de divisões do layout [CollageLayoutKind.custom] — ver
+  /// [CollageSplit]. Nos outros layouts fica `null`.
+  final CollageSplit? split;
+
+  /// A árvore do "Personalizada" (uma célula só se ainda não houver).
+  CollageSplit get _tree => split ?? const CollageSplit.leaf(0);
+
+  bool get _isCustom => kind == CollageLayoutKind.custom;
+
+  /// Maior número de espaços do "Personalizada".
+  static const maxCustomCells = 16;
 
   final CollageLayoutKind kind;
   final int columns;
@@ -55,11 +73,14 @@ class CollageLayout {
   static const minWeight = 0.25;
 
   /// `true` quando algum tamanho foi mudado na aba "Áreas".
-  bool get hasCustomSizes => columnWeights != null || rowWeights != null;
+  bool get hasCustomSizes => _isCustom
+      ? _tree.hasCustomRatios
+      : columnWeights != null || rowWeights != null;
 
   /// Os mesmos arranjo e contagem, com todas as áreas do mesmo tamanho.
-  CollageLayout withEqualSizes() =>
-      CollageLayout(kind: kind, columns: columns, rows: rows);
+  CollageLayout withEqualSizes() => _isCustom
+      ? CollageLayout(kind: kind, split: _tree.equalized)
+      : CollageLayout(kind: kind, columns: columns, rows: rows);
 
   /// Pesos válidos de [count] áreas (somando [count]): os guardados, se
   /// baterem com a contagem atual, senão todos 1.
@@ -89,6 +110,7 @@ class CollageLayout {
     CollageLayoutKind.grid2x3 => 2,
     CollageLayoutKind.grid3x3 => 3,
     CollageLayoutKind.freeGrid => columns < 1 ? 1 : columns,
+    CollageLayoutKind.custom => _customTracks(horizontal: true),
   };
 
   /// Quantas linhas a grade realmente tem, resolvendo os nomes fixos.
@@ -99,10 +121,15 @@ class CollageLayout {
     CollageLayoutKind.grid2x3 => 3,
     CollageLayoutKind.grid3x3 => 3,
     CollageLayoutKind.freeGrid => rows < 1 ? 1 : rows,
+    CollageLayoutKind.custom => _customTracks(horizontal: false),
   };
 
+  int _customTracks({required bool horizontal}) =>
+      _tree.tracks(horizontal: horizontal);
+
   /// Número de fotos que esta organização comporta.
-  int get cellCount => _effectiveColumns * _effectiveRows;
+  int get cellCount =>
+      _isCustom ? _tree.leafCount : _effectiveColumns * _effectiveRows;
 
   /// Colunas e linhas que este layout ocupa de fato (os prontos, como a
   /// grade 3×3, também) — para trocar para "Grade livre" sem mudar a grade.
@@ -120,6 +147,17 @@ class CollageLayout {
     required double outerMarginRatio,
     required double innerMarginRatio,
   }) {
+    if (_isCustom) {
+      final outerMargin = canvasSize.shortestSide * outerMarginRatio;
+      final innerMargin = canvasSize.shortestSide * innerMarginRatio;
+      final byCell = <int, Rect>{};
+      _tree.collectRects(
+        _customRoot(canvasSize, outerMargin),
+        innerMargin,
+        byCell,
+      );
+      return [for (var i = 0; i < cellCount; i++) byCell[i] ?? Rect.zero];
+    }
     final cols = _effectiveColumns;
     final rowsN = _effectiveRows;
     final outerMargin = canvasSize.shortestSide * outerMarginRatio;
@@ -168,7 +206,131 @@ class CollageLayout {
         kind: kind ?? this.kind,
         columns: columns ?? this.columns,
         rows: rows ?? this.rows,
+        split: split,
       );
+
+  /// Retângulo onde a árvore do "Personalizada" é dividida: o canvas menos
+  /// a margem externa.
+  static Rect _customRoot(Size canvasSize, double outerMargin) => Rect.fromLTRB(
+    outerMargin,
+    outerMargin,
+    (canvasSize.width - outerMargin).clamp(outerMargin, double.infinity),
+    (canvasSize.height - outerMargin).clamp(outerMargin, double.infinity),
+  );
+
+  /// Cada divisão do "Personalizada" com o retângulo que ela corta.
+  List<(String path, CollageSplit node, Rect rect)> _customNodes(
+    Size canvasSize,
+    double outerMarginRatio,
+    double innerMarginRatio,
+  ) {
+    final out = <(String, CollageSplit, Rect)>[];
+    _tree.collectNodes(
+      _customRoot(canvasSize, canvasSize.shortestSide * outerMarginRatio),
+      canvasSize.shortestSide * innerMarginRatio,
+      '',
+      out,
+    );
+    return out;
+  }
+
+  static CollageDivider _customDivider(
+    String path,
+    CollageSplit node,
+    Rect rect,
+    double gap,
+  ) {
+    final (a, b) = node.childRects(rect, gap);
+    return node.vertical
+        ? CollageDivider(
+            vertical: true,
+            column: -1,
+            index: -1,
+            path: path,
+            center: Offset((a.right + b.left) / 2, rect.center.dy),
+            length: rect.height,
+          )
+        : CollageDivider(
+            vertical: false,
+            column: -1,
+            index: -1,
+            path: path,
+            center: Offset(rect.center.dx, (a.bottom + b.top) / 2),
+            length: rect.width,
+          );
+  }
+
+  /// Divisões acima da célula [cell], da mais próxima para a raiz: o
+  /// caminho, o nó e se a célula está no primeiro lado dele.
+  List<(String path, CollageSplit node, bool inFirst)> _ancestorsOf(int cell) {
+    final path = _tree.pathOf(cell);
+    if (path == null) return const [];
+    return [
+      for (var i = path.length - 1; i >= 0; i--)
+        (path.substring(0, i), _tree.at(path.substring(0, i)), path[i] == '0'),
+    ];
+  }
+
+  /// Fração da largura ([horizontal]) ou da altura que a célula ocupa no
+  /// "Personalizada" (sem contar as margens).
+  double _customFraction(int cell, {required bool horizontal}) {
+    var f = 1.0;
+    for (final (_, node, inFirst) in _ancestorsOf(cell)) {
+      if (node.vertical != horizontal) continue;
+      f *= inFirst ? node.ratio : 1 - node.ratio;
+    }
+    return f;
+  }
+
+  /// A célula [cell] com [fraction] da largura/altura, mexendo só na divisão
+  /// mais próxima dela naquele eixo.
+  CollageLayout _withCustomFraction(
+    int cell,
+    double fraction, {
+    required bool horizontal,
+  }) {
+    for (final (path, node, inFirst) in _ancestorsOf(cell)) {
+      if (node.vertical != horizontal) continue;
+      final own = inFirst ? node.ratio : 1 - node.ratio;
+      final current = _customFraction(cell, horizontal: horizontal);
+      if (current <= 0 || own <= 0) return this;
+      final outside = current / own;
+      final want = fraction / outside;
+      final ratio = inFirst ? want : 1 - want;
+      return CollageLayout(
+        kind: kind,
+        split: _tree.replaced(path, node.withRatio(ratio)),
+      );
+    }
+    return this;
+  }
+
+  /// "+" do "Personalizada": a célula [cell] vira duas, com a nova (índice
+  /// [cellCount]) do lado [side].
+  CollageLayout splitCell(int cell, CollageSide side) {
+    if (!_isCustom || cellCount >= maxCustomCells) return this;
+    return CollageLayout(kind: kind, split: _tree.split(cell, side, cellCount));
+  }
+
+  /// "Remover espaço" do "Personalizada": a célula [cell] sai e a vizinha
+  /// da mesma divisão ocupa o lugar dela.
+  CollageLayout removeCell(int cell) {
+    if (!_isCustom || cellCount <= 1) return this;
+    return CollageLayout(kind: kind, split: _tree.removed(cell));
+  }
+
+  /// Este layout como "Personalizada", com as mesmas células nos mesmos
+  /// lugares (e os tamanhos da aba "Áreas").
+  CollageLayout toCustom() {
+    if (_isCustom) return this;
+    final cols = _effectiveColumns;
+    return CollageLayout(
+      kind: CollageLayoutKind.custom,
+      split: CollageSplit.fromGrid(_columnWeights(), [
+        for (var c = 0; c < cols; c++) _rowWeightsOf(c),
+      ]),
+    );
+  }
 
   /// Os divisores arrastáveis da aba "Áreas" num canvas de [canvasSize],
   /// com as mesmas margens de [cellRectsFor]: um vertical entre cada par de
@@ -179,6 +341,17 @@ class CollageLayout {
     required double outerMarginRatio,
     required double innerMarginRatio,
   }) {
+    if (_isCustom) {
+      final gap = canvasSize.shortestSide * innerMarginRatio;
+      return [
+        for (final (path, node, rect) in _customNodes(
+          canvasSize,
+          outerMarginRatio,
+          innerMarginRatio,
+        ))
+          _customDivider(path, node, rect, gap),
+      ];
+    }
     final rects = cellRectsFor(
       canvasSize,
       outerMarginRatio: outerMarginRatio,
@@ -230,6 +403,14 @@ class CollageLayout {
     required double outerMarginRatio,
     required double innerMarginRatio,
   }) {
+    if (_isCustom) {
+      return _customHandlesAround(
+        cellIndex,
+        canvasSize,
+        outerMarginRatio,
+        innerMarginRatio,
+      );
+    }
     final cols = _effectiveColumns;
     final rowsN = _effectiveRows;
     if (cellIndex < 0 || cellIndex >= cols * rowsN) return const [];
@@ -282,10 +463,64 @@ class CollageLayout {
     ];
   }
 
+  List<CollageEdgeHandle> _customHandlesAround(
+    int cellIndex,
+    Size canvasSize,
+    double outerMarginRatio,
+    double innerMarginRatio,
+  ) {
+    if (cellIndex < 0 || cellIndex >= cellCount) return const [];
+    final cell = cellRectsFor(
+      canvasSize,
+      outerMarginRatio: outerMarginRatio,
+      innerMarginRatio: innerMarginRatio,
+    )[cellIndex];
+    final gap = canvasSize.shortestSide * innerMarginRatio;
+    final nodes = {
+      for (final (path, node, rect) in _customNodes(
+        canvasSize,
+        outerMarginRatio,
+        innerMarginRatio,
+      ))
+        path: _customDivider(path, node, rect, gap),
+    };
+    final handles = <CollageEdgeHandle>[];
+    // Um lado de cada vez: a divisão mais próxima que tem a célula do lado
+    // certo dela é a que passa rente àquela borda.
+    for (final (vertical, inFirst) in const [
+      (true, false),
+      (true, true),
+      (false, false),
+      (false, true),
+    ]) {
+      for (final (path, node, first) in _ancestorsOf(cellIndex)) {
+        if (node.vertical != vertical || first != inFirst) continue;
+        final divider = nodes[path]!;
+        final center = vertical
+            ? Offset(
+                inFirst ? cell.right + gap / 2 : cell.left - gap / 2,
+                cell.center.dy,
+              )
+            : Offset(
+                cell.center.dx,
+                inFirst ? cell.bottom + gap / 2 : cell.top - gap / 2,
+              );
+        handles.add(CollageEdgeHandle(divider, center));
+        break;
+      }
+    }
+    return handles;
+  }
+
   /// Células (em ordem de leitura) que [divider] redimensiona — as colunas
   /// inteiras dos dois lados num vertical, as duas fotos da coluna num
   /// horizontal. É o que fica em destaque enquanto a alça é arrastada.
   List<int> cellsTouching(CollageDivider divider) {
+    if (_isCustom) {
+      final path = divider.path;
+      if (path == null) return const [];
+      return _tree.at(path).cells;
+    }
     final cols = _effectiveColumns;
     final rowsN = _effectiveRows;
     if (divider.vertical) {
@@ -305,6 +540,7 @@ class CollageLayout {
   /// Largura da coluna da célula [cellIndex], como fração (0 a 1) da
   /// largura disponível para as fotos — o "Largura" da aba "Áreas".
   double widthFractionOf(int cellIndex) {
+    if (_isCustom) return _customFraction(cellIndex, horizontal: true);
     final cols = _effectiveColumns;
     return _columnWeights()[cellIndex % cols] / cols;
   }
@@ -312,6 +548,7 @@ class CollageLayout {
   /// Altura da célula [cellIndex] dentro da coluna dela, como fração (0 a 1)
   /// da altura disponível — o "Altura" da aba "Áreas".
   double heightFractionOf(int cellIndex) {
+    if (_isCustom) return _customFraction(cellIndex, horizontal: false);
     final cols = _effectiveColumns;
     final rowsN = _effectiveRows;
     return _rowWeightsOf(cellIndex % cols)[cellIndex ~/ cols] / rowsN;
@@ -324,8 +561,12 @@ class CollageLayout {
     return (minWeight / count, 1 - (count - 1) * minWeight / count);
   }
 
-  (double, double) get widthFractionRange => fractionRange(_effectiveColumns);
-  (double, double) get heightFractionRange => fractionRange(_effectiveRows);
+  (double, double) get widthFractionRange => _isCustom
+      ? (CollageSplit.minRatio / 2, CollageSplit.maxRatio)
+      : fractionRange(_effectiveColumns);
+  (double, double) get heightFractionRange => _isCustom
+      ? (CollageSplit.minRatio / 2, CollageSplit.maxRatio)
+      : fractionRange(_effectiveRows);
 
   /// [weights] (somando `weights.length`) com a posição [i] valendo
   /// [fraction] do total; as outras encolhem ou crescem na mesma proporção
@@ -375,6 +616,9 @@ class CollageLayout {
   /// A coluna da célula [cellIndex] com [fraction] da largura disponível;
   /// as outras colunas se ajustam na mesma proporção entre si.
   CollageLayout withWidthFraction(int cellIndex, double fraction) {
+    if (_isCustom) {
+      return _withCustomFraction(cellIndex, fraction, horizontal: true);
+    }
     final cols = _effectiveColumns;
     return CollageLayout(
       kind: kind,
@@ -392,6 +636,9 @@ class CollageLayout {
   /// A célula [cellIndex] com [fraction] da altura da coluna dela; as outras
   /// fotos da mesma coluna se ajustam, as outras colunas não mudam.
   CollageLayout withHeightFraction(int cellIndex, double fraction) {
+    if (_isCustom) {
+      return _withCustomFraction(cellIndex, fraction, horizontal: false);
+    }
     final cols = _effectiveColumns;
     final c = cellIndex % cols;
     final perColumn = [for (var k = 0; k < cols; k++) _rowWeightsOf(k)];
@@ -424,10 +671,26 @@ class CollageLayout {
 
   /// "Redefinir área": a célula [cellIndex] volta à largura e à altura
   /// padrão (a mesma de todas numa grade igual); as vizinhas se ajustam.
-  CollageLayout resetArea(int cellIndex) => withWidthFraction(
-    cellIndex,
-    1 / _effectiveColumns,
-  ).withHeightFraction(cellIndex, 1 / _effectiveRows);
+  CollageLayout resetArea(int cellIndex) => _isCustom
+      ? _customResetArea(cellIndex)
+      : withWidthFraction(
+          cellIndex,
+          1 / _effectiveColumns,
+        ).withHeightFraction(cellIndex, 1 / _effectiveRows);
+
+  /// "Redefinir área" do "Personalizada": as divisões mais próximas da
+  /// célula, uma em cada eixo, voltam à proporção igual.
+  CollageLayout _customResetArea(int cellIndex) {
+    var tree = _tree;
+    for (final horizontal in const [true, false]) {
+      for (final (path, node, _) in _ancestorsOf(cellIndex)) {
+        if (node.vertical != horizontal) continue;
+        tree = tree.replaced(path, node.withRatio(node.equalRatio));
+        break;
+      }
+    }
+    return CollageLayout(kind: kind, split: tree);
+  }
 
   /// [divider] arrastado [delta] pixels (para a direita num vertical, para
   /// baixo num horizontal) num canvas de [canvasSize]. Só as duas áreas que
@@ -439,6 +702,28 @@ class CollageLayout {
     required double outerMarginRatio,
     required double innerMarginRatio,
   }) {
+    if (_isCustom) {
+      final path = divider.path;
+      if (path == null) return this;
+      for (final (p, node, rect) in _customNodes(
+        canvasSize,
+        outerMarginRatio,
+        innerMarginRatio,
+      )) {
+        if (p != path) continue;
+        final gap = canvasSize.shortestSide * innerMarginRatio;
+        final span = (node.vertical ? rect.width : rect.height) + gap;
+        if (span <= 0) return this;
+        return CollageLayout(
+          kind: kind,
+          split: _tree.replaced(
+            path,
+            node.withRatio(node.ratio + delta / span),
+          ),
+        );
+      }
+      return this;
+    }
     final cols = _effectiveColumns;
     final rowsN = _effectiveRows;
     final outerMargin = canvasSize.shortestSide * outerMarginRatio;
@@ -515,7 +800,12 @@ class CollageDivider {
     required this.index,
     required this.center,
     required this.length,
+    this.path,
   });
+
+  /// No "Personalizada", o caminho da divisão na árvore ([CollageSplit]);
+  /// `null` nos outros layouts, que usam [column]/[index].
+  final String? path;
 
   /// `true` entre duas colunas (arrasta na horizontal); `false` entre duas
   /// linhas de uma coluna (arrasta na vertical).
@@ -554,4 +844,5 @@ bool sameDivider(CollageDivider? a, CollageDivider? b) =>
     b != null &&
     a.vertical == b.vertical &&
     a.column == b.column &&
-    a.index == b.index;
+    a.index == b.index &&
+    a.path == b.path;

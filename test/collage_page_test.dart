@@ -1353,4 +1353,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(sizes(), before);
   });
+
+  testWidgets('"Personalizada": o + cria um espaço novo ao lado e dá para '
+      'desfazer', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    int cells() => find.byType(CollageCellView).evaluate().length;
+
+    for (final label in ['Grade 3x3', 'Personalizada']) {
+      final chip = find.text(label);
+      await tester.ensureVisible(chip);
+      await tester.pumpAndSettle();
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+    }
+    expect(cells(), 9);
+    expect(find.byKey(const ValueKey('customLayoutHint')), findsOneWidget);
+    final add = find.byKey(const ValueKey('collageAddSlot_4_right'));
+    expect(add, findsOneWidget);
+    final before = tester.getSize(find.byType(CollageCellView).at(4));
+
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(cells(), 10);
+    final after = tester.getSize(find.byType(CollageCellView).at(4));
+    expect(after.width, lessThan(before.width * 0.6));
+    expect(after.height, before.height);
+
+    await tester.tap(find.byIcon(Icons.undo_rounded).first);
+    await tester.pumpAndSettle();
+    expect(cells(), 9);
+  });
 }

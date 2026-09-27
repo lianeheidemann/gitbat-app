@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/crop_rect.dart';
 import '../../../core/ui/color_adjust_controls.dart';
 import '../../../core/ui/crop/photo_crop_page.dart';
+import '../models/collage_layout.dart';
 import '../models/collage_cell.dart';
 import '../models/collage_settings.dart';
 import 'panels/collage_panel_actions.dart';
@@ -27,8 +28,50 @@ void openCollageCellMenu(
   required CollagePanelActions actions,
 }) {
   final cell = settings().cells[index];
+  final canRemoveSlot =
+      settings().layout.kind == CollageLayoutKind.custom &&
+      settings().cells.length > 1;
+  Widget removeSlotTile(BuildContext sheetContext) => ListTile(
+    key: const ValueKey('removeCollageSlot'),
+    leading: const Icon(Icons.remove_circle_outline_rounded),
+    title: const Text('Remover espaço'),
+    onTap: () {
+      Navigator.of(sheetContext).pop();
+      removeCollageSlot(index, settings: settings, actions: actions);
+    },
+  );
   if (!cell.hasPhoto) {
-    pickPhotoForCell(index, context, settings: settings, actions: actions);
+    if (!canRemoveSlot) {
+      pickPhotoForCell(index, context, settings: settings, actions: actions);
+      return;
+    }
+    // No "Personalizada" o espaço vazio também pode sair da montagem.
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_photo_alternate_outlined),
+              title: const Text('Escolher foto'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                pickPhotoForCell(
+                  index,
+                  context,
+                  settings: settings,
+                  actions: actions,
+                );
+              },
+            ),
+            removeSlotTile(sheetContext),
+          ],
+        ),
+      ),
+    );
     return;
   }
   showModalBottomSheet<void>(
@@ -155,6 +198,7 @@ void openCollageCellMenu(
                   );
                 },
               ),
+              if (canRemoveSlot) removeSlotTile(sheetContext),
               // Por último e em vermelho: é a única ação que tira algo da
               // montagem (desfazível, como as outras).
               ListTile(
@@ -179,6 +223,20 @@ void openCollageCellMenu(
       ),
     ),
   );
+}
+
+/// Tira o espaço [index] do layout "Personalizada" (com a foto dele, se
+/// houver); a vizinha da mesma divisão ocupa o lugar. Desfazível.
+void removeCollageSlot(
+  int index, {
+  required CollageSettings Function() settings,
+  required CollagePanelActions actions,
+}) {
+  final current = settings();
+  final layout = current.layout.removeCell(index);
+  if (identical(layout, current.layout)) return;
+  final cells = [...current.cells]..removeAt(index);
+  actions.update(current.copyWith(layout: layout, cells: cells));
 }
 
 Future<void> pickPhotoForCell(
