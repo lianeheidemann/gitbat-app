@@ -3,8 +3,11 @@
 #
 # Para gerar o keystore (uma única vez na vida do app):
 #
-#   keytool -genkey -v -keystore ~/chave-upload-videotogif.jks \
+#   keytool -genkey -v -keystore ~/chave-upload-gitbat.jks \
 #     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# Se a sua chave já existe com outro nome (ex.: chave-upload-videotogif.jks),
+# continue usando ela: o nome do arquivo não importa, a chave sim.
 #
 # Guarde o .jks e as senhas em lugar seguro (gerenciador de senhas + backup).
 # Perder essa chave significa perder a capacidade de atualizar o app.
@@ -12,4 +15,4 @@
 storePassword=SENHA_DO_KEYSTORE
 keyPassword=SENHA_DA_CHAVE
 keyAlias=upload
-storeFile=/caminho/absoluto/para/chave-upload-videotogif.jks
+storeFile=/caminho/absoluto/para/chave-upload-gitbat.jks

@@ -83,7 +83,7 @@ class ColorAdjustButton extends StatelessWidget {
 /// rótulo embaixo, mesmo tamanho de alvo de toque) para ficar na mesma
 /// fileira sem quebrar o alinhamento, mas com um círculo **contornado** em
 /// vez de preenchido — nenhum ajuste de cor jamais aparece assim (só preenchido,
-/// em roxo quando selecionado ou em cinza quando não) — para não parecer só
+/// na cor principal da paleta quando selecionado ou em cinza quando não) — para não parecer só
 /// mais uma opção de ajuste na mesma sequência.
 class _ResetAllButton extends StatelessWidget {
   const _ResetAllButton({required this.onTap});
@@ -248,7 +248,7 @@ class _ColorAdjustPanelState extends State<ColorAdjustPanel> {
         ),
         const SizedBox(height: 10),
         // Sem repetir o nome do ajuste aqui: o ícone escolhido logo acima já
-        // fica roxo e com o rótulo em destaque, e a régua mostra só o valor.
+        // fica na cor principal e com o rótulo em destaque, e a régua mostra só o valor.
         IntensityRuler(
           value: widget.valueOf(_current),
           onChangeStart: widget.onChangeStart,

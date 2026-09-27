@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/services/output_service.dart';
+import 'package:gitbat/core/services/output_service.dart';
 
 // Tudo o que o app salva ou compartilha sai com o nome da marca.
 

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:video_to_gif/features/svg/services/svg_source_fixer.dart';
+import 'package:gitbat/features/svg/services/svg_source_fixer.dart';
 import 'package:xml/xml.dart';
 
 // SVGs que o leitor do app recusava ("Não foi possível ler este arquivo

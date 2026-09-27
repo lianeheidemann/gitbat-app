@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/features/collage/widgets/folder_tab.dart';
+import 'package:gitbat/features/collage/widgets/folder_tab.dart';
 
 // O contorno da pasta sai de um caminho só (sem `Path.combine`, que no
 // celular deixava vazias as pastas de rótulo curto).

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/models/video_info.dart';
-import 'package:video_to_gif/features/quick_convert/widgets/source_file_card.dart';
+import 'package:gitbat/core/models/video_info.dart';
+import 'package:gitbat/features/quick_convert/widgets/source_file_card.dart';
 
 VideoInfo _video({
   String fileName = 'ferias.mp4',

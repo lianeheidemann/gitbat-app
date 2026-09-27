@@ -90,30 +90,40 @@ they can no longer change afterward:
 ### 3.1 The `applicationId`
 
 This is the app's permanent address in the store. In this project it's
-`br.com.lianeheidemann.videotogif`, defined in two places:
+`br.com.lianeheidemann.videotogif`, set in `android/app/build.gradle.kts`
+→ `applicationId`.
 
-- `android/app/build.gradle.kts` → `namespace` and `applicationId`
-- the folder `android/app/src/main/kotlin/br/com/lianeheidemann/videotogif/`
-
-If you want to change it, change it in both places and rename the folder.
+It keeps the name from the time the app was called "Video to GIF" **on
+purpose**: changing it creates a different app, which does not install over
+the current one and loses the store listing. The GitBat name only appears
+in what users see (3.2) and in the Kotlin package
+(`namespace = "br.com.lianeheidemann.gitbat"` and the folder
+`android/app/src/main/kotlin/br/com/lianeheidemann/gitbat/`), which can
+change freely.
 
 ### 3.2 The visible name
 
-It's in `android/app/src/main/AndroidManifest.xml`, in the
+**GitBat**. It's in `android/app/src/main/AndroidManifest.xml`, in the
 `android:label` attribute. On the store, the name can be at most **30
 characters**.
 
 ### 3.3 The icon
 
-**Already done.** The repository ships with its own icon (not Flutter's
-default) at every density, plus the adaptive-icon version for Android 8+:
+**Already done.** The repository ships with its own icon — the GitBat
+bat — at every density, plus the adaptive and monochrome versions for
+Android 8+ and the Android 12+ splash icon:
 
 ```
 android/app/src/main/res/mipmap-*/ic_launcher.png
 android/app/src/main/res/mipmap-*/ic_launcher_foreground.png
 android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-assets/icone.png                                 (1024×1024 master)
+android/app/src/main/res/drawable-nodpi/splash_icon.png
+assets/icon/icon-v2/morceguinho-icone-simples.png  (master, the bat)
 ```
+
+The previous icon, with everything generated from it, is kept in
+`assets/icon/icon-v1/`. The logo at the top of the README (no background)
+is `assets/readme/gitbat-logo.png`.
 
 If you want to change the design or colors, edit `tool/gerar_icones.py`
 and run:
@@ -141,6 +151,10 @@ brand-new app from scratch, without the existing users.
 > is destroyed, or you have to transfer it over an insecure path. This is
 > the one part of the process that can't be outsourced or automated.
 
+> If the key was already created under another name (e.g.
+> `videotogif-upload-key.jks`, from the "Video to GIF" days), keep using it:
+> just swap the file name in the commands below.
+
 `keytool` ships with Java. If you don't have Java installed, it's inside
 Android Studio, at `<android-studio-folder>/jbr/bin/keytool`. Android
 Studio can also do this through its UI, under
@@ -150,7 +164,7 @@ Studio can also do this through its UI, under
 
 ```bash
 keytool -genkeypair -v \
-  -keystore ~/videotogif-upload-key.jks \
+  -keystore ~/gitbat-upload-key.jks \
   -keyalg RSA -keysize 2048 -validity 10000 \
   -alias upload
 ```
@@ -159,7 +173,7 @@ keytool -genkeypair -v \
 
 ```bash
 keytool -genkeypair -v \
-  -keystore ~/videotogif-upload-key.jks \
+  -keystore ~/gitbat-upload-key.jks \
   -storepass YOUR_STRONG_PASSWORD -keypass YOUR_STRONG_PASSWORD \
   -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
   -dname "CN=Your Name, O=, L=Your City, ST=State, C=BR"
@@ -172,7 +186,7 @@ same person. What actually matters is the file and the password.
 Check that it worked:
 
 ```bash
-keytool -list -v -keystore ~/videotogif-upload-key.jks
+keytool -list -v -keystore ~/gitbat-upload-key.jks
 ```
 
 You should see `Alias name: upload`, the validity period (about 27 years,
@@ -188,7 +202,7 @@ Now create the file `android/key.properties` (copy it from
 storePassword=the-password-you-chose
 keyPassword=the-same-password
 keyAlias=upload
-storeFile=/full/path/to/videotogif-upload-key.jks
+storeFile=/full/path/to/gitbat-upload-key.jks
 ```
 
 > ⚠️ **Never** put the `.jks` or `key.properties` into Git. This
@@ -273,9 +287,9 @@ generated, since it wouldn't be usable.
 To enable real signing, turn your keystore into text:
 
 ```bash
-base64 -w0 ~/videotogif-upload-key.jks > key-base64.txt
+base64 -w0 ~/gitbat-upload-key.jks > key-base64.txt
 # on macOS, without the -w0 option:
-# base64 -i ~/videotogif-upload-key.jks -o key-base64.txt
+# base64 -i ~/gitbat-upload-key.jks -o key-base64.txt
 ```
 
 Under **Settings → Secrets and variables → Actions → New repository

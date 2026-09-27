@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/models/color_adjustments.dart';
-import 'package:video_to_gif/core/ffmpeg/ffmpeg_service.dart';
+import 'package:gitbat/core/models/color_adjustments.dart';
+import 'package:gitbat/core/ffmpeg/ffmpeg_service.dart';
 
 void main() {
   final service = FfmpegService();

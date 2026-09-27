@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/app/app_palette.dart';
-import 'package:video_to_gif/app/theme.dart';
-import 'package:video_to_gif/app/theme_controller.dart';
-import 'package:video_to_gif/core/ui/preview_settings_panel.dart';
+import 'package:gitbat/app/app_palette.dart';
+import 'package:gitbat/app/theme.dart';
+import 'package:gitbat/app/theme_controller.dart';
+import 'package:gitbat/core/ui/preview_settings_panel.dart';
 
 // A aba "Configurações" das telas de edição troca o tema claro/escuro e a
 // paleta de cores.

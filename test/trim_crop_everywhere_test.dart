@@ -4,11 +4,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/core/models/crop_rect.dart';
-import 'package:video_to_gif/core/ui/crop/crop_overlay.dart';
-import 'package:video_to_gif/core/ui/crop/photo_crop_page.dart';
-import 'package:video_to_gif/features/svg/models/svg_info.dart';
-import 'package:video_to_gif/features/svg/svg_edit_page.dart';
+import 'package:gitbat/core/models/crop_rect.dart';
+import 'package:gitbat/core/ui/crop/crop_overlay.dart';
+import 'package:gitbat/core/ui/crop/photo_crop_page.dart';
+import 'package:gitbat/features/svg/models/svg_info.dart';
+import 'package:gitbat/features/svg/svg_edit_page.dart';
 
 // "Ajustar" (cortar só a margem transparente) também em "Editar SVG" e no
 // recorte de foto da Montagem.

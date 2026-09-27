@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'dart:ui';
-import 'package:video_to_gif/features/collage/models/collage_layout.dart';
+import 'package:gitbat/features/collage/models/collage_layout.dart';
 
 // Aba "Áreas" da montagem: arrastar um divisor muda só as duas áreas que ele
 // separa, e trocar o layout volta tudo ao tamanho padrão.

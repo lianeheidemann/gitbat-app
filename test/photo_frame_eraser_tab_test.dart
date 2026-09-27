@@ -3,11 +3,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/features/photo/models/eraser_mask.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/features/photo/photo_frame_page.dart';
-import 'package:video_to_gif/features/photo/widgets/eraser_mask_overlay.dart';
-import 'package:video_to_gif/features/photo/widgets/eraser_option_button.dart';
+import 'package:gitbat/features/photo/models/eraser_mask.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/features/photo/photo_frame_page.dart';
+import 'package:gitbat/features/photo/widgets/eraser_mask_overlay.dart';
+import 'package:gitbat/features/photo/widgets/eraser_option_button.dart';
 
 Future<void> _writeSolidPng(String path, int width, int height) async {
   final recorder = ui.PictureRecorder();

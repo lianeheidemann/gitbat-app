@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/ui/text_input_dialog.dart';
+import 'package:gitbat/core/ui/text_input_dialog.dart';
 
 // Pop-ups fecham pelo X no canto de cima à direita, sem botão "Cancelar".
 

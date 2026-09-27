@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/ui/editor_tabs_footer.dart';
-import 'package:video_to_gif/features/svg/models/svg_info.dart';
-import 'package:video_to_gif/features/svg/svg_edit_page.dart';
+import 'package:gitbat/core/ui/editor_tabs_footer.dart';
+import 'package:gitbat/features/svg/models/svg_info.dart';
+import 'package:gitbat/features/svg/svg_edit_page.dart';
 
 const _sampleSvg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" '

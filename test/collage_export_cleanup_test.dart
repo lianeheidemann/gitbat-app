@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/features/collage/services/collage_export_runner.dart';
+import 'package:gitbat/features/collage/services/collage_export_runner.dart';
 
 // Exportações que morrem no meio (o Android fecha o app) deixavam centenas
 // de PNGs no cache; a próxima exportação limpa esse lixo.

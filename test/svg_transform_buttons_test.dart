@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/features/svg/models/svg_info.dart';
-import 'package:video_to_gif/features/svg/svg_edit_page.dart';
+import 'package:gitbat/features/svg/models/svg_info.dart';
+import 'package:gitbat/features/svg/svg_edit_page.dart';
 
 // Os quatro botões da aba "Girar" ficam dois a dois numa linha, então cada um
 // tem menos da metade da largura da tela. Com o padding padrão do botão

@@ -3,11 +3,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/models/conversion_settings.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/core/models/video_info.dart';
-import 'package:video_to_gif/features/photo/photo_frame_page.dart';
-import 'package:video_to_gif/features/video/editor_page.dart';
+import 'package:gitbat/core/models/conversion_settings.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/core/models/video_info.dart';
+import 'package:gitbat/features/photo/photo_frame_page.dart';
+import 'package:gitbat/features/video/editor_page.dart';
 
 // A aba "Girar" nasceu na tela de SVG e passou a valer também em "Editar
 // GIF" e "Editar imagem". Nestas duas ela é um passo de saída: gira o

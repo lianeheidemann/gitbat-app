@@ -2,14 +2,14 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/ffmpeg/ffmpeg_service.dart';
-import 'package:video_to_gif/core/ffmpeg/filter_graph.dart';
-import 'package:video_to_gif/core/ffmpeg/gif_args.dart';
-import 'package:video_to_gif/core/models/conversion_settings.dart';
-import 'package:video_to_gif/core/models/frame_settings.dart';
-import 'package:video_to_gif/core/models/image_frame.dart';
-import 'package:video_to_gif/core/models/output_transform.dart';
-import 'package:video_to_gif/core/models/video_info.dart';
+import 'package:gitbat/core/ffmpeg/ffmpeg_service.dart';
+import 'package:gitbat/core/ffmpeg/filter_graph.dart';
+import 'package:gitbat/core/ffmpeg/gif_args.dart';
+import 'package:gitbat/core/models/conversion_settings.dart';
+import 'package:gitbat/core/models/frame_settings.dart';
+import 'package:gitbat/core/models/image_frame.dart';
+import 'package:gitbat/core/models/output_transform.dart';
+import 'package:gitbat/core/models/video_info.dart';
 
 // A aba "Girar" do vídeo e da foto é um passo de saída: sem moldura de
 // imagem, ela gira o resultado já composto, sem mexer em recorte, moldura

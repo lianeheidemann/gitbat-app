@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/core/models/collage_sticker.dart';
-import 'package:video_to_gif/core/models/frame_settings.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/core/services/text_overlay_render.dart';
-import 'package:video_to_gif/core/ui/sticker_overlay_editor.dart';
-import 'package:video_to_gif/features/photo/photo_frame_page.dart';
-import 'package:video_to_gif/features/photo/services/photo_frame_compositor.dart';
-import 'package:video_to_gif/features/svg/models/svg_edit_settings.dart';
-import 'package:video_to_gif/features/svg/models/svg_info.dart';
-import 'package:video_to_gif/features/svg/services/svg_xml_editor.dart';
+import 'package:gitbat/core/models/collage_sticker.dart';
+import 'package:gitbat/core/models/frame_settings.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/core/services/text_overlay_render.dart';
+import 'package:gitbat/core/ui/sticker_overlay_editor.dart';
+import 'package:gitbat/features/photo/photo_frame_page.dart';
+import 'package:gitbat/features/photo/services/photo_frame_compositor.dart';
+import 'package:gitbat/features/svg/models/svg_edit_settings.dart';
+import 'package:gitbat/features/svg/models/svg_info.dart';
+import 'package:gitbat/features/svg/services/svg_xml_editor.dart';
 import 'package:xml/xml.dart';
 
 // A aba "Stickers" da Montagem também em Editar imagem, Editar vídeo e

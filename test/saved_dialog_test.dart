@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/app/theme.dart';
-import 'package:video_to_gif/core/ui/saved_dialog.dart';
+import 'package:gitbat/app/theme.dart';
+import 'package:gitbat/core/ui/saved_dialog.dart';
 
 void main() {
   testWidgets('pop-up "Salvo!" mostra a mensagem e fecha no OK', (

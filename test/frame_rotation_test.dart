@@ -5,15 +5,15 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/core/ffmpeg/filter_graph.dart';
-import 'package:video_to_gif/core/models/conversion_settings.dart';
-import 'package:video_to_gif/core/models/frame_settings.dart';
-import 'package:video_to_gif/core/models/image_frame.dart';
-import 'package:video_to_gif/core/models/output_transform.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/core/models/video_info.dart';
-import 'package:video_to_gif/features/photo/photo_frame_page.dart';
-import 'package:video_to_gif/features/photo/services/photo_frame_compositor.dart';
+import 'package:gitbat/core/ffmpeg/filter_graph.dart';
+import 'package:gitbat/core/models/conversion_settings.dart';
+import 'package:gitbat/core/models/frame_settings.dart';
+import 'package:gitbat/core/models/image_frame.dart';
+import 'package:gitbat/core/models/output_transform.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/core/models/video_info.dart';
+import 'package:gitbat/features/photo/photo_frame_page.dart';
+import 'package:gitbat/features/photo/services/photo_frame_compositor.dart';
 
 // Com moldura de imagem, a aba "Girar" gira só o conteúdo dentro da janela
 // (a moldura fica de pé) e o botão "90°" da aba "Moldura" gira a moldura

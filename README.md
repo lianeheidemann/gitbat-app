@@ -99,8 +99,13 @@ device with FFmpeg — the app has **no internet permission**.
   transparent margins)
 - Shared color adjustment — brightness, exposure, contrast, highlights,
   shadows, saturation, hue and temperature — identical in preview and export
-- **Configurações** tab with dark theme and preview checkerboard
-- Confirmation pop-up on every save to the gallery
+- **Configurações** tab with dark theme, preview checkerboard and **color
+  palettes** — the official *Morceguinho* (the GitBat bat's blues and cyan)
+  plus Lavanda, Menta, Pêssego and Rosa, each in light and dark; the chosen
+  one is remembered and also sets the default background, border and text
+  colors of the editors
+- Confirmation pop-up on every save to the gallery; everything is saved to
+  the **GitBat** album and named `GitBat_YYYYMMDD_HHMMSS`
 
 ## Download
 
@@ -153,14 +158,15 @@ published version.
 ```
 lib/
 ├── main.dart
-├── app/          # theme, licenses, app-wide controllers
+├── app/          # theme, color palettes, licenses, app-wide controllers
 ├── core/         # shared code: ffmpeg, models, painting, services, ui
 └── features/     # one folder per tool
     ├── collage/  ├── home/  ├── photo/
     ├── quick_convert/  ├── svg/  └── video/
 test/             # unit, widget and golden-pixel tests
 tool/             # icon generation, accuracy script, asset-list sync
-assets/           # backgrounds, fonts, frames, stickers
+assets/           # backgrounds, fonts, frames, stickers; plus icon/,
+                  # readme/ and interface-v2/ (brand art, not in the APK)
 docs/             # en and pt-Br documentation
 ```
 
@@ -182,7 +188,7 @@ CI checks this on every push.
 
 ## Quality
 
-- **580+ automated tests** — size model, FFmpeg arguments, crop and frame
+- **610+ automated tests** — size model, FFmpeg arguments, crop and frame
   geometry, collage layout and compositing (golden pixels), animation
   timeline, SVG export and editor interactions
 - `tool/medir_precisao.py` measures the size model against real FFmpeg
@@ -199,6 +205,15 @@ CI checks this on every push.
 | Vector art | `flutter_svg`, `xml` |
 | Files and output | `file_picker`, `gal`, `share_plus` |
 | Magic eraser | Plain Dart PatchMatch in an `Isolate` |
+
+## Brand
+
+| Item | Where |
+|---|---|
+| App icon (master) | `assets/icon/icon-v2/morceguinho-icone-simples.png` — regenerate every size with `python3 tool/gerar_icones.py` |
+| README logo | `assets/readme/gitbat-logo.png` |
+| Official palette | *Morceguinho* in `lib/app/app_palette.dart` |
+| Previous identity | `assets/icon/icon-v1/` |
 
 ## License
 

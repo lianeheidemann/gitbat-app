@@ -42,8 +42,8 @@ like this:
 - During conversion, temporary files are written to the app's own cache
   folder and deleted right after. Android also clears that folder
   automatically.
-- The final GIF is saved to the gallery **only when you tap "Save to
-  gallery"**.
+- The final GIF is saved to the gallery (**GitBat** album) **only when you
+  tap "Save to gallery"**.
 - Uninstalling the app removes all temporary files. GIFs you've already
   saved to the gallery remain there, since they belong to you.
 

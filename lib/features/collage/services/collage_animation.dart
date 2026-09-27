@@ -118,8 +118,8 @@ Set<String> _photoPaths(CollageSettings settings) => {
 /// imagem parada (ou não dá para ler).
 ///
 /// Tenta primeiro [_gifHeaderDuration], que lê só os blocos de controle do
-/// GIF sem decodificar pixel nenhum — cobre o caso comum, já que o app é
-/// "video to GIF". Qualquer coisa que não seja um GIF bem-formado (WebP
+/// GIF sem decodificar pixel nenhum — cobre o caso comum, já que a maioria
+/// das animações que passam pelo app são GIFs. Qualquer coisa que não seja um GIF bem-formado (WebP
 /// animado, arquivo corrompido, formato desconhecido) cai no caminho de
 /// reserva abaixo, que decodifica quadro a quadro como antes.
 Future<Duration?> _animationDuration(String path) async {

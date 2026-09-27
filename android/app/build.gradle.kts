@@ -25,9 +25,9 @@ if (hasSigningConfig) {
 }
 
 android {
-    // O applicationId é a identidade permanente do app na Play Store.
-    // Depois do primeiro envio ele NUNCA mais pode ser alterado.
-    namespace = "br.com.lianeheidemann.videotogif"
+    // Pacote do código Kotlin/Java (acompanha o nome GitBat). Não é o
+    // applicationId: pode mudar sem afetar quem já tem o app instalado.
+    namespace = "br.com.lianeheidemann.gitbat"
 
     compileSdk = 36
 
@@ -44,6 +44,10 @@ android {
     }
 
     defaultConfig {
+        // Identidade permanente do app no Android e na Play Store: continua
+        // com o nome da época do "Video to GIF" de propósito. Mudar criaria
+        // outro app — não instala por cima da versão atual e perde a ficha
+        // da loja. Depois do primeiro envio à loja ele NUNCA pode mudar.
         applicationId = "br.com.lianeheidemann.videotogif"
 
         // ffmpeg_kit_flutter_new exige no mínimo a API 24 (Android 7.0).

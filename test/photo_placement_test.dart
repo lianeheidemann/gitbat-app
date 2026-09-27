@@ -6,12 +6,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/core/models/frame_settings.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/core/models/photo_placement.dart';
-import 'package:video_to_gif/features/photo/photo_frame_page.dart';
-import 'package:video_to_gif/features/photo/services/photo_frame_compositor.dart';
-import 'package:video_to_gif/features/photo/widgets/photo_placement_view.dart';
+import 'package:gitbat/core/models/frame_settings.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/core/models/photo_placement.dart';
+import 'package:gitbat/features/photo/photo_frame_page.dart';
+import 'package:gitbat/features/photo/services/photo_frame_compositor.dart';
+import 'package:gitbat/features/photo/widgets/photo_placement_view.dart';
 
 /// PNG 80x40: metade esquerda vermelha, direita azul.
 Future<PhotoInfo> _photo(Directory dir) async {

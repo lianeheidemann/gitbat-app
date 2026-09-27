@@ -4,9 +4,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/core/ui/crop/crop_overlay.dart';
-import 'package:video_to_gif/features/photo/photo_frame_page.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/core/ui/crop/crop_overlay.dart';
+import 'package:gitbat/features/photo/photo_frame_page.dart';
 
 /// PNG [size]x[size] transparente com um quadrado opaco em [content].
 Future<void> _writePng(String path, int size, Rect? content) async {

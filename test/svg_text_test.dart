@@ -2,14 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/ui/editor_tabs_footer.dart';
+import 'package:gitbat/core/ui/editor_tabs_footer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/core/models/collage_text.dart';
-import 'package:video_to_gif/core/models/crop_rect.dart';
-import 'package:video_to_gif/features/svg/models/svg_edit_settings.dart';
-import 'package:video_to_gif/features/svg/models/svg_info.dart';
-import 'package:video_to_gif/features/svg/services/svg_xml_editor.dart';
-import 'package:video_to_gif/features/svg/svg_edit_page.dart';
+import 'package:gitbat/core/models/collage_text.dart';
+import 'package:gitbat/core/models/crop_rect.dart';
+import 'package:gitbat/features/svg/models/svg_edit_settings.dart';
+import 'package:gitbat/features/svg/models/svg_info.dart';
+import 'package:gitbat/features/svg/services/svg_xml_editor.dart';
+import 'package:gitbat/features/svg/svg_edit_page.dart';
 import 'package:xml/xml.dart';
 
 // Texto no "Editar SVG": sai no arquivo como `<text>` de verdade, por cima

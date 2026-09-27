@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/features/collage/models/collage_layout.dart';
-import 'package:video_to_gif/features/collage/models/collage_settings.dart';
-import 'package:video_to_gif/features/collage/widgets/panels/aspect_panel.dart';
-import 'package:video_to_gif/features/collage/widgets/panels/collage_panel_actions.dart';
+import 'package:gitbat/features/collage/models/collage_layout.dart';
+import 'package:gitbat/features/collage/models/collage_settings.dart';
+import 'package:gitbat/features/collage/widgets/panels/aspect_panel.dart';
+import 'package:gitbat/features/collage/widgets/panels/collage_panel_actions.dart';
 
 // Aba "Proporção": arrastar o slider fica em "x:y", mesmo passando por um
 // formato pronto — senão o painel mudava de altura no meio do arrasto.

@@ -42,8 +42,8 @@ acesso funciona assim:
 - Durante a conversão, arquivos temporários são gravados na pasta de cache do
   próprio aplicativo e apagados em seguida. O sistema Android também limpa
   essa pasta automaticamente.
-- O GIF final é salvo na galeria **somente quando você toca em "Salvar na
-  galeria"**.
+- O GIF final é salvo na galeria (álbum **GitBat**) **somente quando você
+  toca em "Salvar na galeria"**.
 - Desinstalar o aplicativo remove todos os arquivos temporários. Os GIFs que
   você já salvou na galeria continuam lá, pois pertencem a você.
 

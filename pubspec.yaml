@@ -1,7 +1,8 @@
-name: video_to_gif
+name: gitbat
 description: >-
-  Conversor de vídeo para GIF com corte de duração, recorte de proporção,
-  controle de velocidade, resolução, FPS e estimativa de peso antes da conversão.
+  GitBat — edição de vídeo, GIF, imagem, SVG e montagens no Android, offline:
+  converte vídeo em GIF ou WebP animado com estimativa de peso antes da
+  conversão, coloca molduras, ajusta cores e monta colagens.
 publish_to: "none"
 
 # version = <versionName>+<versionCode>
