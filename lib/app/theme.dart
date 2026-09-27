@@ -136,7 +136,17 @@ ThemeData buildTheme(Brightness brightness) {
           ? const Color(0xFF5D4D72)
           : scheme.primaryContainer,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      labelStyle: const TextStyle(fontSize: 13),
+      // Com a cor explícita: só o tamanho aqui fazia o rótulo herdar a cor
+      // do texto em volta, e no tema claro os chips (ex.: proporções do
+      // recorte) ficavam com texto branco sobre fundo branco.
+      labelStyle: TextStyle(
+        fontSize: 13,
+        color: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.disabled)
+              ? scheme.onSurface.withValues(alpha: 0.38)
+              : scheme.onSurface,
+        ),
+      ),
     ),
     dividerColor: scheme.outlineVariant.withValues(alpha: 0.45),
   );
