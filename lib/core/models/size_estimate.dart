@@ -1,3 +1,6 @@
+import '../../app/language_controller.dart';
+import '../../app/translations.dart';
+
 /// Quão confiável é o número mostrado ao usuário.
 enum EstimateConfidence {
   /// Ainda não medimos nada deste vídeo: o número vem de um valor médio.
@@ -13,9 +16,15 @@ enum EstimateConfidence {
 
 extension EstimateConfidenceLabel on EstimateConfidence {
   String get label => switch (this) {
-    EstimateConfidence.rough => 'Estimativa aproximada',
-    EstimateConfidence.fromSource => 'Estimativa aproximada',
-    EstimateConfidence.calibrated => 'Estimativa medida',
+    EstimateConfidence.rough => tr('Estimativa aproximada', 'Rough estimate'),
+    EstimateConfidence.fromSource => tr(
+      'Estimativa aproximada',
+      'Rough estimate',
+    ),
+    EstimateConfidence.calibrated => tr(
+      'Estimativa medida',
+      'Measured estimate',
+    ),
   };
 
   /// Margem de erro aplicada para montar a faixa mínimo–máximo.
@@ -33,10 +42,12 @@ enum SizeVerdict {
   heavy('Pesado', 'Pode demorar para carregar e alguns apps vão recomprimir'),
   tooHeavy('Muito pesado', 'Vários apps vão recusar ou destruir a qualidade');
 
-  const SizeVerdict(this.label, this.advice);
+  const SizeVerdict(this.labelPt, this.advicePt);
 
-  final String label;
-  final String advice;
+  final String labelPt;
+  String get label => trKey(labelPt);
+  final String advicePt;
+  String get advice => trKey(advicePt);
 
   static SizeVerdict forBytes(int bytes) {
     const mb = 1024 * 1024;
@@ -49,9 +60,10 @@ enum SizeVerdict {
 
 /// Limites práticos de destinos comuns, para dar contexto ao número.
 class ShareTarget {
-  const ShareTarget(this.name, this.limitBytes);
+  const ShareTarget(this.namePt, this.limitBytes);
 
-  final String name;
+  final String namePt;
+  String get name => trKey(namePt);
   final int limitBytes;
 
   static const targets = <ShareTarget>[

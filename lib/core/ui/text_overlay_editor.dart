@@ -1,3 +1,5 @@
+import '../../app/language_controller.dart';
+import '../../app/translations.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -465,11 +467,11 @@ class TextOverlayPanel extends StatelessWidget {
             if (selected != null) ...[
               const SizedBox(height: 8),
               PanelColorRow(
-                label: 'Cor do texto',
+                label: tr('Cor do texto', 'Text color'),
                 color: selected.color,
                 onTap: () => _pickColor(
                   context,
-                  title: 'Cor do texto',
+                  title: tr('Cor do texto', 'Text color'),
                   current: selected.color,
                   apply: (item, color) => item.copyWith(color: color),
                 ),
@@ -485,7 +487,7 @@ class TextOverlayPanel extends StatelessWidget {
                 ),
               ),
               PanelSwitchRow(
-                label: 'Fundo do texto',
+                label: tr('Fundo do texto', 'Text background'),
                 value: selected.hasBackground,
                 onChanged: (on) => _toggleBackground(selected, on),
               ),
@@ -507,32 +509,32 @@ class TextOverlayPanel extends StatelessWidget {
         spacing: 4,
         children: [
           IconButton(
-            tooltip: 'Editar',
+            tooltip: tr('Editar', 'Edit'),
             onPressed: () => controller.beginEdit(selected),
             icon: const Icon(Icons.edit_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Fonte',
+            tooltip: tr('Fonte', 'Font'),
             onPressed: () => _pickFont(context, selected),
             icon: const Icon(Icons.font_download_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Duplicar',
+            tooltip: tr('Duplicar', 'Duplicate'),
             onPressed: () => _duplicate(selected),
             icon: const Icon(Icons.copy_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Frente',
+            tooltip: tr('Frente', 'Front'),
             onPressed: () => _bringToFront(selected),
             icon: const Icon(Icons.flip_to_front_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Trás',
+            tooltip: tr('Trás', 'Back'),
             onPressed: () => _sendToBack(selected),
             icon: const Icon(Icons.flip_to_back_outlined, size: 20),
           ),
           IconButton(
-            tooltip: 'Remover',
+            tooltip: tr('Remover', 'Remove'),
             onPressed: () => _remove(selected),
             icon: const Icon(Icons.delete_outline, size: 20),
           ),
@@ -550,7 +552,9 @@ class TextOverlayPanel extends StatelessWidget {
         Row(
           children: [
             Text(
-              editing ? 'Editar texto' : 'Novo texto',
+              editing
+                  ? tr('Editar texto', 'Edit text')
+                  : tr('Novo texto', 'New text'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -559,7 +563,7 @@ class TextOverlayPanel extends StatelessWidget {
             if (editing)
               TextButton(
                 onPressed: controller.cancelEdit,
-                child: const Text('Cancelar'),
+                child: Text(tr('Cancelar', 'Cancel')),
               ),
           ],
         ),
@@ -577,7 +581,7 @@ class TextOverlayPanel extends StatelessWidget {
               textCapitalization: TextCapitalization.sentences,
               onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
-                hintText: 'Digite seu texto...',
+                hintText: tr('Digite seu texto...', 'Type your text...'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),
@@ -585,7 +589,9 @@ class TextOverlayPanel extends StatelessWidget {
                 suffixIcon: Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: IconButton(
-                    tooltip: editing ? 'Salvar texto' : 'Adicionar texto',
+                    tooltip: editing
+                        ? tr('Salvar texto', 'Save text')
+                        : tr('Adicionar texto', 'Add text'),
                     onPressed: canSubmit ? _submit : null,
                     icon: Icon(
                       editing ? Icons.check_rounded : Icons.add_rounded,
@@ -649,11 +655,11 @@ class TextOverlayPanel extends StatelessWidget {
       child: Column(
         children: [
           PanelColorRow(
-            label: 'Cor',
+            label: tr('Cor', 'Color'),
             color: selected.backgroundColor!,
             onTap: () => _pickColor(
               context,
-              title: 'Cor do fundo do texto',
+              title: tr('Cor do fundo do texto', 'Text background color'),
               current: selected.backgroundColor!,
               apply: (item, color) => item.copyWith(backgroundColor: color),
             ),
@@ -661,7 +667,7 @@ class TextOverlayPanel extends StatelessWidget {
           const SizedBox(height: 4),
           PanelSliderRow(
             onChangeStart: () => onGestureStart?.call(),
-            label: 'Opacidade',
+            label: tr('Opacidade', 'Opacity'),
             value: selected.backgroundColor!.a,
             min: 0,
             max: 1,
@@ -680,7 +686,7 @@ class TextOverlayPanel extends StatelessWidget {
           const SizedBox(height: 4),
           PanelSliderRow(
             onChangeStart: () => onGestureStart?.call(),
-            label: 'Arredondamento',
+            label: tr('Arredondamento', 'Rounding'),
             value: selected.backgroundCornerRatio,
             min: 0,
             max: CollageTextItem.maxBackgroundCornerRatio,
@@ -752,7 +758,7 @@ class TextOverlayPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Fonte',
+                tr('Fonte', 'Font'),
                 style: Theme.of(sheetContext).textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
@@ -764,7 +770,7 @@ class TextOverlayPanel extends StatelessWidget {
                     _fontThumb(
                       sheetContext,
                       family: font.$1,
-                      label: font.$2,
+                      label: trKey(font.$2),
                       selected: item.fontFamily == font.$1,
                       onTap: () {
                         Navigator.of(sheetContext).pop();
@@ -785,7 +791,7 @@ class TextOverlayPanel extends StatelessWidget {
                   _fontThumb(
                     sheetContext,
                     family: null,
-                    label: 'Importar',
+                    label: tr('Importar', 'Import'),
                     selected: false,
                     icon: Icons.font_download_outlined,
                     onTap: () {

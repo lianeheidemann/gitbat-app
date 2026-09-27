@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:convert' show base64Encode;
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -76,7 +77,9 @@ SvgGeometry readSvgGeometry(XmlElement root, SvgInfo info) {
       attrHeight <= 0 ||
       !attrWidth.isFinite ||
       !attrHeight.isFinite) {
-    throw const SvgEditException('Este SVG não tem um tamanho válido.');
+    throw SvgEditException(
+      tr('Este SVG não tem um tamanho válido.', 'This SVG has no valid size.'),
+    );
   }
 
   var vbX = 0.0, vbY = 0.0, vbW = attrWidth, vbH = attrHeight;
@@ -693,16 +696,23 @@ String renderEditedSvg(
   } on SvgEditException {
     rethrow;
   } catch (_) {
-    throw const SvgEditException(
-      'Não foi possível interpretar este SVG (arquivo malformado ou com '
-      'codificação não suportada).',
+    throw SvgEditException(
+      tr(
+        'Não foi possível interpretar este SVG (arquivo malformado ou com codificação não suportada).',
+        'Could not parse this SVG (malformed file or unsupported encoding).',
+      ),
     );
   }
 
   try {
     final root = doc.rootElement;
     if (root.name.local != 'svg') {
-      throw const SvgEditException('Este arquivo não é um SVG válido.');
+      throw SvgEditException(
+        tr(
+          'Este arquivo não é um SVG válido.',
+          'This file is not a valid SVG.',
+        ),
+      );
     }
 
     final geometry = readSvgGeometry(root, info);
@@ -744,18 +754,33 @@ String renderEditedSvg(
   } on SvgEditException {
     rethrow;
   } catch (_) {
-    throw const SvgEditException('Não foi possível gerar o SVG editado.');
+    throw SvgEditException(
+      tr(
+        'Não foi possível gerar o SVG editado.',
+        'Could not create the edited SVG.',
+      ),
+    );
   }
 }
 
 (double, double, double, double) _currentViewBox(XmlElement root) {
   final raw = root.getAttribute('viewBox');
   if (raw == null) {
-    throw const SvgEditException('Este SVG não tem um viewBox válido.');
+    throw SvgEditException(
+      tr(
+        'Este SVG não tem um viewBox válido.',
+        'This SVG has no valid viewBox.',
+      ),
+    );
   }
   final parts = raw.trim().split(RegExp(r'[\s,]+')).map(double.parse).toList();
   if (parts.length != 4) {
-    throw const SvgEditException('Este SVG não tem um viewBox válido.');
+    throw SvgEditException(
+      tr(
+        'Este SVG não tem um viewBox válido.',
+        'This SVG has no valid viewBox.',
+      ),
+    );
   }
   return (parts[0], parts[1], parts[2], parts[3]);
 }

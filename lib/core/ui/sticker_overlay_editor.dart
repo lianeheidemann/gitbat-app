@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -417,10 +418,12 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
   );
 
   Future<void> _createFolder() async {
-    final name = await _prompt('', 'Nova pasta');
+    final name = await _prompt('', tr('Nova pasta', 'New folder'));
     if (name == null) return;
     if (name.trim().isEmpty) {
-      _message('Digite um nome para a pasta.');
+      _message(
+        tr('Digite um nome para a pasta.', 'Type a name for the folder.'),
+      );
       return;
     }
     try {
@@ -431,7 +434,14 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
         ..pendingFolderScrollId = folder.id
         ..openFolder(folder.id);
     } catch (e) {
-      if (mounted) _message('Não deu para criar a pasta: $e');
+      if (mounted) {
+        _message(
+          tr(
+            'Não deu para criar a pasta: $e',
+            'Could not create the folder: $e',
+          ),
+        );
+      }
     }
   }
 
@@ -446,7 +456,7 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
           children: [
             ListTile(
               leading: const Icon(Icons.drive_file_rename_outline),
-              title: const Text('Renomear'),
+              title: Text(tr('Renomear', 'Rename')),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _renameFolder(folder);
@@ -454,7 +464,7 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
-              title: const Text('Apagar'),
+              title: Text(tr('Apagar', 'Delete')),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _removeFolder(folder);
@@ -467,7 +477,10 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
   }
 
   Future<void> _renameFolder(StickerFolder folder) async {
-    final name = await _prompt(folder.name, 'Renomear pasta');
+    final name = await _prompt(
+      folder.name,
+      tr('Renomear pasta', 'Rename folder'),
+    );
     if (name == null || name.trim().isEmpty) return;
     await _folderStore.rename(folder.id, name);
     if (!mounted) return;
@@ -485,18 +498,26 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: DialogTitle('Apagar pasta?'),
+        title: DialogTitle(tr('Apagar pasta?', 'Delete folder?')),
         content: Text(
           inFolder == 0
-              ? '"${folder.name}" vai ser apagada.'
-              : '"${folder.name}" vai ser apagada. '
-                    '${inFolder == 1 ? 'O sticker que está' : 'Os $inFolder stickers que estão'} '
-                    'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
+              ? tr(
+                  '"${folder.name}" vai ser apagada.',
+                  '"${folder.name}" will be deleted.',
+                )
+              : tr(
+                  '"${folder.name}" vai ser apagada. '
+                      '${inFolder == 1 ? 'O sticker que está' : 'Os $inFolder stickers que estão'} '
+                      'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
+                  '"${folder.name}" will be deleted. '
+                      '${inFolder == 1 ? 'The sticker in it goes' : 'The $inFolder stickers in it go'} '
+                      'back to "Imported".',
+                ),
         ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Apagar'),
+            child: Text(tr('Apagar', 'Delete')),
           ),
         ],
       ),
@@ -532,18 +553,26 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: DialogTitle('Remover sticker?'),
+        title: DialogTitle(tr('Remover sticker?', 'Remove sticker?')),
         content: Text(
           inUse.isEmpty
-              ? '"${asset.label}" vai ser removido da lista.'
-              : '"${asset.label}" vai ser removido da lista e também daqui, '
-                    'onde está usado ${inUse.length} '
-                    '${inUse.length == 1 ? 'vez' : 'vezes'}.',
+              ? tr(
+                  '"${asset.label}" vai ser removido da lista.',
+                  '"${asset.label}" will be removed from the list.',
+                )
+              : tr(
+                  '"${asset.label}" vai ser removido da lista e também daqui, '
+                      'onde está usado ${inUse.length} '
+                      '${inUse.length == 1 ? 'vez' : 'vezes'}.',
+                  '"${asset.label}" will be removed from the list and also '
+                      'from here, where it is used ${inUse.length} '
+                      '${inUse.length == 1 ? 'time' : 'times'}.',
+                ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Remover'),
+            child: Text(tr('Remover', 'Remove')),
           ),
         ],
       ),

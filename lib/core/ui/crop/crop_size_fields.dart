@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/crop_rect.dart';
@@ -40,7 +41,7 @@ class CropSizeSummary extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Janela de recorte',
+              tr('Janela de recorte', 'Crop window'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -114,7 +115,7 @@ class CropSizeInputs extends StatelessWidget {
             focusNode: widthFocus,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              labelText: 'Largura$unit',
+              labelText: tr('Largura$unit', 'Width$unit'),
               isDense: true,
               border: const OutlineInputBorder(),
             ),
@@ -129,7 +130,7 @@ class CropSizeInputs extends StatelessWidget {
             focusNode: heightFocus,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              labelText: 'Altura$unit',
+              labelText: tr('Altura$unit', 'Height$unit'),
               isDense: true,
               border: const OutlineInputBorder(),
             ),
@@ -164,7 +165,7 @@ class CropSizeSlider extends StatelessWidget {
   Widget build(BuildContext context) {
     return PanelSliderRow(
       sliderKey: const ValueKey('cropSizeSlider'),
-      label: 'Tamanho da janela',
+      label: tr('Tamanho da janela', 'Window size'),
       valueLabel: '$percent%',
       value: percent.toDouble(),
       min: 1,

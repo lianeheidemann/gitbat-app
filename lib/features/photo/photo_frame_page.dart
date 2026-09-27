@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -59,13 +60,17 @@ const _selectableContentFitModes = [
 /// `svg_edit_page.dart`: não é uma proporção de verdade (o -1 nunca é usado
 /// como razão), só marca "livre" — cada alça mexe só no seu lado/canto, sem
 /// travar largura/altura entre si.
-const _customAspectPreset = AspectPreset('Personalizado', -1);
+const _customAspectPreset = AspectPreset(
+  'Personalizado',
+  -1,
+  labelEn: 'Custom',
+);
 
 /// "Ajustar": também não é uma proporção (o -2 nunca vira razão).
 /// Tocar nele encosta o recorte nos pixels visíveis, cortando só a margem
 /// totalmente transparente (ver `opaque_bounds.dart`); depois disso o recorte
 /// fica livre como em "Personalizado", para a pessoa refinar se quiser.
-const _trimAspectPreset = AspectPreset('Ajustar', -2);
+const _trimAspectPreset = AspectPreset('Ajustar', -2, labelEn: 'Fit');
 
 /// Tela dedicada a aplicar uma moldura (procedural ou de imagem) a uma foto
 /// estática. Reaproveita o mesmo modelo ([FrameSettings], [ImageFrameAsset])
@@ -321,13 +326,18 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       final file = await _writeTempPng(bytes);
       await _output.saveToGallery(file);
       if (!mounted) return;
-      await showSavedDialog(context, 'Foto salva na galeria.');
+      await showSavedDialog(
+        context,
+        tr('Foto salva na galeria.', 'Photo saved to the gallery.'),
+      );
     } on OutputException catch (e) {
       if (!mounted) return;
       _message(e.message);
     } catch (_) {
       if (!mounted) return;
-      _message('Não foi possível gerar a imagem.');
+      _message(
+        tr('Não foi possível gerar a imagem.', 'Could not create the image.'),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -341,11 +351,16 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       await _output.share(
         file,
         mimeType: 'image/png',
-        text: 'Foto com moldura feita com o app GitBat',
+        text: tr(
+          'Foto com moldura feita com o app GitBat',
+          'Framed photo made with the GitBat app',
+        ),
       );
     } catch (_) {
       if (!mounted) return;
-      _message('Não foi possível gerar a imagem.');
+      _message(
+        tr('Não foi possível gerar a imagem.', 'Could not create the image.'),
+      );
     } finally {
       if (mounted) setState(() => _sharing = false);
     }
@@ -354,7 +369,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// Resumo da aba "Moldura": o nome da arte, com o giro dela quando houver.
   String get _imageFrameLabel {
     final asset = _frame.imageFrame;
-    if (asset == null) return 'Sem moldura';
+    if (asset == null) return tr('Sem moldura', 'No frame');
     final turns = _frame.frameQuarterTurns;
     return turns == 0 ? asset.label : '${asset.label} · ${turns * 90}°';
   }
@@ -371,21 +386,21 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   List<EditorSection> get _sections => [
     EditorSection(
       icon: Icons.crop_rounded,
-      title: 'Recorte',
+      title: tr('Recorte', 'Crop'),
       value: _cropLabel,
       builder: (_) => _cropSection(),
     ),
     EditorSection(
       icon: Icons.auto_fix_high_rounded,
-      title: 'Borracha mágica',
-      label: 'Borracha',
+      title: tr('Borracha mágica', 'Magic eraser'),
+      label: tr('Borracha', 'Eraser'),
       // Sem `value`: o painel desenha o próprio cabeçalho, com o estado da
       // seleção num selo ao lado do título (ver `_eraserHeader`).
       builder: (_) => _eraserSection(),
     ),
     EditorSection(
       icon: Icons.rotate_90_degrees_ccw_rounded,
-      title: 'Girar',
+      title: tr('Girar', 'Rotate'),
       value: _frame.outputTransform.label,
       builder: (_) => RotateFlipPanel(
         transform: _frame.outputTransform,
@@ -395,21 +410,21 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     ),
     EditorSection(
       icon: Icons.check_box_outline_blank_rounded,
-      title: 'Borda',
+      title: tr('Borda', 'Border'),
       value: _activeFrameStyle.label,
       builder: (_) => _frameStyleSection(),
     ),
     EditorSection(
       icon: Icons.smartphone_rounded,
-      title: 'Moldura',
+      title: tr('Moldura', 'Frame'),
       value: _imageFrameLabel,
       builder: (_) => _imageFrameSection(),
     ),
     if (_frame.hasFixedAspect)
       EditorSection(
         icon: Icons.fit_screen_rounded,
-        title: 'Ajuste da foto',
-        label: 'Ajuste',
+        title: tr('Ajuste da foto', 'Photo fit'),
+        label: tr('Ajuste', 'Fit'),
         value: _frame.contentFit.label,
         builder: (_) => _contentFitSection(),
       ),
@@ -417,35 +432,43 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     // Borda → Moldura → Fundo → Cor → Stickers → Texto → Configurações.
     EditorSection(
       icon: Icons.wallpaper_rounded,
-      title: 'Fundo',
-      value: _frame.transparentBackground ? 'Transparente' : 'Cor',
+      title: tr('Fundo', 'Background'),
+      value: _frame.transparentBackground
+          ? tr('Transparente', 'Transparent')
+          : tr('Cor', 'Color'),
       builder: (_) => _backgroundSection(),
     ),
     EditorSection(
       icon: Icons.tune_rounded,
-      title: 'Ajustar cor',
-      label: 'Cor',
-      value: _frame.adjustments.hasAdjustments ? 'Ajustada' : 'Original',
+      title: tr('Ajustar cor', 'Adjust color'),
+      label: tr('Cor', 'Color'),
+      value: _frame.adjustments.hasAdjustments
+          ? tr('Ajustada', 'Adjusted')
+          : tr('Original', 'Original'),
       builder: (_) => _colorAdjustSection(),
     ),
     EditorSection(
       icon: Icons.emoji_emotions_outlined,
-      title: 'Stickers',
-      value: _frame.stickers.isEmpty ? 'Nenhum' : '${_frame.stickers.length}',
+      title: tr('Stickers', 'Stickers'),
+      value: _frame.stickers.isEmpty
+          ? tr('Nenhum', 'None')
+          : '${_frame.stickers.length}',
       builder: (_) => _stickerSection(),
     ),
     EditorSection(
       icon: Icons.text_fields_rounded,
-      title: 'Texto',
-      value: _frame.texts.isEmpty ? 'Nenhum' : '${_frame.texts.length}',
+      title: tr('Texto', 'Text'),
+      value: _frame.texts.isEmpty
+          ? tr('Nenhum', 'None')
+          : '${_frame.texts.length}',
       builder: (_) => _textSection(),
     ),
     // Última aba da barra nas três telas de edição (vídeo, foto e
     // montagem) — configurações gerais, não deste recorte/moldura em si.
     EditorSection(
       icon: Icons.settings_rounded,
-      title: 'Configurações',
-      label: 'Configurações',
+      title: tr('Configurações', 'Settings'),
+      label: tr('Configurações', 'Settings'),
       builder: (_) => const PreviewSettingsPanel(),
     ),
   ];
@@ -460,27 +483,32 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     // As alças de recorte só aparecem na própria aba "Recorte" — nas outras,
     // a prévia já mostra o resultado recortado, igual ao vídeo e ao SVG.
     final showCropHandles =
-        active != null && sections[active].title == 'Recorte';
-    final textTabActive = active != null && sections[active].title == 'Texto';
-    _stickersTabActive = active != null && sections[active].title == 'Stickers';
+        active != null && sections[active].title == tr('Recorte', 'Crop');
+    final textTabActive =
+        active != null && sections[active].title == tr('Texto', 'Text');
+    _stickersTabActive =
+        active != null && sections[active].title == tr('Stickers', 'Stickers');
     final eraserTabActive =
-        active != null && sections[active].title == 'Borracha mágica';
+        active != null &&
+        sections[active].title == tr('Borracha mágica', 'Magic eraser');
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitle('Editar imagem'),
+        title: AppBarTitle(tr('Editar imagem', 'Edit image')),
         actions: [
           IconButton(
-            tooltip: 'Desfazer',
+            tooltip: tr('Desfazer', 'Undo'),
             onPressed: _undoStack.isEmpty ? null : _undo,
             icon: const Icon(Icons.undo_rounded),
           ),
           IconButton(
-            tooltip: 'Refazer',
+            tooltip: tr('Refazer', 'Redo'),
             onPressed: _redoStack.isEmpty ? null : _redo,
             icon: const Icon(Icons.redo_rounded),
           ),
           IconButton(
-            tooltip: _saving ? 'Salvando…' : 'Salvar na galeria',
+            tooltip: _saving
+                ? tr('Salvando…', 'Saving…')
+                : tr('Salvar na galeria', 'Save to gallery'),
             onPressed: busy ? null : _save,
             icon: _saving
                 ? const SizedBox(
@@ -491,7 +519,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 : const Icon(Icons.download_rounded),
           ),
           IconButton(
-            tooltip: _sharing ? 'Preparando…' : 'Compartilhar',
+            tooltip: _sharing
+                ? tr('Preparando…', 'Preparing…')
+                : tr('Compartilhar', 'Share'),
             onPressed: busy ? null : _share,
             icon: _sharing
                 ? const SizedBox(
@@ -861,7 +891,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             child: TextButton.icon(
               onPressed: _centerCurrentCrop,
               icon: const Icon(Icons.center_focus_strong_rounded),
-              label: const Text('Centralizar'),
+              label: Text(tr('Centralizar', 'Center')),
             ),
           ),
         ],
@@ -919,7 +949,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _trimming = false);
-      _message('Não foi possível ler a imagem.');
+      _message(
+        tr('Não foi possível ler a imagem.', 'Could not read the image.'),
+      );
       return;
     }
     if (!mounted) return;
@@ -928,14 +960,24 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     if (path != _photo.path) return;
 
     if (bounds == null) {
-      _message('A imagem está toda transparente.');
+      _message(
+        tr(
+          'A imagem está toda transparente.',
+          'The image is fully transparent.',
+        ),
+      );
       return;
     }
     if (bounds.x == 0 &&
         bounds.y == 0 &&
         bounds.width == _photo.width &&
         bounds.height == _photo.height) {
-      _message('A imagem não tem bordas transparentes para remover.');
+      _message(
+        tr(
+          'A imagem não tem bordas transparentes para remover.',
+          'The image has no transparent edges to remove.',
+        ),
+      );
       return;
     }
     _aspect = _trimAspectPreset;
@@ -946,9 +988,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final parsed = int.tryParse(value.trim());
     if (parsed == null) return;
     if (parsed > _photo.width) {
-      _message('Largura máxima é ${_photo.width} (tamanho original).');
+      _message(
+        tr(
+          'Largura máxima é ${_photo.width} (tamanho original).',
+          'Maximum width is ${_photo.width} (original size).',
+        ),
+      );
     } else if (parsed < 1) {
-      _message('A largura mínima é 1.');
+      _message(tr('A largura mínima é 1.', 'Minimum width is 1.'));
     }
     final crop = _frame.crop;
     if (crop == null) return;
@@ -963,9 +1010,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final parsed = int.tryParse(value.trim());
     if (parsed == null) return;
     if (parsed > _photo.height) {
-      _message('Altura máxima é ${_photo.height} (tamanho original).');
+      _message(
+        tr(
+          'Altura máxima é ${_photo.height} (tamanho original).',
+          'Maximum height is ${_photo.height} (original size).',
+        ),
+      );
     } else if (parsed < 1) {
-      _message('A altura mínima é 1.');
+      _message(tr('A altura mínima é 1.', 'Minimum height is 1.'));
     }
     final crop = _frame.crop;
     if (crop == null) return;
@@ -1071,7 +1123,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           SectionCard(
             children: [
               PanelColorRow(
-                label: 'Cor da borda',
+                label: tr('Cor da borda', 'Border color'),
                 color: _frame.color,
                 onTap: _pickFrameColor,
               ),
@@ -1127,7 +1179,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               // (antes só em "Expandir sem cortar"; nos outros era preto).
               PanelColorRow(
                 key: const ValueKey('frameWindowColorRow'),
-                label: 'Cor do fundo da moldura',
+                label: tr('Cor do fundo da moldura', 'Frame background color'),
                 color: _frame.expandBackgroundColor,
                 onTap: _pickExpandBackgroundColor,
               ),
@@ -1209,14 +1261,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // ---------------------------------------------------------------------
 
   void _pickFrameColor() => _pickColor(
-    title: 'Cor da borda',
+    title: tr('Cor da borda', 'Border color'),
     selectedColor: _frame.color,
     onSelected: (color) =>
         _updateFrame(_frame.copyWith(color: color), pushUndo: false),
   );
 
   void _pickExpandBackgroundColor() => _pickColor(
-    title: 'Cor do fundo da moldura',
+    title: tr('Cor do fundo da moldura', 'Frame background color'),
     selectedColor: _frame.expandBackgroundColor,
     onSelected: (color) => _updateFrame(
       _frame.copyWith(expandBackgroundColor: color),
@@ -1225,7 +1277,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   );
 
   void _pickBackgroundColor() => _pickColor(
-    title: 'Cor do fundo',
+    title: tr('Cor do fundo', 'Background color'),
     selectedColor: _frame.backgroundColor,
     onSelected: (color) =>
         _updateFrame(_frame.copyWith(backgroundColor: color), pushUndo: false),
@@ -1269,22 +1321,25 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Resolução da moldura', style: theme.textTheme.bodySmall),
+          Text(
+            tr('Resolução da moldura', 'Frame resolution'),
+            style: theme.textTheme.bodySmall,
+          ),
           const SizedBox(height: 8),
           SegmentedButton<ImageFrameResolutionMode>(
             key: const ValueKey('frameResolutionSegmentedButton'),
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: ImageFrameResolutionMode.matchAjustar,
                 label: Text(
-                  'Da foto',
+                  tr('Da foto', 'From photo'),
                   key: ValueKey('frameResolutionSegment_matchAjustar'),
                 ),
               ),
               ButtonSegment(
                 value: ImageFrameResolutionMode.nativeMax,
                 label: Text(
-                  'Máxima',
+                  tr('Máxima', 'Maximum'),
                   key: ValueKey('frameResolutionSegment_nativeMax'),
                 ),
               ),
@@ -1379,7 +1434,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             height: 36,
             child: Row(
               children: [
-                Text('Tamanho do pincel', style: rowLabel),
+                Text(tr('Tamanho do pincel', 'Brush size'), style: rowLabel),
                 Expanded(
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
@@ -1415,7 +1470,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         ],
         Row(
           children: [
-            Text('Qualidade', style: rowLabel),
+            Text(tr('Qualidade', 'Quality'), style: rowLabel),
             const SizedBox(width: 12),
             for (final (i, quality) in EraserQuality.values.indexed) ...[
               if (i > 0) const SizedBox(width: 6),
@@ -1446,7 +1501,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 ),
                 onPressed: (_eraserMask.isEmpty || _erasing) ? null : _erase,
                 icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
-                label: const Text('Apagar'),
+                label: Text(tr('Apagar', 'Erase')),
               ),
             ),
             const SizedBox(width: 8),
@@ -1463,7 +1518,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 onPressed: (_eraserMask.isEmpty || _erasing)
                     ? null
                     : () => setState(() => _eraserMask = EraserMask.empty),
-                child: const Text('Limpar'),
+                child: Text(tr('Limpar', 'Clear')),
               ),
             ),
           ],
@@ -1478,7 +1533,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 onPressed: () =>
                     setState(() => _eraserMask = _eraserMask.removeLast()),
                 icon: const Icon(Icons.undo_rounded, size: 18),
-                label: const Text('Desfazer traço'),
+                label: Text(tr('Desfazer traço', 'Undo stroke')),
               ),
             // Só aparece depois de uma apagada: outra semente dá outro
             // resultado para a mesma seleção, que é a saída quando o
@@ -1488,14 +1543,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 style: linkStyle,
                 onPressed: _retryErase,
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Tentar de novo'),
+                label: Text(tr('Tentar de novo', 'Try again')),
               ),
             if (canvas?.isZoomed ?? false)
               TextButton.icon(
                 style: linkStyle,
                 onPressed: canvas!.resetZoom,
                 icon: const Icon(Icons.zoom_out_map_rounded, size: 18),
-                label: const Text('Enquadrar'),
+                label: Text(tr('Enquadrar', 'Fit to view')),
               ),
           ],
         ),
@@ -1524,7 +1579,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Borracha',
+                tr('Borracha', 'Eraser'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -1543,7 +1598,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                ready ? 'Seleção pronta' : 'Nenhuma seleção',
+                ready
+                    ? tr('Seleção pronta', 'Selection ready')
+                    : tr('Nenhuma seleção', 'No selection'),
                 style: theme.textTheme.labelSmall?.copyWith(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -1605,7 +1662,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       builder: (_) => ExportProgressDialog(
         progress: progress,
         formatLabel: 'PNG',
-        title: 'Apagando da foto',
+        title: tr('Apagando da foto', 'Erasing from the photo'),
         width: _photo.width,
         height: _photo.height,
         onCancel: () {
@@ -1645,7 +1702,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     } on MagicEraserException catch (e) {
       if (mounted) _message(e.message);
     } catch (_) {
-      if (mounted) _message('Não foi possível apagar essa área.');
+      if (mounted) {
+        _message(
+          tr(
+            'Não foi possível apagar essa área.',
+            'Could not erase this area.',
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
@@ -1707,7 +1771,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           children: [
             Expanded(
               child: Text(
-                'Fundo transparente',
+                tr('Fundo transparente', 'Transparent background'),
                 style: theme.textTheme.bodyMedium,
               ),
             ),
@@ -1725,7 +1789,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           ),
           PanelColorRow(
             key: const ValueKey('backgroundColorRow'),
-            label: 'Cor do fundo',
+            label: tr('Cor do fundo', 'Background color'),
             color: _frame.backgroundColor,
             onTap: _pickBackgroundColor,
           ),

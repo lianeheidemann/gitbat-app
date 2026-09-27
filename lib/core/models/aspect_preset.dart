@@ -1,24 +1,39 @@
+import '../../app/language_controller.dart';
+
 /// Proporções oferecidas em toda tela de recorte do app (vídeo, foto e
 /// montagem) — a mesma lista em todo lugar, para o usuário encontrar as
 /// mesmas opções não importa qual recorte esteja usando.
 class AspectPreset {
-  const AspectPreset(this.label, this.ratio, {this.hint = ''});
+  const AspectPreset(
+    this.labelPt,
+    this.ratio, {
+    this.hintPt = '',
+    this.labelEn,
+    this.hintEn = '',
+  });
 
-  final String label;
+  /// Rótulo e dica em português; [labelEn]/[hintEn] são as versões em
+  /// inglês (sem [labelEn], o rótulo é o mesmo nos dois idiomas, ex.: "4:5").
+  final String labelPt;
   final double? ratio; // null = manter a proporção original
-  final String hint;
+  final String hintPt;
+  final String? labelEn;
+  final String hintEn;
+
+  String get label => tr(labelPt, labelEn ?? labelPt);
+  String get hint => tr(hintPt, hintEn);
 
   static const presets = <AspectPreset>[
     AspectPreset('Original', null),
-    AspectPreset('1:1', 1.0, hint: 'Quadrado'),
-    AspectPreset('4:5', 4 / 5, hint: 'Retrato'),
+    AspectPreset('1:1', 1.0, hintPt: 'Quadrado', hintEn: 'Square'),
+    AspectPreset('4:5', 4 / 5, hintPt: 'Retrato', hintEn: 'Portrait'),
     AspectPreset('5:4', 5 / 4),
     AspectPreset('2:3', 2 / 3),
-    AspectPreset('3:2', 3 / 2, hint: 'Foto'),
+    AspectPreset('3:2', 3 / 2, hintPt: 'Foto', hintEn: 'Photo'),
     AspectPreset('3:4', 3 / 4),
-    AspectPreset('4:3', 4 / 3, hint: 'Clássico'),
-    AspectPreset('9:16', 9 / 16, hint: 'Stories'),
-    AspectPreset('16:9', 16 / 9, hint: 'Paisagem'),
+    AspectPreset('4:3', 4 / 3, hintPt: 'Clássico', hintEn: 'Classic'),
+    AspectPreset('9:16', 9 / 16, hintPt: 'Stories', hintEn: 'Stories'),
+    AspectPreset('16:9', 16 / 9, hintPt: 'Paisagem', hintEn: 'Landscape'),
     AspectPreset('2:1', 2.0),
     AspectPreset('1:2', 0.5),
   ];

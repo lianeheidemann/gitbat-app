@@ -1,6 +1,7 @@
 import 'dart:ui' show Offset, Rect, Size;
 
 import 'collage_split.dart';
+import '../../../app/translations.dart';
 
 export 'collage_split.dart' show CollageSide, CollageSplit;
 
@@ -16,9 +17,10 @@ enum CollageLayoutKind {
   freeGrid('Grade livre'),
   custom('Personalizada');
 
-  const CollageLayoutKind(this.label);
+  const CollageLayoutKind(this.labelPt);
 
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 }
 
 /// Organização das fotos dentro da montagem: quantas células existem e como

@@ -1,3 +1,4 @@
+import '../../../../app/language_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -66,7 +67,7 @@ class CollageTextPanel extends StatelessWidget {
         if (selected != null) ...[
           const SizedBox(height: 8),
           PanelColorRow(
-            label: 'Cor do texto',
+            label: tr('Cor do texto', 'Text color'),
             color: selected.color,
             onTap: () => _pickTextColor(context, selected.id),
           ),
@@ -80,7 +81,7 @@ class CollageTextPanel extends StatelessWidget {
             ),
           ),
           PanelSwitchRow(
-            label: 'Fundo do texto',
+            label: tr('Fundo do texto', 'Text background'),
             value: selected.hasBackground,
             onChanged: (on) => _toggleTextBackground(selected.id, on),
           ),
@@ -112,14 +113,14 @@ class CollageTextPanel extends StatelessWidget {
       child: Column(
         children: [
           PanelColorRow(
-            label: 'Cor',
+            label: tr('Cor', 'Color'),
             color: selected.backgroundColor!,
             onTap: () => _pickTextBackgroundColor(context, selected.id),
           ),
           const SizedBox(height: 4),
           PanelSliderRow(
             onChangeStart: onPushUndoCheckpoint,
-            label: 'Opacidade',
+            label: tr('Opacidade', 'Opacity'),
             value: selected.backgroundColor!.a,
             min: 0,
             max: 1,
@@ -135,7 +136,7 @@ class CollageTextPanel extends StatelessWidget {
           const SizedBox(height: 4),
           PanelSliderRow(
             onChangeStart: onPushUndoCheckpoint,
-            label: 'Arredondamento',
+            label: tr('Arredondamento', 'Rounding'),
             value: selected.backgroundCornerRatio,
             min: 0,
             max: CollageTextItem.maxBackgroundCornerRatio,
@@ -169,7 +170,7 @@ class CollageTextPanel extends StatelessWidget {
   void _pickTextColor(BuildContext context, String id) => _pickOverlayTextColor(
     context,
     id: id,
-    title: 'Cor do texto',
+    title: tr('Cor do texto', 'Text color'),
     current: (item) => item.color,
     apply: (item, color) => item.copyWith(color: color),
   );
@@ -178,7 +179,7 @@ class CollageTextPanel extends StatelessWidget {
       _pickOverlayTextColor(
         context,
         id: id,
-        title: 'Cor do fundo do texto',
+        title: tr('Cor do fundo do texto', 'Text background color'),
         current: (item) => item.backgroundColor ?? EditorDefaults.background,
         apply: (item, color) => item.copyWith(backgroundColor: color),
       );
@@ -225,7 +226,9 @@ class CollageTextPanel extends StatelessWidget {
         Row(
           children: [
             Text(
-              editing ? 'Editar texto' : 'Novo texto',
+              editing
+                  ? tr('Editar texto', 'Edit text')
+                  : tr('Novo texto', 'New text'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -234,7 +237,7 @@ class CollageTextPanel extends StatelessWidget {
             if (editing)
               TextButton(
                 onPressed: onCancelEdit,
-                child: const Text('Cancelar'),
+                child: Text(tr('Cancelar', 'Cancel')),
               ),
           ],
         ),
@@ -255,7 +258,7 @@ class CollageTextPanel extends StatelessWidget {
               textCapitalization: TextCapitalization.sentences,
               onSubmitted: (_) => onSubmit(),
               decoration: InputDecoration(
-                hintText: 'Digite seu texto...',
+                hintText: tr('Digite seu texto...', 'Type your text...'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),
@@ -263,7 +266,9 @@ class CollageTextPanel extends StatelessWidget {
                 suffixIcon: Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: IconButton(
-                    tooltip: editing ? 'Salvar texto' : 'Adicionar texto',
+                    tooltip: editing
+                        ? tr('Salvar texto', 'Save text')
+                        : tr('Adicionar texto', 'Add text'),
                     onPressed: canSubmit ? onSubmit : null,
                     icon: Icon(
                       editing ? Icons.check_rounded : Icons.add_rounded,

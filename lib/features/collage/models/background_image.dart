@@ -1,9 +1,12 @@
+import '../../../app/translations.dart';
+
 /// Uma imagem de fundo que já vem com o app, em `assets/background`.
 class BundledBackground {
-  const BundledBackground({required this.assetPath, required this.label});
+  const BundledBackground({required this.assetPath, required this._label});
 
   final String assetPath;
-  final String label;
+  final String _label;
+  String get label => trKey(_label);
 }
 
 /// Os fundos prontos oferecidos na aba "Fundo" da montagem, antes dos que o

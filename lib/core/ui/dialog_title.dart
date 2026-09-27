@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 /// Título de pop-up com um X no canto de cima à direita para fechar — no
@@ -20,7 +21,7 @@ class DialogTitle extends StatelessWidget {
           offset: const Offset(10, -10),
           child: IconButton(
             key: const ValueKey('dialogCloseButton'),
-            tooltip: 'Fechar',
+            tooltip: tr('Fechar', 'Close'),
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.close_rounded),
             onPressed: () => Navigator.of(context).maybePop(),

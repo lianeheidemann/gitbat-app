@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -85,12 +86,17 @@ class ImportedAssetStore {
           ? const ['svg', 'png', 'jpg', 'jpeg', 'webp']
           : const ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'heic', 'heif'],
       dialogTitle: kind == ImportedAssetKind.sticker
-          ? 'Escolha uma imagem para o sticker'
-          : 'Escolha uma imagem de fundo',
+          ? tr(
+              'Escolha uma imagem para o sticker',
+              'Choose an image for the sticker',
+            )
+          : tr('Escolha uma imagem de fundo', 'Choose a background image'),
     );
     final path = picked?.path;
     if (path == null) {
-      throw ImportedAssetException('Nenhum arquivo selecionado.');
+      throw ImportedAssetException(
+        tr('Nenhum arquivo selecionado.', 'No file selected.'),
+      );
     }
 
     final isVector = path.toLowerCase().endsWith('.svg');
@@ -115,7 +121,7 @@ class ImportedAssetStore {
 
     final asset = ImportedAsset(
       id: '${kind.name}_$stamp',
-      label: label.isEmpty ? 'Importado' : label,
+      label: label.isEmpty ? tr('Importado', 'Imported') : label,
       filePath: destPath,
       isVector: isVector,
       nativeAspectRatio: aspectRatio,
@@ -221,7 +227,12 @@ class ImportedAssetStore {
       try {
         final size = pictureInfo.size;
         if (size.width <= 0 || size.height <= 0) {
-          throw ImportedAssetException('Este SVG não tem um tamanho válido.');
+          throw ImportedAssetException(
+            tr(
+              'Este SVG não tem um tamanho válido.',
+              'This SVG has no valid size.',
+            ),
+          );
         }
         return size.width / size.height;
       } finally {
@@ -231,7 +242,10 @@ class ImportedAssetStore {
       rethrow;
     } catch (_) {
       throw ImportedAssetException(
-        'Não foi possível ler este arquivo como SVG.',
+        tr(
+          'Não foi possível ler este arquivo como SVG.',
+          'Could not read this file as an SVG.',
+        ),
       );
     }
   }
@@ -245,7 +259,10 @@ class ImportedAssetStore {
       try {
         if (image.width <= 0 || image.height <= 0) {
           throw ImportedAssetException(
-            'Esta imagem não tem um tamanho válido.',
+            tr(
+              'Esta imagem não tem um tamanho válido.',
+              'This image has no valid size.',
+            ),
           );
         }
         return image.width / image.height;
@@ -255,7 +272,9 @@ class ImportedAssetStore {
     } on ImportedAssetException {
       rethrow;
     } catch (_) {
-      throw ImportedAssetException('Não foi possível ler esta imagem.');
+      throw ImportedAssetException(
+        tr('Não foi possível ler esta imagem.', 'Could not read this image.'),
+      );
     }
   }
 

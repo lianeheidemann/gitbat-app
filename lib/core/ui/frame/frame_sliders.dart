@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/frame_settings.dart';
@@ -21,7 +22,7 @@ class FrameThicknessRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final thickness = frame.thicknessAtReference.clamp(0, 24).toDouble();
     return PanelSliderRow(
-      label: 'Espessura da borda',
+      label: tr('Espessura da borda', 'Border thickness'),
       valueLabel: '${thickness.round()}px',
       value: thickness,
       min: 0,
@@ -55,7 +56,7 @@ class CornerRadiusRow extends StatelessWidget {
     const max = FrameSettings.maxCornerRatio;
     final ratio = frame.cornerRatio.clamp(0.0, max).toDouble();
     return PanelSliderRow(
-      label: 'Arredondamento dos cantos',
+      label: tr('Arredondamento dos cantos', 'Corner rounding'),
       valueLabel: '${(ratio / max * 100).round()}%',
       value: ratio,
       min: 0,
@@ -89,7 +90,7 @@ class ContentZoomRow extends StatelessWidget {
     final percent = (zoom * 100).round();
     return PanelSliderRow(
       sliderKey: const ValueKey('frameContentZoomSlider'),
-      label: 'Zoom do conteúdo',
+      label: tr('Zoom do conteúdo', 'Content zoom'),
       valueLabel: '$percent%',
       value: zoom,
       min: FrameSettings.minContentZoom,

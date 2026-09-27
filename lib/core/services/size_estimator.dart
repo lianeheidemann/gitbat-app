@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:math' as math;
 
 import '../models/conversion_settings.dart';
@@ -427,8 +428,12 @@ class SizeEstimator {
     );
 
     if (current.verdict == SizeVerdict.light) {
-      return 'Está leve. Se quiser, dá para subir a resolução ou o FPS sem '
-          'estourar o peso.';
+      return tr(
+        'Está leve. Se quiser, dá para subir a resolução ou o FPS sem '
+            'estourar o peso.',
+        'It is light. You can raise the resolution or FPS without making it '
+            'too heavy.',
+      );
     }
 
     int bytesIf(ConversionSettings s) =>
@@ -442,9 +447,8 @@ class SizeEstimator {
         orElse: () => settings.fps,
       );
       if (lower < settings.fps) {
-        options['baixar para $lower FPS'] = bytesIf(
-          settings.copyWith(fps: lower),
-        );
+        options[tr('baixar para $lower FPS', 'you lower it to $lower FPS')] =
+            bytesIf(settings.copyWith(fps: lower));
       }
     }
 
@@ -454,7 +458,10 @@ class SizeEstimator {
         orElse: () => settings.targetWidth,
       );
       if (lower < settings.targetWidth) {
-        options['reduzir a largura para $lower px'] = bytesIf(
+        options[tr(
+          'reduzir a largura para $lower px',
+          'you reduce the width to $lower px',
+        )] = bytesIf(
           settings.copyWith(targetWidth: lower),
         );
       }
@@ -465,11 +472,14 @@ class SizeEstimator {
         endSeconds:
             settings.startSeconds + settings.sourceDurationSeconds * 0.7,
       );
-      options['cortar 30% da duração'] = bytesIf(shorter);
+      options[tr('cortar 30% da duração', 'you trim 30% of the duration')] =
+          bytesIf(shorter);
     }
 
     if (settings.colors > 64) {
-      options['usar 128 cores'] = bytesIf(settings.copyWith(colors: 128));
+      options[tr('usar 128 cores', 'you use 128 colors')] = bytesIf(
+        settings.copyWith(colors: 128),
+      );
     }
 
     if (options.isEmpty) return current.verdict.advice;
@@ -479,7 +489,11 @@ class SizeEstimator {
     if (saved <= 0) return current.verdict.advice;
 
     final percent = (saved / current.bytes * 100).round();
-    return 'Dica: $percent% mais leve se ${best.key} '
-        '(${SizeEstimate.formatBytes(best.value)}).';
+    return tr(
+      'Dica: $percent% mais leve se ${best.key} '
+          '(${SizeEstimate.formatBytes(best.value)}).',
+      'Tip: $percent% lighter if ${best.key} '
+          '(${SizeEstimate.formatBytes(best.value)}).',
+    );
   }
 }

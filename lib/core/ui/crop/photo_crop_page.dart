@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,8 +17,8 @@ import '../dialog_title.dart';
 /// proporção). `null` em [ratio] é o recorte livre;
 /// [PhotoCropPage.cellAspectRatio] entra como "Da célula", e
 /// "Personalizada…" abre um campo para digitar `L:A`.
-const _cropRatioPresets = <(String label, double? ratio)>[
-  ('Livre', null),
+List<(String label, double? ratio)> get _cropRatioPresets => [
+  (tr('Livre', 'Free'), null),
   ('1:1', 1.0),
   ('4:5', 4 / 5),
   ('5:4', 5 / 4),
@@ -72,7 +73,7 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
   /// Rótulo da opção marcada na fileira — guardado à parte de [_lockedRatio]
   /// porque "Da célula" e uma proporção digitada podem cair no mesmo número
   /// de um preset, e o chip marcado tem que continuar sendo o que foi tocado.
-  String _selectedLabel = 'Livre';
+  String _selectedLabel = tr('Livre', 'Free');
 
   /// Última proporção digitada em "Personalizada…", para o chip continuar
   /// mostrando o valor escolhido.
@@ -158,7 +159,7 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
     });
   }
 
-  static const _trimLabel = 'Ajustar';
+  static String get _trimLabel => tr('Ajustar', 'Fit');
   bool _trimming = false;
 
   /// "Ajustar": recorte livre encostado nos pixels visíveis da foto,
@@ -176,13 +177,18 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
     } catch (_) {
       bounds = null;
       _trimming = false;
-      _snack('Não foi possível ler a imagem.');
+      _snack(tr('Não foi possível ler a imagem.', 'Could not read the image.'));
       return;
     }
     _trimming = false;
     if (!mounted) return;
     if (bounds == null) {
-      _snack('A imagem está toda transparente.');
+      _snack(
+        tr(
+          'A imagem está toda transparente.',
+          'The image is fully transparent.',
+        ),
+      );
       return;
     }
     final found = bounds;
@@ -190,7 +196,12 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
         found.y == 0 &&
         found.width == widget.photoWidth &&
         found.height == widget.photoHeight) {
-      _snack('A imagem não tem bordas transparentes para remover.');
+      _snack(
+        tr(
+          'A imagem não tem bordas transparentes para remover.',
+          'The image has no transparent edges to remove.',
+        ),
+      );
       return;
     }
     setState(() {
@@ -226,7 +237,7 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
       }
     }
     if ((widget.cellAspectRatio - ratio).abs() < 0.001) {
-      _selectRatio('Da célula', widget.cellAspectRatio);
+      _selectRatio(tr('Da célula', 'From area'), widget.cellAspectRatio);
       return;
     }
 
@@ -240,12 +251,12 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
     // edição; a área da foto usa o mesmo fundo de prévia delas.
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recortar foto'),
+        title: Text(tr('Recortar foto', 'Crop photo')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(_crop),
-            child: const Text(
-              'Usar recorte',
+            child: Text(
+              tr('Usar recorte', 'Use crop'),
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
@@ -313,11 +324,17 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
               ],
             ],
             _ratioChip(
-              'Da célula',
-              () => _selectRatio('Da célula', widget.cellAspectRatio),
+              tr('Da célula', 'From area'),
+              () => _selectRatio(
+                tr('Da célula', 'From area'),
+                widget.cellAspectRatio,
+              ),
             ),
             const SizedBox(width: 8),
-            _ratioChip(_customLabel ?? 'Personalizada…', _askCustomRatio),
+            _ratioChip(
+              _customLabel ?? tr('Personalizada…', 'Custom…'),
+              _askCustomRatio,
+            ),
           ],
         ),
       ),
@@ -364,7 +381,12 @@ class _CustomRatioDialogState extends State<_CustomRatioDialog> {
     final w = double.tryParse(_width.text.trim().replaceAll(',', '.'));
     final h = double.tryParse(_height.text.trim().replaceAll(',', '.'));
     if (w == null || h == null || w <= 0 || h <= 0) {
-      setState(() => _error = 'Digite dois números maiores que zero.');
+      setState(
+        () => _error = tr(
+          'Digite dois números maiores que zero.',
+          'Type two numbers greater than zero.',
+        ),
+      );
       return;
     }
     final label = '${_trim(w)}:${_trim(h)}';
@@ -380,7 +402,7 @@ class _CustomRatioDialogState extends State<_CustomRatioDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: DialogTitle('Proporção personalizada'),
+      title: DialogTitle(tr('Proporção personalizada', 'Custom aspect ratio')),
       content: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -392,7 +414,7 @@ class _CustomRatioDialogState extends State<_CustomRatioDialog> {
                 decimal: true,
               ),
               decoration: InputDecoration(
-                labelText: 'Largura',
+                labelText: tr('Largura', 'Width'),
                 errorText: _error,
                 errorMaxLines: 2,
               ),
@@ -408,13 +430,15 @@ class _CustomRatioDialogState extends State<_CustomRatioDialog> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(labelText: 'Altura'),
+              decoration: InputDecoration(labelText: tr('Altura', 'Height')),
               onSubmitted: (_) => _confirm(),
             ),
           ),
         ],
       ),
-      actions: [FilledButton(onPressed: _confirm, child: const Text('Usar'))],
+      actions: [
+        FilledButton(onPressed: _confirm, child: Text(tr('Usar', 'Use'))),
+      ],
     );
   }
 }

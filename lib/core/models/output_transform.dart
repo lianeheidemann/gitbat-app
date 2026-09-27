@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:math' as math;
 import 'dart:ui' show Canvas, Size;
 
@@ -56,11 +57,11 @@ class OutputTransform {
 
   /// Resumo curto para o cabeçalho da aba.
   String get label {
-    if (isIdentity) return 'Original';
+    if (isIdentity) return tr('Original', 'Original');
     return [
       if (quarterTurns != 0) '${quarterTurns * 90}°',
-      if (flipHorizontal) 'Espelho H',
-      if (flipVertical) 'Espelho V',
+      if (flipHorizontal) tr('Espelho H', 'Flip H'),
+      if (flipVertical) tr('Espelho V', 'Flip V'),
     ].join(' · ');
   }
 

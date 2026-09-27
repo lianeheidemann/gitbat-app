@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/size_estimate.dart';
@@ -66,7 +67,7 @@ class SizePanel extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Estimativa de tamanho',
+                        tr('Estimativa de tamanho', 'Size estimate'),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -74,7 +75,9 @@ class SizePanel extends StatelessWidget {
                     ),
                     // "Recalcular" é só o ícone, no canto do cabeçalho.
                     IconButton(
-                      tooltip: measuring ? 'Medindo…' : 'Recalcular',
+                      tooltip: measuring
+                          ? tr('Medindo…', 'Measuring…')
+                          : tr('Recalcular', 'Recalculate'),
                       visualDensity: VisualDensity.compact,
                       onPressed: measuring ? null : onMeasure,
                       icon: measuring
@@ -143,7 +146,7 @@ class SizePanel extends StatelessWidget {
                 // duas linhas separadas antes, só para caber a mesma
                 // informação num painel mais compacto.
                 Text(
-                  '${calibrated ? 'Faixa medida' : 'Faixa provável'}: '
+                  '${calibrated ? tr('Faixa medida', 'Measured range') : tr('Faixa provável', 'Likely range')}: '
                   '${estimate.formattedRange} · $summary',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -161,9 +164,9 @@ class SizePanel extends StatelessWidget {
 
   /// Rótulo curto do veredito, usado no selo ao lado do tamanho.
   static String _verdictLabel(SizeVerdict verdict) => switch (verdict) {
-    SizeVerdict.light => 'Leve',
-    SizeVerdict.good => 'Moderado',
-    SizeVerdict.heavy || SizeVerdict.tooHeavy => 'Pesado',
+    SizeVerdict.light => tr('Leve', 'Light'),
+    SizeVerdict.good => tr('Moderado', 'Moderate'),
+    SizeVerdict.heavy || SizeVerdict.tooHeavy => tr('Pesado', 'Heavy'),
   };
 }
 
@@ -248,11 +251,11 @@ class _ImpactBar extends StatelessWidget {
           },
         ),
         const SizedBox(height: 6),
-        const Row(
+        Row(
           children: [
             Expanded(
               child: Text(
-                'Leve',
+                tr('Leve', 'Light'),
                 style: TextStyle(
                   color: Color(0xFF58C78C),
                   fontSize: 11,
@@ -262,7 +265,7 @@ class _ImpactBar extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                'Moderado',
+                tr('Moderado', 'Moderate'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Color(0xFFB8B36A),
@@ -273,7 +276,7 @@ class _ImpactBar extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                'Pesado',
+                tr('Pesado', 'Heavy'),
                 textAlign: TextAlign.end,
                 style: TextStyle(
                   color: Color(0xFFE57373),

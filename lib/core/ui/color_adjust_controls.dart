@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../models/collage_color_adjustment.dart';
@@ -117,7 +118,7 @@ class _ResetAllButton extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             Text(
-              'Redefinir',
+              tr('Redefinir', 'Reset'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelSmall?.copyWith(

@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -63,8 +64,11 @@ Future<String> prepareSvgForEditing(String path) async {
       data = Uint8List.fromList(gzip.decode(data));
       changed = true;
     } catch (_) {
-      throw const SvgOpenException(
-        'Este arquivo está compactado e não deu para abrir.',
+      throw SvgOpenException(
+        tr(
+          'Este arquivo está compactado e não deu para abrir.',
+          'This file is compressed and could not be opened.',
+        ),
       );
     }
   }
@@ -91,7 +95,9 @@ Future<String> prepareSvgForEditing(String path) async {
   if (withoutDeg != text) changed = true;
 
   if (!withoutDeg.contains('<svg')) {
-    throw const SvgOpenException('Este arquivo não é um SVG.');
+    throw SvgOpenException(
+      tr('Este arquivo não é um SVG.', 'This file is not an SVG.'),
+    );
   }
   return (text: withoutDeg, changed: changed);
 }
@@ -119,8 +125,11 @@ bool _hasSize(String text) {
     return numeric(root.getAttribute('width')) &&
         numeric(root.getAttribute('height'));
   } catch (_) {
-    throw const SvgOpenException(
-      'Este SVG está com o código quebrado (XML inválido).',
+    throw SvgOpenException(
+      tr(
+        'Este SVG está com o código quebrado (XML inválido).',
+        'This SVG has broken code (invalid XML).',
+      ),
     );
   }
 }
@@ -147,9 +156,11 @@ Future<String> _withDetectedViewBox(String text, String originalPath) async {
       _probeSide,
     );
     if (bounds == null) {
-      throw const SvgOpenException(
-        'Este SVG não informa o tamanho e não foi possível encontrar o '
-        'desenho dentro dele.',
+      throw SvgOpenException(
+        tr(
+          'Este SVG não informa o tamanho e não foi possível encontrar o desenho dentro dele.',
+          'This SVG does not declare its size and the drawing inside it could not be found.',
+        ),
       );
     }
     root
@@ -163,8 +174,11 @@ Future<String> _withDetectedViewBox(String text, String originalPath) async {
   } on SvgOpenException {
     rethrow;
   } catch (_) {
-    throw const SvgOpenException(
-      'Este SVG não informa o tamanho (width/height ou viewBox).',
+    throw SvgOpenException(
+      tr(
+        'Este SVG não informa o tamanho (width/height ou viewBox).',
+        'This SVG does not declare its size (width/height or viewBox).',
+      ),
     );
   } finally {
     if (probe.existsSync()) probe.deleteSync();

@@ -21,6 +21,7 @@
 /// preenchimento sai em resolução nativa.
 library;
 
+import '../../../app/language_controller.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
@@ -69,7 +70,7 @@ class MagicEraseTask {
 
 class MagicEraserCancelled implements Exception {
   @override
-  String toString() => 'Apagada cancelada.';
+  String toString() => tr('Apagada cancelada.', 'Erasing cancelled.');
 }
 
 class MagicEraserException implements Exception {
@@ -126,7 +127,9 @@ Future<Uint8List> _erase({
 }) async {
   final hole = mask.boundsIn(photo.width, photo.height);
   if (hole == null) {
-    throw MagicEraserException('Não há nada marcado para apagar.');
+    throw MagicEraserException(
+      tr('Não há nada marcado para apagar.', 'Nothing is marked to erase.'),
+    );
   }
 
   final window = eraserContextWindow(hole, photo.width, photo.height);
@@ -152,7 +155,9 @@ Future<Uint8List> _erase({
       format: ui.ImageByteFormat.rawRgba,
     );
     if (rgba == null || maskRgba == null) {
-      throw MagicEraserException('Não foi possível ler a imagem.');
+      throw MagicEraserException(
+        tr('Não foi possível ler a imagem.', 'Could not read the image.'),
+      );
     }
 
     // A máscara vive no canal alfa: a imagem nasce transparente, o que soma
@@ -405,7 +410,9 @@ Future<Uint8List> _inpaintInIsolate({
       result.completeError(
         task.isCancelled
             ? MagicEraserCancelled()
-            : MagicEraserException('A apagada falhou: $message'),
+            : MagicEraserException(
+                tr('A apagada falhou: $message', 'Erasing failed: $message'),
+              ),
       );
     }
   });

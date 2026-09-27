@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -131,7 +132,9 @@ class FolderTab extends StatelessWidget {
     // `StickerFolderStore.create` já não deixa isso acontecer de novo, mas
     // sem isto uma entrada assim continuaria aparecendo como um vão sem
     // texto para sempre.
-    final displayLabel = label.trim().isEmpty ? 'Pasta sem nome' : label;
+    final displayLabel = label.trim().isEmpty
+        ? tr('Pasta sem nome', 'Unnamed folder')
+        : label;
     return Material(
       color: selected
           ? theme.colorScheme.primaryContainer

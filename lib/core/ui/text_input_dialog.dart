@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 import 'dialog_title.dart';
 
@@ -7,7 +8,7 @@ class TextInputDialog extends StatefulWidget {
   const TextInputDialog({
     super.key,
     required this.initial,
-    this.title = 'Texto',
+    this.title,
     this.maxLines = 3,
   });
 
@@ -15,7 +16,7 @@ class TextInputDialog extends StatefulWidget {
 
   /// Título do diálogo — o mesmo campo serve para escrever um texto da
   /// montagem e para nomear/renomear uma pasta de stickers.
-  final String title;
+  final String? title;
   final int maxLines;
 
   @override
@@ -42,7 +43,7 @@ class _TextInputDialogState extends State<TextInputDialog> {
     // teclado e a pessoa acha que confirmou sem ter confirmado nada.
     final singleLine = widget.maxLines == 1;
     return AlertDialog(
-      title: DialogTitle(widget.title),
+      title: DialogTitle(widget.title ?? tr('Texto', 'Text')),
       content: TextField(
         controller: _controller,
         autofocus: true,

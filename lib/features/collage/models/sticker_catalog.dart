@@ -1,3 +1,4 @@
+import '../../../app/language_controller.dart';
 import '../../../core/services/bundled_assets.dart';
 import '../../../core/services/bundled_sticker_store.dart';
 
@@ -33,13 +34,13 @@ extension BundledStickerFolderInfo on BundledStickerFolder {
   String get id => name;
 
   String get label => switch (this) {
-    BundledStickerFolder.reactions => 'Reações',
-    BundledStickerFolder.symbols => 'Símbolos',
-    BundledStickerFolder.effects => 'Efeitos',
+    BundledStickerFolder.reactions => tr('Reações', 'Reactions'),
+    BundledStickerFolder.symbols => tr('Símbolos', 'Symbols'),
+    BundledStickerFolder.effects => tr('Efeitos', 'Effects'),
     BundledStickerFolder.github => 'GitHub',
     BundledStickerFolder.black => 'Black',
-    BundledStickerFolder.novos => 'Novos',
-    BundledStickerFolder.imported => 'Importados',
+    BundledStickerFolder.novos => tr('Novos', 'New'),
+    BundledStickerFolder.imported => tr('Importados', 'Imported'),
   };
 }
 

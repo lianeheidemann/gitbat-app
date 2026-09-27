@@ -1,5 +1,6 @@
 // `ValueListenable` vem de foundation: material reexporta o
 // ValueListenableBuilder, mas não o tipo em si.
+import '../../../app/language_controller.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
@@ -87,7 +88,11 @@ class ExportProgressDialog extends StatelessWidget {
                 Text(
                   state.cancelling
                       ? 'Cancelando…'
-                      : (title ?? 'Exportando em $formatLabel'),
+                      : (title ??
+                            tr(
+                              'Exportando em $formatLabel',
+                              'Exporting as $formatLabel',
+                            )),
                   style: theme.textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -104,7 +109,7 @@ class ExportProgressDialog extends StatelessWidget {
                   TextButton.icon(
                     onPressed: state.cancelling ? null : onCancel,
                     icon: const Icon(Icons.close),
-                    label: const Text('Cancelar'),
+                    label: Text(tr('Cancelar', 'Cancel')),
                   ),
                 ],
               ],

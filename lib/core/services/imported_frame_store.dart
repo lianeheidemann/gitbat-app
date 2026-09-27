@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -145,8 +146,10 @@ NormalizedRect detectContentRect(ByteData raw, int width, int height) {
 
   if (bestArea == 0) {
     throw ImportedFrameException(
-      'Não encontramos uma área transparente nessa imagem. Abra num '
-      'editor de imagem e apague o centro da tela antes de importar.',
+      tr(
+        'Não encontramos uma área transparente nessa imagem. Abra num editor de imagem e apague o centro da tela antes de importar.',
+        'No transparent area was found in this image. Open it in an image editor and erase the screen area before importing.',
+      ),
     );
   }
 
@@ -156,14 +159,18 @@ NormalizedRect detectContentRect(ByteData raw, int width, int height) {
   final fraction = (bboxWidth * bboxHeight) / totalArea;
   if (fraction < 0.05) {
     throw ImportedFrameException(
-      'A área transparente dessa imagem é pequena demais para servir de '
-      'janela de vídeo.',
+      tr(
+        'A área transparente dessa imagem é pequena demais para servir de janela de vídeo.',
+        'The transparent area of this image is too small to hold the video.',
+      ),
     );
   }
   if (fraction > 0.90) {
     throw ImportedFrameException(
-      'A área transparente dessa imagem é grande demais — ela não parece '
-      'ter uma moldura ao redor.',
+      tr(
+        'A área transparente dessa imagem é grande demais — ela não parece ter uma moldura ao redor.',
+        'The transparent area of this image is too big — it does not seem to have a frame around it.',
+      ),
     );
   }
 
@@ -187,12 +194,22 @@ Future<SvgFrameMeasurement> measureSvgFrame(BytesLoader loader) async {
   try {
     pictureInfo = await vg.loadPicture(loader, null);
   } catch (_) {
-    throw ImportedFrameException('Não foi possível ler este arquivo como SVG.');
+    throw ImportedFrameException(
+      tr(
+        'Não foi possível ler este arquivo como SVG.',
+        'Could not read this file as an SVG.',
+      ),
+    );
   }
   try {
     final nativeSize = pictureInfo.size;
     if (nativeSize.width <= 0 || nativeSize.height <= 0) {
-      throw ImportedFrameException('Este SVG não tem um tamanho válido.');
+      throw ImportedFrameException(
+        tr(
+          'Este SVG não tem um tamanho válido.',
+          'This SVG has no valid size.',
+        ),
+      );
     }
     final nativeWidth = nativeSize.width.round();
 
@@ -214,7 +231,9 @@ Future<SvgFrameMeasurement> measureSvgFrame(BytesLoader loader) async {
     try {
       final raw = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
       if (raw == null) {
-        throw ImportedFrameException('Não foi possível ler este SVG.');
+        throw ImportedFrameException(
+          tr('Não foi possível ler este SVG.', 'Could not read this SVG.'),
+        );
       }
       return SvgFrameMeasurement(
         contentRect: detectContentRect(raw, image.width, image.height),
@@ -245,11 +264,16 @@ class ImportedFrameStore {
     final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['svg'],
-      dialogTitle: 'Escolha um SVG de moldura (mesmo formato das prontas)',
+      dialogTitle: tr(
+        'Escolha um SVG de moldura (mesmo formato das prontas)',
+        'Choose a frame SVG (same format as the bundled ones)',
+      ),
     );
     final path = picked?.path;
     if (path == null) {
-      throw ImportedFrameException('Nenhum arquivo selecionado.');
+      throw ImportedFrameException(
+        tr('Nenhum arquivo selecionado.', 'No file selected.'),
+      );
     }
 
     final bytes = await File(path).readAsBytes();
@@ -271,7 +295,7 @@ class ImportedFrameStore {
 
     final asset = ImageFrameAsset(
       id: 'imported_$stamp',
-      label: label.isEmpty ? 'Moldura importada' : label,
+      label: label.isEmpty ? tr('Moldura importada', 'Imported frame') : label,
       source: ImageFrameSource.importedSvg,
       imageFilePath: destPath,
       nativeAspectRatio: aspectRatio,

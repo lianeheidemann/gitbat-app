@@ -1,3 +1,4 @@
+import '../../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_svg/flutter_svg.dart';
@@ -132,7 +133,7 @@ class CollageStickersPanel extends StatelessWidget {
                 );
               }
               return FolderTab(
-                label: 'Nova pasta',
+                label: tr('Nova pasta', 'New folder'),
                 selected: false,
                 icon: Icons.create_new_folder_outlined,
                 onTap: onCreateFolder,
@@ -198,7 +199,7 @@ class CollageStickersPanel extends StatelessWidget {
                       ? null
                       : stickerFolderId,
                 ),
-                label: 'Importar',
+                label: tr('Importar', 'Import'),
                 size: 44,
                 height: 36,
               );

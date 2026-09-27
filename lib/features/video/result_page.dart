@@ -1,3 +1,4 @@
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/models/conversion_settings.dart';
@@ -45,7 +46,10 @@ class _ResultPageState extends State<ResultPage> {
       });
       await showSavedDialog(
         context,
-        '${widget.result.format.shortLabel} salvo na galeria.',
+        tr(
+          '${widget.result.format.shortLabel} salvo na galeria.',
+          '${widget.result.format.shortLabel} saved to the gallery.',
+        ),
       );
     } on OutputException catch (e) {
       if (!mounted) return;
@@ -70,14 +74,22 @@ class _ResultPageState extends State<ResultPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${result.format.shortLabel} pronto'),
+        title: Text(
+          tr(
+            '${result.format.shortLabel} pronto',
+            '${result.format.shortLabel} ready',
+          ),
+        ),
         actions: [
           IconButton(
-            tooltip: 'Compartilhar',
+            tooltip: tr('Compartilhar', 'Share'),
             onPressed: () => _output.share(
               result.file,
               mimeType: result.format.mimeType,
-              text: '${result.format.shortLabel} feito com o app GitBat',
+              text: tr(
+                '${result.format.shortLabel} feito com o app GitBat',
+                '${result.format.shortLabel} made with the GitBat app',
+              ),
             ),
             icon: const Icon(Icons.share_outlined),
           ),
@@ -140,7 +152,10 @@ class _ResultPageState extends State<ResultPage> {
                   const SizedBox(height: 4),
                   Text.rich(
                     TextSpan(
-                      text: 'Conversão concluída em ',
+                      text: tr(
+                        'Conversão concluída em ',
+                        'Conversion finished in ',
+                      ),
                       children: [
                         TextSpan(
                           text: '${_elapsedSeconds()}s',
@@ -171,7 +186,10 @@ class _ResultPageState extends State<ResultPage> {
                         : null,
                     finalSize: result.formattedSize,
                     difference: result.format == OutputFormat.gif
-                        ? '${_predictionDiff()} da previsão'
+                        ? tr(
+                            '${_predictionDiff()} da previsão',
+                            '${_predictionDiff()} from the estimate',
+                          )
                         : null,
                     accent: accent,
                   ),
@@ -183,30 +201,40 @@ class _ResultPageState extends State<ResultPage> {
                   const SizedBox(height: 10),
                   _SectionTitle(
                     icon: Icons.video_file_outlined,
-                    label: '${result.format.shortLabel} gerado',
+                    label: tr(
+                      '${result.format.shortLabel} gerado',
+                      '${result.format.shortLabel} created',
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _MetricRow(
                     icon: Icons.layers_outlined,
-                    label: 'Quadros',
-                    original: 'de ${_originalFrames()}',
+                    label: tr('Quadros', 'Frames'),
+                    original: tr(
+                      'de ${_originalFrames()}',
+                      'of ${_originalFrames()}',
+                    ),
                     value: '${result.frames}',
                   ),
                   const SizedBox(height: 6),
                   _MetricRow(
                     icon: Icons.schedule_outlined,
-                    label: 'Duração',
-                    original:
-                        'de ${widget.video.durationSeconds.toStringAsFixed(1)}s',
+                    label: tr('Duração', 'Duration'),
+                    original: tr(
+                      'de ${widget.video.durationSeconds.toStringAsFixed(1)}s',
+                      'of ${widget.video.durationSeconds.toStringAsFixed(1)}s',
+                    ),
                     value:
                         '${widget.settings.outputDurationSeconds.toStringAsFixed(1)}s • ${widget.settings.fps} FPS',
                   ),
                   const SizedBox(height: 6),
                   _MetricRow(
                     icon: Icons.aspect_ratio_outlined,
-                    label: 'Dimensões',
-                    original:
-                        'de ${widget.video.width} × ${widget.video.height} px',
+                    label: tr('Dimensões', 'Dimensions'),
+                    original: tr(
+                      'de ${widget.video.width} × ${widget.video.height} px',
+                      'of ${widget.video.width} × ${widget.video.height} px',
+                    ),
                     value: '${result.width} × ${result.height} px',
                   ),
                   const SizedBox(height: 12),
@@ -215,9 +243,9 @@ class _ResultPageState extends State<ResultPage> {
                     color: scheme.outlineVariant.withValues(alpha: 0.55),
                   ),
                   const SizedBox(height: 10),
-                  const _SectionTitle(
+                  _SectionTitle(
                     icon: Icons.workspace_premium_outlined,
-                    label: 'Qualidade',
+                    label: tr('Qualidade', 'Quality'),
                   ),
                   const SizedBox(height: 8),
                   if (result.format == OutputFormat.gif)
@@ -226,7 +254,10 @@ class _ResultPageState extends State<ResultPage> {
                         Expanded(
                           child: _QualityPill(
                             icon: Icons.palette_outlined,
-                            label: '${widget.settings.colors} cores',
+                            label: tr(
+                              '${widget.settings.colors} cores',
+                              '${widget.settings.colors} colors',
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -248,7 +279,10 @@ class _ResultPageState extends State<ResultPage> {
                   else
                     _QualityPill(
                       icon: Icons.high_quality_outlined,
-                      label: 'Qualidade ${widget.settings.webpQuality}',
+                      label: tr(
+                        'Qualidade ${widget.settings.webpQuality}',
+                        'Quality ${widget.settings.webpQuality}',
+                      ),
                     ),
                 ],
               ),
@@ -358,7 +392,10 @@ class _SizeComparison extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: _SizeCell(label: 'Original', value: original),
+                  child: _SizeCell(
+                    label: tr('Original', 'Original'),
+                    value: original,
+                  ),
                 ),
                 VerticalDivider(
                   width: 1,
@@ -367,7 +404,10 @@ class _SizeComparison extends StatelessWidget {
                 ),
                 if (predicted != null) ...[
                   Expanded(
-                    child: _SizeCell(label: 'Previsto', value: predicted!),
+                    child: _SizeCell(
+                      label: tr('Previsto', 'Estimated'),
+                      value: predicted!,
+                    ),
                   ),
                   VerticalDivider(
                     width: 1,
@@ -377,7 +417,7 @@ class _SizeComparison extends StatelessWidget {
                 ],
                 Expanded(
                   child: _SizeCell(
-                    label: 'Final',
+                    label: tr('Final', 'Final'),
                     value: finalSize,
                     accent: accent,
                   ),
@@ -641,10 +681,10 @@ class _GradientActionButton extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     isBusy
-                        ? 'Salvando…'
+                        ? tr('Salvando…', 'Saving…')
                         : isDone
-                        ? 'Salvo na galeria'
-                        : 'Salvar na galeria',
+                        ? tr('Salvo na galeria', 'Saved to gallery')
+                        : tr('Salvar na galeria', 'Save to gallery'),
                     style: TextStyle(
                       color: foreground,
                       fontSize: 14,

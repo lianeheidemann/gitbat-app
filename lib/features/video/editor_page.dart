@@ -37,8 +37,13 @@ import 'widgets/size_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import 'widgets/webp_convert_panel.dart';
+import '../../app/language_controller.dart';
 
-const _customAspectPreset = AspectPreset('Personalizados', -1);
+const _customAspectPreset = AspectPreset(
+  'Personalizados',
+  -1,
+  labelEn: 'Custom',
+);
 
 /// Opções apresentadas ao usuário. `fit` continua como resultado interno do
 /// ajuste automático quando é preciso preservar o vídeo inteiro, mas não é
@@ -245,7 +250,10 @@ class _EditorPageState extends State<EditorPage> {
       if (!mounted) return;
       setState(() => _measuring = false);
       _showMessage(
-        'Não deu para medir este trecho. A estimativa aproximada continua valendo.',
+        tr(
+          'Não deu para medir este trecho. A estimativa aproximada continua valendo.',
+          'Could not measure this clip. The rough estimate still applies.',
+        ),
       );
     }
   }
@@ -293,19 +301,37 @@ class _EditorPageState extends State<EditorPage> {
       // Mesma ordem nas quatro telas de edição: primeiro o que é só deste
       // modo (aqui, o formato e o tempo do vídeo), depois Recorte → Girar →
       // Borda → Moldura → Fundo → Cor → Stickers → Texto, e Configurações no fim.
-      EditorSection.fromLabeled(_formatSection(), label: 'Formato'),
-      EditorSection.fromLabeled(_durationSection(), label: 'Duração'),
-      EditorSection.fromLabeled(_speedSection(), label: 'Velocidade'),
+      EditorSection.fromLabeled(
+        _formatSection(),
+        label: tr('Formato', 'Format'),
+      ),
+      EditorSection.fromLabeled(
+        _durationSection(),
+        label: tr('Duração', 'Duration'),
+      ),
+      EditorSection.fromLabeled(
+        _speedSection(),
+        label: tr('Velocidade', 'Speed'),
+      ),
       EditorSection.fromLabeled(_fpsSection(), label: 'FPS'),
-      EditorSection.fromLabeled(_resolutionSection(), label: 'Resolução'),
+      EditorSection.fromLabeled(
+        _resolutionSection(),
+        label: tr('Resolução', 'Resolution'),
+      ),
       if (isWebp)
-        EditorSection.fromLabeled(_webpQualitySection(), label: 'Qualidade')
+        EditorSection.fromLabeled(
+          _webpQualitySection(),
+          label: tr('Qualidade', 'Quality'),
+        )
       else
-        EditorSection.fromLabeled(_colorSection(), label: 'Cores'),
-      EditorSection.fromLabeled(_aspectSection(), label: 'Recorte'),
+        EditorSection.fromLabeled(
+          _colorSection(),
+          label: tr('Cores', 'Colors'),
+        ),
+      EditorSection.fromLabeled(_aspectSection(), label: tr('Recorte', 'Crop')),
       EditorSection(
         icon: Icons.rotate_90_degrees_ccw_rounded,
-        title: 'Girar',
+        title: tr('Girar', 'Rotate'),
         value: _settings.outputTransform.label,
         builder: (_) => RotateFlipPanel(
           transform: _settings.outputTransform,
@@ -316,34 +342,44 @@ class _EditorPageState extends State<EditorPage> {
           ),
         ),
       ),
-      EditorSection.fromLabeled(_frameStyleSection(), label: 'Borda'),
-      EditorSection.fromLabeled(_imageFrameSection(), label: 'Moldura'),
+      EditorSection.fromLabeled(
+        _frameStyleSection(),
+        label: tr('Borda', 'Border'),
+      ),
+      EditorSection.fromLabeled(
+        _imageFrameSection(),
+        label: tr('Moldura', 'Frame'),
+      ),
       EditorSection(
         icon: Icons.wallpaper_rounded,
-        title: 'Fundo',
-        value: _settings.frame.transparentBackground ? 'Transparente' : 'Cor',
+        title: tr('Fundo', 'Background'),
+        value: _settings.frame.transparentBackground
+            ? tr('Transparente', 'Transparent')
+            : tr('Cor', 'Color'),
         builder: (_) => _backgroundSection(),
       ),
       EditorSection(
         icon: Icons.tune_rounded,
-        title: 'Ajustar cor',
-        label: 'Cor',
-        value: _settings.adjustments.hasAdjustments ? 'Ajustada' : 'Original',
+        title: tr('Ajustar cor', 'Adjust color'),
+        label: tr('Cor', 'Color'),
+        value: _settings.adjustments.hasAdjustments
+            ? tr('Ajustada', 'Adjusted')
+            : tr('Original', 'Original'),
         builder: (_) => _colorAdjustSection(),
       ),
       EditorSection(
         icon: Icons.emoji_emotions_outlined,
         title: 'Stickers',
         value: _settings.frame.stickers.isEmpty
-            ? 'Nenhum'
+            ? tr('Nenhum', 'None')
             : '${_settings.frame.stickers.length}',
         builder: (_) => _stickerSection(),
       ),
       EditorSection(
         icon: Icons.text_fields_rounded,
-        title: 'Texto',
+        title: tr('Texto', 'Text'),
         value: _settings.frame.texts.isEmpty
-            ? 'Nenhum'
+            ? tr('Nenhum', 'None')
             : '${_settings.frame.texts.length}',
         builder: (_) => _textSection(),
       ),
@@ -351,17 +387,23 @@ class _EditorPageState extends State<EditorPage> {
       // estimado), depois de todos os ajustes, formato/moldura incluídos.
       EditorSection(
         icon: Icons.data_usage_rounded,
-        title: 'Estimativa de tamanho',
-        label: 'Tamanho',
+        title: tr('Estimativa de tamanho', 'Size estimate'),
+        label: tr('Tamanho', 'Size'),
         value: isWebp ? null : _estimate.formatted,
         builder: (_) => isWebp
             ? WebpConvertPanel(
-                summary: '$baseSummary · qualidade ${_settings.webpQuality}',
+                summary: tr(
+                  '$baseSummary · qualidade ${_settings.webpQuality}',
+                  '$baseSummary · quality ${_settings.webpQuality}',
+                ),
               )
             : SizePanel(
                 estimate: _estimate,
                 originalBytes: _video.fileSizeBytes,
-                summary: '$baseSummary · ${_settings.colors} cores',
+                summary: tr(
+                  '$baseSummary · ${_settings.colors} cores',
+                  '$baseSummary · ${_settings.colors} colors',
+                ),
                 measuring: _measuring,
                 onMeasure: _measure,
               ),
@@ -370,8 +412,8 @@ class _EditorPageState extends State<EditorPage> {
       // montagem) — configurações gerais, não deste vídeo em si.
       EditorSection(
         icon: Icons.settings_rounded,
-        title: 'Configurações',
-        label: 'Configurações',
+        title: tr('Configurações', 'Settings'),
+        label: tr('Configurações', 'Settings'),
         builder: (_) => const PreviewSettingsPanel(),
       ),
     ];
@@ -387,28 +429,31 @@ class _EditorPageState extends State<EditorPage> {
     // a janela; em qualquer outra aba a prévia já mostra o corte aplicado
     // (ver _previewArea), como o resultado final vai sair.
     final isCropTabActive =
-        active != null && sections[active].barLabel == 'Recorte';
+        active != null && sections[active].barLabel == tr('Recorte', 'Crop');
     final textTabActive =
-        active != null && sections[active].barLabel == 'Texto';
+        active != null && sections[active].barLabel == tr('Texto', 'Text');
     _stickersTabActive =
         active != null && sections[active].barLabel == 'Stickers';
 
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitle('Editar vídeo'),
+        title: AppBarTitle(tr('Editar vídeo', 'Edit video')),
         actions: [
           IconButton(
-            tooltip: 'Desfazer',
+            tooltip: tr('Desfazer', 'Undo'),
             onPressed: _undoStack.isEmpty ? null : _undo,
             icon: const Icon(Icons.undo_rounded),
           ),
           IconButton(
-            tooltip: 'Refazer',
+            tooltip: tr('Refazer', 'Redo'),
             onPressed: _redoStack.isEmpty ? null : _redo,
             icon: const Icon(Icons.redo_rounded),
           ),
           IconButton(
-            tooltip: 'Converter em ${_settings.format.shortLabel}',
+            tooltip: tr(
+              'Converter em ${_settings.format.shortLabel}',
+              'Convert to ${_settings.format.shortLabel}',
+            ),
             onPressed: _openingConversion ? null : _convert,
             icon: const Icon(Icons.download_rounded),
           ),
@@ -875,7 +920,7 @@ class _EditorPageState extends State<EditorPage> {
   /// Resumo da aba "Moldura": o nome da arte, com o giro dela quando houver.
   String get _imageFrameLabel {
     final asset = _settings.frame.imageFrame;
-    if (asset == null) return 'Sem moldura';
+    if (asset == null) return tr('Sem moldura', 'No frame');
     final turns = _settings.frame.frameQuarterTurns;
     return turns == 0 ? asset.label : '${asset.label} · ${turns * 90}°';
   }
@@ -897,9 +942,9 @@ class _EditorPageState extends State<EditorPage> {
 
     return LabeledSection(
       icon: Icons.check_box_outline_blank_rounded,
-      title: 'Borda',
+      title: tr('Borda', 'Border'),
       value: style.label,
-      hint: 'Escolha uma opção',
+      hint: tr('Escolha uma opção', 'Choose an option'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -912,7 +957,7 @@ class _EditorPageState extends State<EditorPage> {
             SectionCard(
               children: [
                 PanelColorRow(
-                  label: 'Cor da borda',
+                  label: tr('Cor da borda', 'Border color'),
                   color: _settings.frame.color,
                   onTap: _pickFrameColor,
                 ),
@@ -960,9 +1005,9 @@ class _EditorPageState extends State<EditorPage> {
     final hasFixedAspect = _settings.frame.hasFixedAspect;
     return LabeledSection(
       icon: Icons.smartphone_rounded,
-      title: 'Moldura',
+      title: tr('Moldura', 'Frame'),
       value: _imageFrameLabel,
-      hint: 'Escolha uma opção',
+      hint: tr('Escolha uma opção', 'Choose an option'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -985,7 +1030,10 @@ class _EditorPageState extends State<EditorPage> {
                 // (antes só em "Expandir sem cortar"; nos outros era preto).
                 PanelColorRow(
                   key: const ValueKey('frameWindowColorRow'),
-                  label: 'Cor do fundo da moldura',
+                  label: tr(
+                    'Cor do fundo da moldura',
+                    'Frame background color',
+                  ),
                   color: _settings.frame.expandBackgroundColor,
                   onTap: _pickExpandBackgroundColor,
                 ),
@@ -1069,7 +1117,7 @@ class _EditorPageState extends State<EditorPage> {
           SwitchListTile(
             key: const ValueKey('transparentBackgroundSwitch'),
             contentPadding: EdgeInsets.zero,
-            title: const Text('Fundo transparente'),
+            title: Text(tr('Fundo transparente', 'Transparent background')),
             value: frame.transparentBackground,
             onChanged: (v) =>
                 _updateFrame(frame.copyWith(transparentBackground: v)),
@@ -1078,7 +1126,7 @@ class _EditorPageState extends State<EditorPage> {
             const Divider(height: 1),
             PanelColorRow(
               key: const ValueKey('backgroundColorRow'),
-              label: 'Cor do fundo',
+              label: tr('Cor do fundo', 'Background color'),
               color: _settings.frame.backgroundColor,
               onTap: _pickBackgroundColor,
             ),
@@ -1134,7 +1182,7 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   void _pickExpandBackgroundColor() => _pickColor(
-    title: 'Cor do fundo da moldura',
+    title: tr('Cor do fundo da moldura', 'Frame background color'),
     selectedColor: _settings.frame.expandBackgroundColor,
     onSelected: (color) => _updateFrame(
       _settings.frame.copyWith(expandBackgroundColor: color),
@@ -1143,14 +1191,14 @@ class _EditorPageState extends State<EditorPage> {
   );
 
   void _pickFrameColor() => _pickColor(
-    title: 'Cor da borda',
+    title: tr('Cor da borda', 'Border color'),
     selectedColor: _settings.frame.color,
     onSelected: (color) =>
         _updateFrame(_settings.frame.copyWith(color: color), pushUndo: false),
   );
 
   void _pickBackgroundColor() => _pickColor(
-    title: 'Cor do fundo',
+    title: tr('Cor do fundo', 'Background color'),
     selectedColor: _settings.frame.backgroundColor,
     onSelected: (color) => _updateFrame(
       _settings.frame.copyWith(backgroundColor: color),
@@ -1188,7 +1236,7 @@ class _EditorPageState extends State<EditorPage> {
   Widget _contentFitSubsection() {
     final selected = _settings.frame.contentFit;
     return _collapsibleSubsection(
-      label: 'Ajuste do conteúdo',
+      label: tr('Ajuste do conteúdo', 'Content fit'),
       expanded: _contentFitExpanded,
       onToggle: () =>
           setState(() => _contentFitExpanded = !_contentFitExpanded),
@@ -1228,22 +1276,25 @@ class _EditorPageState extends State<EditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Resolução da moldura', style: theme.textTheme.bodySmall),
+          Text(
+            tr('Resolução da moldura', 'Frame resolution'),
+            style: theme.textTheme.bodySmall,
+          ),
           const SizedBox(height: 8),
           SegmentedButton<ImageFrameResolutionMode>(
             key: const ValueKey('frameResolutionSegmentedButton'),
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: ImageFrameResolutionMode.matchAjustar,
                 label: Text(
-                  'Ajustar',
+                  tr('Ajustar', 'Fit'),
                   key: ValueKey('frameResolutionSegment_matchAjustar'),
                 ),
               ),
               ButtonSegment(
                 value: ImageFrameResolutionMode.nativeMax,
                 label: Text(
-                  'Máxima',
+                  tr('Máxima', 'Maximum'),
                   key: ValueKey('frameResolutionSegment_nativeMax'),
                 ),
               ),
@@ -1277,10 +1328,18 @@ class _EditorPageState extends State<EditorPage> {
           children: [
             Icon(Icons.videocam_off_outlined, color: theme.colorScheme.primary),
             const SizedBox(height: 10),
-            const Text('Prévia indisponível para este codec'),
+            Text(
+              tr(
+                'Prévia indisponível para este codec',
+                'Preview unavailable for this codec',
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
-              'A conversão continua funcionando normalmente.',
+              tr(
+                'A conversão continua funcionando normalmente.',
+                'Conversion still works normally.',
+              ),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -1576,7 +1635,10 @@ class _EditorPageState extends State<EditorPage> {
                     ),
                   ),
                   Text(
-                    'Atual ${_formatSeconds(current.clamp(0, duration).toDouble())}',
+                    tr(
+                      'Atual ${_formatSeconds(current.clamp(0, duration).toDouble())}',
+                      'Now ${_formatSeconds(current.clamp(0, duration).toDouble())}',
+                    ),
                     style: TextStyle(
                       color: fg.withValues(alpha: 0.54),
                       fontSize: 11,
@@ -1605,7 +1667,7 @@ class _EditorPageState extends State<EditorPage> {
 
     return LabeledSection(
       icon: Icons.content_cut_rounded,
-      title: 'Duração',
+      title: tr('Duração', 'Duration'),
       value: '${_settings.sourceDurationSeconds.toStringAsFixed(1)} s',
       originalValue: '${_video.durationSeconds.toStringAsFixed(1)} s',
       child: Column(
@@ -1630,10 +1692,10 @@ class _EditorPageState extends State<EditorPage> {
             onChangeEnd: (values) => _seekPreview(values.start),
           ),
           const SizedBox(height: 4),
-          _metricRow('Início', _formatSeconds(start)),
-          _metricRow('Fim', _formatSeconds(end)),
+          _metricRow(tr('Início', 'Start'), _formatSeconds(start)),
+          _metricRow(tr('Fim', 'End'), _formatSeconds(end)),
           _metricRow(
-            'Duração total',
+            tr('Duração total', 'Total duration'),
             '${_settings.sourceDurationSeconds.toStringAsFixed(1)} s',
           ),
           const SizedBox(height: 10),
@@ -1650,7 +1712,7 @@ class _EditorPageState extends State<EditorPage> {
                 _seekPreview(widget.initialSettings.startSeconds);
               },
               icon: const Icon(Icons.restart_alt_rounded),
-              label: const Text('Redefinir'),
+              label: Text(tr('Redefinir', 'Reset')),
             ),
           ),
         ],
@@ -1669,7 +1731,7 @@ class _EditorPageState extends State<EditorPage> {
 
     return LabeledSection(
       icon: Icons.crop_rounded,
-      title: 'Formato da janela',
+      title: tr('Formato da janela', 'Window shape'),
       value: _aspect.ratio == null
           ? '${_video.width}×${_video.height}'
           : _aspect.label,
@@ -1719,7 +1781,7 @@ class _EditorPageState extends State<EditorPage> {
               child: TextButton.icon(
                 onPressed: _centerCurrentCrop,
                 icon: const Icon(Icons.center_focus_strong_rounded),
-                label: const Text('Centralizar'),
+                label: Text(tr('Centralizar', 'Center')),
               ),
             ),
           ],
@@ -1762,10 +1824,13 @@ class _EditorPageState extends State<EditorPage> {
     if (parsed == null) return;
     if (parsed > _video.width) {
       _showMessage(
-        'Largura máxima é ${_video.width}px (tamanho do vídeo original).',
+        tr(
+          'Largura máxima é ${_video.width}px (tamanho do vídeo original).',
+          'Maximum width is ${_video.width}px (original video size).',
+        ),
       );
     } else if (parsed < 2) {
-      _showMessage('A largura mínima é 2px.');
+      _showMessage(tr('A largura mínima é 2px.', 'Minimum width is 2px.'));
     }
     final crop = _settings.crop;
     if (crop == null) return;
@@ -1783,10 +1848,13 @@ class _EditorPageState extends State<EditorPage> {
     if (parsed == null) return;
     if (parsed > _video.height) {
       _showMessage(
-        'Altura máxima é ${_video.height}px (tamanho do vídeo original).',
+        tr(
+          'Altura máxima é ${_video.height}px (tamanho do vídeo original).',
+          'Maximum height is ${_video.height}px (original video size).',
+        ),
       );
     } else if (parsed < 2) {
-      _showMessage('A altura mínima é 2px.');
+      _showMessage(tr('A altura mínima é 2px.', 'Minimum height is 2px.'));
     }
     final crop = _settings.crop;
     if (crop == null) return;
@@ -1814,7 +1882,7 @@ class _EditorPageState extends State<EditorPage> {
 
     return LabeledSection(
       icon: Icons.speed_rounded,
-      title: 'Velocidade',
+      title: tr('Velocidade', 'Speed'),
       value: '${_formatSpeed(_settings.speed)}x',
       originalValue: '${_formatSpeed(1.0)}x',
       child: Column(
@@ -1865,12 +1933,13 @@ class _EditorPageState extends State<EditorPage> {
 
     return LabeledSection(
       icon: Icons.photo_size_select_large_rounded,
-      title: 'Resolução',
+      title: tr('Resolução', 'Resolution'),
       value: '$percent% · $width×$height',
       originalValue: '${_video.width}×${_video.height}',
-      tip:
-          '100% preserva a nitidez original; reduzir gera arquivos mais '
-          'leves, mas com menos detalhe.',
+      tip: tr(
+        '100% preserva a nitidez original; reduzir gera arquivos mais leves, mas com menos detalhe.',
+        '100% keeps the original sharpness; lowering it makes lighter files with less detail.',
+      ),
       child: Slider(
         min: ConversionSettings.minResolutionPercent.toDouble(),
         max: 100,
@@ -1895,12 +1964,17 @@ class _EditorPageState extends State<EditorPage> {
   LabeledSection _fpsSection() {
     return LabeledSection(
       icon: Icons.animation_rounded,
-      title: 'Quadros por segundo (FPS)',
+      title: tr('Quadros por segundo (FPS)', 'Frames per second (FPS)'),
       value: '${_settings.fps} FPS',
       originalValue: '${_video.frameRate.round()} FPS',
-      hint:
-          'Mais FPS deixa a animação mais fluida, mas aumenta o tamanho do arquivo.',
-      tip: '12 FPS é um bom equilíbrio entre fluidez e tamanho.',
+      hint: tr(
+        'Mais FPS deixa a animação mais fluida, mas aumenta o tamanho do arquivo.',
+        'More FPS makes the animation smoother but increases the file size.',
+      ),
+      tip: tr(
+        '12 FPS é um bom equilíbrio entre fluidez e tamanho.',
+        '12 FPS is a good balance between smoothness and size.',
+      ),
       child: OptionChips<int>(
         options: ConversionSettings.fpsOptions,
         selected: _settings.fps,
@@ -1918,12 +1992,12 @@ class _EditorPageState extends State<EditorPage> {
   LabeledSection _formatSection() {
     return LabeledSection(
       icon: Icons.image_outlined,
-      title: 'Formato de saída',
+      title: tr('Formato de saída', 'Output format'),
       value: _settings.format.label,
-      hint:
-          'GIF é compatível com quase tudo; WebP costuma gerar arquivos bem '
-          'menores com qualidade parecida, mas alguns apps mais antigos não '
-          'abrem.',
+      hint: tr(
+        'GIF é compatível com quase tudo; WebP costuma gerar arquivos bem menores com qualidade parecida, mas alguns apps mais antigos não abrem.',
+        'GIF works almost everywhere; WebP usually makes much smaller files with similar quality, but some older apps cannot open it.',
+      ),
       child: OptionChips<OutputFormat>(
         options: OutputFormat.values,
         selected: _settings.format,
@@ -1945,10 +2019,12 @@ class _EditorPageState extends State<EditorPage> {
 
     return LabeledSection(
       icon: Icons.high_quality_outlined,
-      title: 'Qualidade do WebP',
+      title: tr('Qualidade do WebP', 'WebP quality'),
       value: '${_settings.webpQuality}',
-      tip:
-          '75 costuma equilibrar bem qualidade e tamanho; 95 preserva mais detalhe.',
+      tip: tr(
+        '75 costuma equilibrar bem qualidade e tamanho; 95 preserva mais detalhe.',
+        '75 usually balances quality and size well; 95 keeps more detail.',
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1964,8 +2040,13 @@ class _EditorPageState extends State<EditorPage> {
             children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Repetir para sempre'),
-                subtitle: const Text('Desligue para o WebP tocar uma vez só'),
+                title: Text(tr('Repetir para sempre', 'Loop forever')),
+                subtitle: Text(
+                  tr(
+                    'Desligue para o WebP tocar uma vez só',
+                    'Turn off to play the WebP only once',
+                  ),
+                ),
                 value: _settings.loop,
                 onChanged: (v) => _update(_settings.copyWith(loop: v)),
               ),
@@ -1987,11 +2068,13 @@ class _EditorPageState extends State<EditorPage> {
 
     return LabeledSection(
       icon: Icons.palette_outlined,
-      title: 'Qualidade das cores',
-      value: '${_settings.colors} cores',
-      originalValue: 'Cores ilimitadas',
-      tip:
-          '128 cores costuma equilibrar bem qualidade e tamanho; 256 preserva mais detalhes.',
+      title: tr('Qualidade das cores', 'Color quality'),
+      value: tr('${_settings.colors} cores', '${_settings.colors} colors'),
+      originalValue: tr('Cores ilimitadas', 'Unlimited colors'),
+      tip: tr(
+        '128 cores costuma equilibrar bem qualidade e tamanho; 256 preserva mais detalhes.',
+        '128 colors usually balances quality and size well; 256 keeps more detail.',
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1999,10 +2082,13 @@ class _EditorPageState extends State<EditorPage> {
             options: colors,
             selected: _settings.colors,
             labelBuilder: (value) => switch (value) {
-              64 => '64 cores — Menor tamanho',
-              128 => '128 cores — Equilibrado',
-              256 => '256 cores — Melhor qualidade',
-              _ => '$value cores',
+              64 => tr('64 cores — Menor tamanho', '64 colors — Smallest size'),
+              128 => tr('128 cores — Equilibrado', '128 colors — Balanced'),
+              256 => tr(
+                '256 cores — Melhor qualidade',
+                '256 colors — Best quality',
+              ),
+              _ => tr('$value cores', '$value colors'),
             },
             onSelected: (value) => _update(_settings.copyWith(colors: value)),
           ),
@@ -2010,7 +2096,7 @@ class _EditorPageState extends State<EditorPage> {
           SectionCard(
             children: [
               _collapsibleSubsection(
-                label: 'Suavização de cor',
+                label: tr('Suavização de cor', 'Color smoothing'),
                 subtitle: _settings.dither.label,
                 expanded: _ditherExpanded,
                 onToggle: () =>
@@ -2027,7 +2113,7 @@ class _EditorPageState extends State<EditorPage> {
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
               ),
               _collapsibleSubsection(
-                label: 'Paleta',
+                label: tr('Paleta', 'Palette'),
                 subtitle: _settings.palette.label,
                 expanded: _paletteExpanded,
                 onToggle: () =>
@@ -2046,8 +2132,13 @@ class _EditorPageState extends State<EditorPage> {
             children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Repetir para sempre'),
-                subtitle: const Text('Desligue para o GIF tocar uma vez só'),
+                title: Text(tr('Repetir para sempre', 'Loop forever')),
+                subtitle: Text(
+                  tr(
+                    'Desligue para o GIF tocar uma vez só',
+                    'Turn off to play the GIF only once',
+                  ),
+                ),
                 value: _settings.loop,
                 onChanged: (v) => _update(_settings.copyWith(loop: v)),
               ),

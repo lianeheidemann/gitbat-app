@@ -8,6 +8,7 @@ import 'default_colors.dart';
 import 'image_frame.dart';
 import 'output_transform.dart';
 import 'photo_placement.dart';
+import '../../app/translations.dart';
 
 /// Estilo da borda (moldura procedural) desenhada ao redor do GIF/foto. Cada
 /// estilo é só um atalho para um par de valores — espessura da borda e
@@ -21,12 +22,13 @@ enum FrameStyle {
   thick('Borda grossa', defaultThickness: 18, defaultCornerRatio: 0.20);
 
   const FrameStyle(
-    this.label, {
+    this.labelPt, {
     required this.defaultThickness,
     required this.defaultCornerRatio,
   });
 
-  final String label;
+  final String labelPt;
+  String get label => trKey(labelPt);
 
   /// Espessura sugerida (px numa largura de referência de 480px).
   final double defaultThickness;
@@ -44,10 +46,12 @@ enum ContentFitMode {
   fit('Encaixar', 'Mostra o vídeo inteiro com barras'),
   expand('Expandir sem cortar', 'Preenche com fundo estendido');
 
-  const ContentFitMode(this.label, this.subtitle);
+  const ContentFitMode(this.labelPt, this.subtitlePt);
 
-  final String label;
-  final String subtitle;
+  final String labelPt;
+  String get label => trKey(labelPt);
+  final String subtitlePt;
+  String get subtitle => trKey(subtitlePt);
 }
 
 /// Em que resolução o canvas de uma moldura de imagem é gerado — só se
@@ -65,10 +69,12 @@ enum ImageFrameResolutionMode {
     'Usa a resolução original da arte, no maior tamanho possível',
   );
 
-  const ImageFrameResolutionMode(this.label, this.subtitle);
+  const ImageFrameResolutionMode(this.labelPt, this.subtitlePt);
 
-  final String label;
-  final String subtitle;
+  final String labelPt;
+  String get label => trKey(labelPt);
+  final String subtitlePt;
+  String get subtitle => trKey(subtitlePt);
 }
 
 /// Resolve [ContentFitMode.auto] para [ContentFitMode.fill] ou
