@@ -323,6 +323,8 @@ Future<CollageFrameSequence> renderCollageFrames({
   required Directory workDir,
   void Function(double progress)? onProgress,
   bool Function()? isCancelled,
+  void Function(String step)? onStep,
+  Future<void> Function()? betweenFrames,
 }) async {
   final animated = <String, _AnimatedCursor>{};
   final stills = <String, ui.Image>{};
@@ -330,14 +332,24 @@ Future<CollageFrameSequence> renderCollageFrames({
 
   try {
     final neededWidths = _neededPhotoWidths(settings, outputWidth);
-    for (final path in _photoPaths(settings)) {
+    final paths = _photoPaths(settings).toList();
+    for (final (k, path) in paths.indexed) {
+      final label = 'foto ${k + 1}/${paths.length}';
+      onStep?.call('$label: abrindo ${_describeFile(path)}');
       final codec = await _openCodec(path, targetWidth: neededWidths[path]);
-      if (codec == null) continue;
+      if (codec == null) {
+        onStep?.call('$label: não deu para abrir');
+        continue;
+      }
       if (codec.frameCount > 1) {
         // Duração pelo cabeçalho (GIF/WebP), sem decodificar os pixels.
         final duration =
             await _animationDuration(path) ??
             Duration(milliseconds: codec.frameCount * 100);
+        onStep?.call(
+          '$label: animada, ${codec.frameCount} quadros, '
+          '${(duration.inMilliseconds / 1000).toStringAsFixed(1)} s',
+        );
         animated[path] = _AnimatedCursor(codec, codec.frameCount, duration);
       } else {
         try {
@@ -365,19 +377,36 @@ Future<CollageFrameSequence> renderCollageFrames({
       math.min(_maxOutputFrames, (total.inMilliseconds * fps / 1000).round()),
     );
 
+    onStep?.call(
+      '$frameCount quadros de ${outputWidth}px a $fps fps '
+      '(${animated.length} animadas)',
+    );
     final pattern = '${workDir.path}/quadro_%05d.png';
     for (var index = 0; index < frameCount; index++) {
       // Entre um quadro e outro: é o ponto em que dá para parar sem deixar
       // um PNG pela metade na pasta de trabalho.
       if (isCancelled?.call() ?? false) throw CollageRenderCancelled();
+      // Os primeiros quadros são anotados passo a passo (é onde o app
+      // fechava); depois, só de vez em quando.
+      final detailed = index < 3;
+      if (!detailed && index % 20 == 0) {
+        onStep?.call('quadro ${index + 1} de $frameCount');
+      }
       final t = Duration(milliseconds: (index * 1000 / fps).round());
-      final cellImages = [
-        for (final cell in settings.cells)
-          cell.photoPath == null
-              ? null
-              : (await animated[cell.photoPath!]?.frameAt(t) ??
-                    stills[cell.photoPath!]),
-      ];
+      final cellImages = <ui.Image?>[];
+      for (final (c, cell) in settings.cells.indexed) {
+        final path = cell.photoPath;
+        final cursor = path == null ? null : animated[path];
+        if (cursor != null && detailed) {
+          onStep?.call(
+            'quadro ${index + 1}: lendo a animação da área ${c + 1}',
+          );
+        }
+        cellImages.add(
+          path == null ? null : (await cursor?.frameAt(t) ?? stills[path]),
+        );
+      }
+      if (detailed) onStep?.call('quadro ${index + 1}: desenhando');
       final bytes = await composeCollageFrame(
         settings: settings,
         outputWidth: outputWidth,
@@ -387,7 +416,11 @@ Future<CollageFrameSequence> renderCollageFrames({
       );
       final name = index.toString().padLeft(5, '0');
       await File('${workDir.path}/quadro_$name.png').writeAsBytes(bytes);
+      if (detailed) onStep?.call('quadro ${index + 1}: pronto');
       onProgress?.call((index + 1) / frameCount);
+      // Deixa a tela desenhar um quadro antes do próximo: o motor gráfico
+      // libera as texturas usadas nesse intervalo.
+      await betweenFrames?.call();
     }
 
     return CollageFrameSequence(
@@ -406,6 +439,17 @@ Future<CollageFrameSequence> renderCollageFrames({
     for (final image in backgrounds.values) {
       image.dispose();
     }
+  }
+}
+
+/// Nome e tamanho do arquivo, para o diagnóstico.
+String _describeFile(String path) {
+  final name = path.split(Platform.pathSeparator).last;
+  try {
+    final kb = File(path).lengthSync() ~/ 1024;
+    return '$name ($kb KB)';
+  } catch (_) {
+    return name;
   }
 }
 
@@ -482,6 +526,10 @@ Map<String, int?> _neededPhotoWidths(
 
 /// Abre o decodificador de [path] com no máximo [targetWidth] de largura
 /// (a proporção é mantida). `null` quando o arquivo não dá para ler.
+///
+/// O motor do Flutter só aplica [targetWidth] em imagens paradas: GIF/WebP
+/// animados vêm sempre no tamanho original (medido com um WebP de
+/// 1080×1922 — pedir 300 de largura ainda devolve 1080×1922).
 Future<ui.Codec?> _openCodec(String path, {int? targetWidth}) async {
   try {
     final bytes = await File(path).readAsBytes();
