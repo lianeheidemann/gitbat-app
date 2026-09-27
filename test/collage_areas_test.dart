@@ -118,4 +118,56 @@ void main() {
     final rightH = dividers.firstWhere((d) => !d.vertical && d.column == 1);
     expect(grid.cellsTouching(rightH), [1, 3]);
   });
+
+  group('controles da "Área selecionada"', () {
+    const grid = CollageLayout(kind: CollageLayoutKind.grid2x2);
+
+    test('largura e altura em fração, e os limites', () {
+      expect(grid.widthFractionOf(0), 0.5);
+      expect(grid.heightFractionOf(3), 0.5);
+      final (lo, hi) = grid.widthFractionRange;
+      expect(lo, CollageLayout.minWeight / 2);
+      expect(hi, 1 - CollageLayout.minWeight / 2);
+      // Numa linha só não há o que redistribuir na altura.
+      expect(
+        const CollageLayout(
+          kind: CollageLayoutKind.row,
+          columns: 3,
+        ).heightFractionRange,
+        (1.0, 1.0),
+      );
+    });
+
+    test('mudar a largura redistribui as outras colunas', () {
+      const row = CollageLayout(kind: CollageLayoutKind.row, columns: 3);
+      final next = row.withWidthFraction(1, 0.5);
+      expect(next.widthFractionOf(1), closeTo(0.5, 1e-9));
+      expect(next.widthFractionOf(0), closeTo(0.25, 1e-9));
+      expect(next.widthFractionOf(2), closeTo(0.25, 1e-9));
+      final rects = _rects(next);
+      expect(rects[1].width, closeTo(200, 1e-6));
+    });
+
+    test('mudar a altura mexe só na coluna da foto', () {
+      final next = grid.withHeightFraction(0, 0.7);
+      expect(next.heightFractionOf(0), closeTo(0.7, 1e-9));
+      expect(next.heightFractionOf(2), closeTo(0.3, 1e-9));
+      expect(next.heightFractionOf(1), 0.5);
+    });
+
+    test('bloquear proporção escala as duas medidas juntas', () {
+      final next = grid.scaledArea(0, 1.2);
+      expect(next.widthFractionOf(0), closeTo(0.6, 1e-9));
+      expect(next.heightFractionOf(0), closeTo(0.6, 1e-9));
+      final rect = _rects(next)[0];
+      expect(rect.width / rect.height, closeTo(1, 1e-9));
+    });
+
+    test('"Redefinir área" volta a foto ao tamanho padrão', () {
+      final changed = grid.withWidthFraction(0, 0.8).withHeightFraction(0, 0.2);
+      final reset = changed.resetArea(0);
+      expect(reset.widthFractionOf(0), closeTo(0.5, 1e-9));
+      expect(reset.heightFractionOf(0), closeTo(0.5, 1e-9));
+    });
+  });
 }

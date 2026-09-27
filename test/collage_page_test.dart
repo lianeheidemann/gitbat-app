@@ -1097,6 +1097,8 @@ void main() {
     await tester.tap(find.byTooltip('Refazer'));
     await tester.pumpAndSettle();
     expect(cellSizes(), after);
+    await tester.ensureVisible(find.text('Tamanhos iguais'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Tamanhos iguais'));
     await tester.pumpAndSettle();
     expect(cellSizes(), before);
@@ -1148,5 +1150,85 @@ void main() {
       ),
     );
     expect(placeholder, findsNothing);
+  });
+
+  testWidgets('"Remover foto" no menu "..." esvazia a célula e desfaz', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+
+    List<CollageCellSettings> cells() => tester
+        .widgetList<CollageCellView>(find.byType(CollageCellView))
+        .map((v) => v.cell)
+        .toList();
+    expect(cells().first.hasPhoto, isTrue);
+    final count = cells().length;
+
+    await tester.tap(find.byIcon(Icons.more_horiz_rounded).first);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Remover foto'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Remover foto'));
+    await tester.pumpAndSettle();
+
+    expect(cells().length, count);
+    expect(cells().first.hasPhoto, isFalse);
+
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(cells().first.hasPhoto, isTrue);
+  });
+
+  testWidgets('aba "Áreas": cartão "Área selecionada" muda largura e altura', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Área selecionada'), findsNothing);
+
+    await tester.tap(find.byType(CollageCellView).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Área selecionada'), findsOneWidget);
+    expect(find.text('Aplicar às semelhantes'), findsNothing);
+
+    List<Size> sizes() => tester
+        .widgetList<CollageCellView>(find.byType(CollageCellView))
+        .map((v) => v.cellSize)
+        .toList();
+    final before = sizes();
+
+    // Muda a medida que tem para onde crescer (a outra é 100% numa só
+    // linha/coluna e fica travada).
+    for (final key in ['areaWidthSlider', 'areaHeightSlider']) {
+      final slider = tester.widget<Slider>(find.byKey(ValueKey(key)));
+      if (slider.onChanged == null) continue;
+      slider.onChangeStart!(slider.value);
+      slider.onChanged!(0.7);
+    }
+    await tester.pumpAndSettle();
+    final after = sizes();
+    expect(after[0], isNot(before[0]));
+    expect(find.text('70%'), findsOneWidget);
+
+    final resetArea = find.text('Redefinir área');
+    await tester.ensureVisible(resetArea);
+    await tester.pumpAndSettle();
+    await tester.tap(resetArea);
+    await tester.pumpAndSettle();
+    expect(sizes(), before);
   });
 }

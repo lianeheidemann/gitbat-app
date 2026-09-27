@@ -170,6 +170,10 @@ class _CollagePageState extends State<CollagePage> {
   /// que ele está redimensionando.
   CollageDivider? _draggingDivider;
 
+  /// "Bloquear proporção" do cartão "Área selecionada": largura e altura
+  /// mudam juntas, mantendo o formato da área.
+  bool _lockAreaAspect = false;
+
   /// Alvo dos controles da aba "Borda e cantos": `false` = a montagem
   /// inteira, `true` = todas as fotos de uma vez. Só estado de UI (qual
   /// seletor está tocado agora) — não faz parte de [CollageSettings].
@@ -524,6 +528,17 @@ class _CollagePageState extends State<CollagePage> {
     ),
     _CollageTab.areas => CollageAreasPanel(
       layout: _settings.layout,
+      selectedCell: _validSelectedAreaCell,
+      lockAspect: _lockAreaAspect,
+      onLockAspectChanged: (v) => setState(() => _lockAreaAspect = v),
+      onChangeStart: _pushUndoCheckpoint,
+      onWidthChanged: (f) => _resizeSelectedArea(width: f),
+      onHeightChanged: (f) => _resizeSelectedArea(height: f),
+      onResetArea: () {
+        final cell = _validSelectedAreaCell;
+        if (cell == null) return;
+        _update(_settings.copyWith(layout: _settings.layout.resetArea(cell)));
+      },
       onReset: () => _update(
         _settings.copyWith(layout: _settings.layout.withEqualSizes()),
       ),
@@ -801,6 +816,27 @@ class _CollagePageState extends State<CollagePage> {
       },
       child: cell,
     );
+  }
+
+  /// Largura ou altura nova (fração) da foto selecionada, vinda dos sliders
+  /// do cartão "Área selecionada". Com "Bloquear proporção", a outra medida
+  /// acompanha na mesma proporção.
+  void _resizeSelectedArea({double? width, double? height}) {
+    final cell = _validSelectedAreaCell;
+    if (cell == null) return;
+    final layout = _settings.layout;
+    final CollageLayout next;
+    if (_lockAreaAspect) {
+      final factor = width != null
+          ? width / layout.widthFractionOf(cell)
+          : height! / layout.heightFractionOf(cell);
+      next = layout.scaledArea(cell, factor);
+    } else if (width != null) {
+      next = layout.withWidthFraction(cell, width);
+    } else {
+      next = layout.withHeightFraction(cell, height!);
+    }
+    _update(_settings.copyWith(layout: next), pushUndo: false);
   }
 
   /// Foto selecionada na aba "Áreas", se ela ainda existe no layout atual
