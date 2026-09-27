@@ -361,19 +361,13 @@ class _HomePageState extends State<HomePage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Selos das tecnologias do app, na versão do tema atual —
-                // cópias geradas por tool/gerar_selos_do_app.py.
-                AspectRatio(
-                  aspectRatio: 1540 / 92,
-                  child: SvgPicture.asset(
-                    theme.brightness == Brightness.dark
-                        ? 'recursos/marca/gitbat-selos-escuro.svg'
-                        : 'recursos/marca/gitbat-selos-claro.svg',
-                    key: const ValueKey('homeBadges'),
-                    fit: BoxFit.contain,
-                    semanticsLabel:
-                        'Flutter, Dart, Android, FFmpeg e licença proprietária',
-                  ),
+                // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
+                Image.asset(
+                  'recursos/marca/gitbat-logo.png',
+                  key: const ValueKey('homeLogo'),
+                  height: 96,
+                  fit: BoxFit.contain,
+                  semanticLabel: 'Logo do GitBat',
                 ),
                 const SizedBox(height: 16),
                 Text(

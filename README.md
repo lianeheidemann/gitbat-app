@@ -176,7 +176,7 @@ lib/
     ├── collage/  ├── home/  ├── photo/
     ├── quick_convert/  ├── svg/  └── video/
 test/             # unit, widget and golden-pixel tests
-tool/             # icon/badge generation, accuracy script, asset-list sync
+tool/             # icon generation, accuracy script, asset-list sync
 recursos/         # stable copies of brand art used inside the app
 assets/           # backgrounds, fonts, frames, stickers; plus icon/,
                   # readme/ and interface-v2/ (brand art, not in the APK)
@@ -225,7 +225,8 @@ CI checks this on every push.
 |---|---|
 | App icon (master) | `assets/icon/icon-v2/morceguinho-icone-simples.png` — regenerate every size with `python3 tool/gerar_icones.py` |
 | README logo | `assets/readme/gitbat-logo.png` |
-| Tech badges | `assets/badge/gitbat-badges-adaptive-v10.svg` (README); light/dark copies for the app's home screen in `recursos/marca/` — regenerate with `python3 tool/gerar_selos_do_app.py` |
+| Tech badges | `assets/badge/gitbat-badges-adaptive-v10.svg` |
+| Home screen logo | `recursos/marca/gitbat-logo.png` — a stable copy of the README logo |
 | Official palette | *Morceguinho* in `lib/app/app_palette.dart` |
 | Previous identity | `assets/icon/icon-v1/` |
 

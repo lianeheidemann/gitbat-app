@@ -31,12 +31,9 @@ PASTAS_DE_CONTEUDO = ['assets/background', 'assets/fonts', 'assets/frame',
 
 # Arquivos avulsos que continuam declarados um a um.
 # `recursos/` guarda cópias estáveis da arte que o app usa, separadas de
-# `assets/` (pasta de trabalho). Os selos são gerados por
-# tool/gerar_selos_do_app.py.
-AVULSOS = [
-    'recursos/marca/gitbat-selos-claro.svg',
-    'recursos/marca/gitbat-selos-escuro.svg',
-]
+# `assets/` (pasta de trabalho): a logo da tela inicial é uma cópia de
+# assets/readme/gitbat-logo.png.
+AVULSOS = ['recursos/marca/gitbat-logo.png']
 
 IGNORADOS = {'.ds_store', 'thumbs.db'}
 

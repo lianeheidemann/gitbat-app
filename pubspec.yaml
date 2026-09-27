@@ -61,8 +61,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - recursos/marca/gitbat-selos-claro.svg
-    - recursos/marca/gitbat-selos-escuro.svg
+    - recursos/marca/gitbat-logo.png
     - assets/background/
     - assets/fonts/
     - assets/frame/
