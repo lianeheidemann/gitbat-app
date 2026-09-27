@@ -128,7 +128,7 @@ def grafico_destaque():
     imagem.alpha_composite(icone_completo(300), (70, 100))
 
     desenho = ImageDraw.Draw(imagem)
-    desenho.text((410, 165), 'Video to GIF', font=fonte(64), fill=BRANCO)
+    desenho.text((410, 165), 'GitBat', font=fonte(64), fill=BRANCO)
     desenho.text(
         (412, 250),
         'Saiba o peso antes de converter',

@@ -8,7 +8,7 @@ direto nos campos correspondentes.
 ## Nome do app (limite: 30 caracteres)
 
 ```
-Video to GIF
+GitBat
 ```
 
 ## Descrição curta (limite: 80 caracteres)

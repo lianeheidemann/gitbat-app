@@ -77,7 +77,7 @@ class _ResultPageState extends State<ResultPage> {
             onPressed: () => _output.share(
               result.file,
               mimeType: result.format.mimeType,
-              text: '${result.format.shortLabel} feito com o app Video to GIF',
+              text: '${result.format.shortLabel} feito com o app GitBat',
             ),
             icon: const Icon(Icons.share_outlined),
           ),

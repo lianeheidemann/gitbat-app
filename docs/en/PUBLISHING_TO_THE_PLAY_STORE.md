@@ -64,8 +64,8 @@ as early as possible.
 ## Stage 2 — Run the project for the first time
 
 ```bash
-git clone https://github.com/lianeheidemann/aplicativo-video-to-gif-1.git
-cd aplicativo-video-to-gif-1
+git clone https://github.com/lianeheidemann/gitbat-app.git
+cd gitbat-app
 
 flutter pub get
 flutter test   # the size-estimator tests should pass

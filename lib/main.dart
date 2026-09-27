@@ -26,13 +26,13 @@ Future<void> main() async {
   ];
   bundledStickerAssets = await loadBundledStickerAssets();
   bundledImageFrames = await loadBundledImageFrames();
-  runApp(const VideoToGifApp());
+  runApp(const GitBatApp());
 }
 
 /// Widget raiz do app: configura o MaterialApp com os temas claro/escuro na
 /// paleta escolhida e define a HomePage como tela inicial.
-class VideoToGifApp extends StatelessWidget {
-  const VideoToGifApp({super.key});
+class GitBatApp extends StatelessWidget {
+  const GitBatApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +41,7 @@ class VideoToGifApp extends StatelessWidget {
       builder: (context, _) {
         final palette = paletteNotifier.value;
         return MaterialApp(
-          title: 'Video to GIF',
+          title: 'GitBat',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(Brightness.light, palette),
           darkTheme: buildTheme(Brightness.dark, palette),

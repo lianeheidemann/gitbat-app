@@ -340,7 +340,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.info_outline),
             onPressed: () => showAboutDialog(
               context: context,
-              applicationName: 'Video to GIF',
+              applicationName: 'GitBat',
               applicationVersion: '1.0.0',
               applicationLegalese:
                   'Conversão feita no próprio aparelho com FFmpeg (LGPL). '
@@ -363,11 +363,11 @@ class _HomePageState extends State<HomePage> {
                   width: 96,
                   height: 96,
                   fit: BoxFit.contain,
-                  semanticLabel: 'Ícone do conversor de vídeo para GIF',
+                  semanticLabel: 'Ícone do GitBat',
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Video to GIF',
+                  'GitBat',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,

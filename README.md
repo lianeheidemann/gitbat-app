@@ -2,11 +2,11 @@
 
 <img width="200" src="assets/video-to-gif-logo-adaptive.svg"/>
 
-# Video to GIF
+# GitBat
 
 <img width="460" src="assets/video-to-gif-badges-adaptive-v9.svg"/>
 
-<p align="center"><a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a>&nbsp;<a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a></p>
+<p align="center"><a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a>&nbsp;<a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a></p>
 
 
 
@@ -17,13 +17,13 @@ directly on Android — privately and offline.**
 
 <img src="assets/gif/video-to-gif-interface-v3.webp"/><br>
 
-**[⬇ Download the latest APK](https://github.com/lianeheidemann/video-to-gif/releases/latest)**
+**[⬇ Download the latest APK](https://github.com/lianeheidemann/gitbat-app/releases/latest)**
 
 </div>
 
 ## Overview
 
-Video to GIF is an Android app built with Flutter. Everything runs on the
+GitBat is an Android app built with Flutter. Everything runs on the
 device with FFmpeg — the app has **no internet permission**.
 
 | Tool | Purpose |
@@ -102,7 +102,7 @@ device with FFmpeg — the app has **no internet permission**.
 
 ## Download
 
-Each [Release](https://github.com/lianeheidemann/video-to-gif/releases)
+Each [Release](https://github.com/lianeheidemann/gitbat-app/releases)
 ships ready-to-install APKs:
 
 | File | Use |
@@ -118,8 +118,8 @@ Pre-releases named `teste-N` are test builds, not stable versions.
 **Requirements:** Flutter 3.47.0 (Dart 3.12+), Android SDK (API 36) and NDK.
 
 ```bash
-git clone https://github.com/lianeheidemann/video-to-gif.git
-cd video-to-gif
+git clone https://github.com/lianeheidemann/gitbat-app.git
+cd gitbat-app
 flutter pub get
 flutter test
 flutter run

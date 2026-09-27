@@ -824,7 +824,7 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
         onPressed: () => _output.share(
           _file!,
           mimeType: widget.format.mimeType,
-          text: '${widget.format.label} feito com o app Video to GIF',
+          text: '${widget.format.label} feito com o app GitBat',
         ),
         icon: const Icon(Icons.share_outlined),
         label: const Text('Compartilhar'),

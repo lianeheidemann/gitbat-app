@@ -2637,7 +2637,7 @@ class _CollagePageState extends State<CollagePage> {
       await _output.share(
         file,
         mimeType: format.mimeType,
-        text: 'Montagem de fotos feita com o app Video to GIF',
+        text: 'Montagem de fotos feita com o app GitBat',
       );
     } on FfmpegException catch (e) {
       if (!mounted) return;

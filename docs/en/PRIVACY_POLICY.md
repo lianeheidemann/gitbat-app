@@ -1,4 +1,4 @@
-# Privacy Policy — Video to GIF
+# Privacy Policy — GitBat
 
 **Last updated:** _fill in the date you publish this_
 
@@ -16,7 +16,7 @@
 
 ## Summary
 
-The **Video to GIF** app does not collect, store or share any personal
+The **GitBat** app does not collect, store or share any personal
 data. All processing happens on your own device.
 
 ## Data collected

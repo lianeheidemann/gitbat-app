@@ -1164,7 +1164,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     final withoutExt = base.toLowerCase().endsWith('.svg')
         ? base.substring(0, base.length - 4)
         : base;
-    return '${withoutExt}_editado.svg';
+    return '${OutputService.filePrefix}${withoutExt}_editado.svg';
   }
 
   Future<void> _save() async {
@@ -1204,7 +1204,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
       await _output.share(
         file,
         mimeType: 'image/svg+xml',
-        text: 'SVG editado com o app Video to GIF',
+        text: 'SVG editado com o app GitBat',
       );
     } on SvgEditException catch (e) {
       if (!mounted) return;

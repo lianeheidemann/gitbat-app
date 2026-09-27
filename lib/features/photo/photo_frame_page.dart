@@ -340,7 +340,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       await _output.share(
         file,
         mimeType: 'image/png',
-        text: 'Foto com moldura feita com o app Video to GIF',
+        text: 'Foto com moldura feita com o app GitBat',
       );
     } catch (_) {
       if (!mounted) return;

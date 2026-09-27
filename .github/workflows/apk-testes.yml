@@ -105,7 +105,7 @@ jobs:
             --build-name="${{ steps.versao.outputs.nome }}" \
             --build-number=${{ steps.versao.outputs.codigo }}
           cp build/app/outputs/flutter-apk/app-release.apk \
-             "entrega/video-em-gif-teste-${GITHUB_RUN_NUMBER}-${{ steps.versao.outputs.ramo }}.apk"
+             "entrega/gitbat-teste-${GITHUB_RUN_NUMBER}-${{ steps.versao.outputs.ramo }}.apk"
           ls -lh entrega/
 
       - name: Apagar o keystore

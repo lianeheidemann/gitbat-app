@@ -61,8 +61,8 @@ fechado, que não tem como pular nem acelerar. Comece por ele o quanto antes.
 ## Etapa 2 — Rodar o projeto pela primeira vez
 
 ```bash
-git clone https://github.com/lianeheidemann/aplicativo-video-to-gif-1.git
-cd aplicativo-video-to-gif-1
+git clone https://github.com/lianeheidemann/gitbat-app.git
+cd gitbat-app
 
 flutter pub get
 flutter test   # os testes do estimador de peso devem passar

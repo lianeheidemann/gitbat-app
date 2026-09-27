@@ -1,4 +1,4 @@
-# Política de Privacidade — Video to GIF
+# Política de Privacidade — GitBat
 
 **Última atualização:** _preencha a data em que você publicar_
 
@@ -16,7 +16,7 @@
 
 ## Resumo
 
-O aplicativo **Video to GIF** não coleta, não armazena e não compartilha
+O aplicativo **GitBat** não coleta, não armazena e não compartilha
 nenhum dado pessoal. Todo o processamento acontece dentro do seu aparelho.
 
 ## Dados coletados
