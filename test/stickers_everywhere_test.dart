@@ -116,6 +116,25 @@ void main() {
     expect(_rgbaAt(d, 10, 5), 0xFF0000FF);
   });
 
+  test('Editar imagem com borda: o miolo transparente continua '
+      'transparente', () async {
+    final photoPath = '${dir.path}/transparente.png';
+    await File(
+      photoPath,
+    ).writeAsBytes(await _png(200, 100, const Color(0x00000000)));
+    final png = await composeFramedPhoto(
+      photo: PhotoInfo(path: photoPath, width: 200, height: 100),
+      frame: const FrameSettings(
+        style: FrameStyle.medium,
+        color: Color(0xFF00FF00),
+        thicknessAtReference: 20,
+      ),
+    );
+    final d = await _decode(png);
+    expect(_rgbaAt(d, 100, 50) & 0xFF, 0, reason: 'miolo transparente');
+    expect(_rgbaAt(d, 2, 50), 0x00FF00FF, reason: 'anel da borda');
+  });
+
   test('Editar vídeo: o sticker entra na camada sobreposta', () async {
     final stickerPath = '${dir.path}/sticker.png';
     await File(

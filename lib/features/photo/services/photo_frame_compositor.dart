@@ -81,6 +81,22 @@ Future<Uint8List> _composeProcedural(
       }
       paintFrame(canvas, size, frame);
       final geometry = FrameGeometry.of(size, frame);
+      if (frame.style != FrameStyle.none) {
+        // `paintFrame` enche o retângulo todo com a cor da borda (no vídeo o
+        // conteúdo cobre o miolo). Na foto o miolo volta a ficar vazio —
+        // transparente ou com a cor do fundo —, para as partes
+        // transparentes da foto não saírem com a cor da borda.
+        canvas.drawRRect(
+          geometry.contentClip,
+          Paint()..blendMode = BlendMode.clear,
+        );
+        if (!frame.transparentBackground) {
+          canvas.drawRRect(
+            geometry.contentClip,
+            Paint()..color = frame.backgroundColor,
+          );
+        }
+      }
       canvas.save();
       canvas.clipRRect(geometry.contentClip);
       final coverSrc = _coverSrcRect(

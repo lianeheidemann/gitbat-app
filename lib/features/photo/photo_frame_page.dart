@@ -713,13 +713,30 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         final outerRadius = frame.cornerRadiusFor(width);
         final innerRadius = (outerRadius - thickness).clamp(0.0, outerRadius);
 
-        final bordered = Container(
-          color: frame.color,
-          padding: EdgeInsets.all(thickness),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(innerRadius),
-            child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
-          ),
+        // A borda é só o anel em volta: o miolo não é pintado com a cor da
+        // borda, então as partes transparentes da foto continuam
+        // transparentes (ou com a cor do fundo, com ele ligado).
+        final bordered = Stack(
+          fit: StackFit.expand,
+          children: [
+            IgnorePointer(
+              child: CustomPaint(
+                painter: _BorderRingPainter(
+                  color: frame.color,
+                  thickness: thickness,
+                  outerRadius: outerRadius,
+                  innerRadius: innerRadius,
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(thickness),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(innerRadius),
+                child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
+              ),
+            ),
+          ],
         );
 
         final rounded = ClipRRect(
@@ -1741,4 +1758,41 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // ---------------------------------------------------------------------
   // Utilitários visuais compartilhados
   // ---------------------------------------------------------------------
+}
+
+/// Anel da borda procedural na prévia: o retângulo arredondado de fora menos
+/// o de dentro, sem preencher o miolo — mesmo desenho da exportação
+/// (`photo_frame_compositor.dart` limpa o miolo depois de `paintFrame`).
+class _BorderRingPainter extends CustomPainter {
+  const _BorderRingPainter({
+    required this.color,
+    required this.thickness,
+    required this.outerRadius,
+    required this.innerRadius,
+  });
+
+  final Color color;
+  final double thickness;
+  final double outerRadius;
+  final double innerRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(outerRadius),
+    );
+    final inner = RRect.fromRectAndRadius(
+      (Offset.zero & size).deflate(thickness),
+      Radius.circular(innerRadius),
+    );
+    canvas.drawDRRect(outer, inner, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BorderRingPainter old) =>
+      old.color != color ||
+      old.thickness != thickness ||
+      old.outerRadius != outerRadius ||
+      old.innerRadius != innerRadius;
 }

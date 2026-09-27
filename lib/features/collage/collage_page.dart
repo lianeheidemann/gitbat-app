@@ -731,85 +731,99 @@ class _CollagePageState extends State<CollagePage> {
   Widget _preview() {
     return AspectRatio(
       aspectRatio: _settings.aspectRatio,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, constraints.maxHeight);
-          final geometry = CollageGeometry.of(size, _settings);
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // A borda da prévia é desenhada pelo mesmo `paintCollageBorder`
-              // da exportação (antes era um Container pintado à mão aqui, que
-              // podia divergir do PNG final).
-              if (geometry.borderThickness > 0)
+      // Contorno fino marcando sempre a área da montagem, como em "Editar
+      // imagem" — por cima (não empurra o conteúdo) e só na prévia.
+      child: Container(
+        key: const ValueKey('collageAreaOutline'),
+        foregroundDecoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.45),
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final size = Size(constraints.maxWidth, constraints.maxHeight);
+            final geometry = CollageGeometry.of(size, _settings);
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // A borda da prévia é desenhada pelo mesmo `paintCollageBorder`
+                // da exportação (antes era um Container pintado à mão aqui, que
+                // podia divergir do PNG final).
+                if (geometry.borderThickness > 0)
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: CollageBorderPainter(_settings),
+                    ),
+                  ),
                 Positioned.fill(
-                  child: CustomPaint(painter: CollageBorderPainter(_settings)),
-                ),
-              Positioned.fill(
-                child: Padding(
-                  padding: EdgeInsets.all(geometry.borderThickness),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(geometry.innerRadius),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        _backgroundPreview(),
-                        for (var i = 0; i < _settings.cells.length; i++)
-                          Positioned.fromRect(
-                            rect: geometry.cellRects[i].translate(
-                              -geometry.borderThickness,
-                              -geometry.borderThickness,
-                            ),
-                            child: _areaSelectable(
-                              i,
-                              CollageCellView(
-                                cell: _settings.cells[i],
-                                cellSize: geometry.cellRects[i].size,
-                                // Com "Stickers" ou "Texto" aberto no rodapé, a
-                                // foto para de responder a gesto — só um dos
-                                // dois grupos (fotos, ou stickers/texto) pode
-                                // ser movido por vez, o mesmo motivo que
-                                // CollageOverlayView.interactive já aplica ao
-                                // contrário nesses dois casos.
-                                // Em "Áreas" também: o arrasto é das alças
-                                // entre as fotos, não do enquadramento.
-                                // Em "Áreas" a foto continua podendo ser
-                                // movida; o toque nela só a seleciona (ver o
-                                // `Listener` abaixo).
-                                interactive:
-                                    _activeTab != _CollageTab.stickers &&
-                                    _activeTab != _CollageTab.text,
-                                onGestureStart: _pushUndoCheckpoint,
-                                onChanged: (cell) => _update(
-                                  _settings.replacingCell(i, cell),
-                                  pushUndo: false,
-                                ),
-                                onMenu: () => openCollageCellMenu(
-                                  i,
-                                  context,
-                                  settings: () => _settings,
-                                  actions: _panelActions,
+                  child: Padding(
+                    padding: EdgeInsets.all(geometry.borderThickness),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(geometry.innerRadius),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _backgroundPreview(),
+                          for (var i = 0; i < _settings.cells.length; i++)
+                            Positioned.fromRect(
+                              rect: geometry.cellRects[i].translate(
+                                -geometry.borderThickness,
+                                -geometry.borderThickness,
+                              ),
+                              child: _areaSelectable(
+                                i,
+                                CollageCellView(
+                                  cell: _settings.cells[i],
+                                  cellSize: geometry.cellRects[i].size,
+                                  // Com "Stickers" ou "Texto" aberto no rodapé, a
+                                  // foto para de responder a gesto — só um dos
+                                  // dois grupos (fotos, ou stickers/texto) pode
+                                  // ser movido por vez, o mesmo motivo que
+                                  // CollageOverlayView.interactive já aplica ao
+                                  // contrário nesses dois casos.
+                                  // Em "Áreas" também: o arrasto é das alças
+                                  // entre as fotos, não do enquadramento.
+                                  // Em "Áreas" a foto continua podendo ser
+                                  // movida; o toque nela só a seleciona (ver o
+                                  // `Listener` abaixo).
+                                  interactive:
+                                      _activeTab != _CollageTab.stickers &&
+                                      _activeTab != _CollageTab.text,
+                                  onGestureStart: _pushUndoCheckpoint,
+                                  onChanged: (cell) => _update(
+                                    _settings.replacingCell(i, cell),
+                                    pushUndo: false,
+                                  ),
+                                  onMenu: () => openCollageCellMenu(
+                                    i,
+                                    context,
+                                    settings: () => _settings,
+                                    actions: _panelActions,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              ..._overlayWidgets(size),
-              if (_activeTab == _CollageTab.areas) ...[
-                ..._areaHighlights(geometry),
-                ..._dividerHandles(geometry),
+                ..._overlayWidgets(size),
+                if (_activeTab == _CollageTab.areas) ...[
+                  ..._areaHighlights(geometry),
+                  ..._dividerHandles(geometry),
+                ],
+                // Sempre depois (por cima) das sobreposições, sem ligar para
+                // o zIndex de quem está selecionado — ver o porquê no doc de
+                // `CollageOverlayView`.
+                ..._selectedHandlesWidgets(size),
               ],
-              // Sempre depois (por cima) das sobreposições, sem ligar para
-              // o zIndex de quem está selecionado — ver o porquê no doc de
-              // `CollageOverlayView`.
-              ..._selectedHandlesWidgets(size),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
