@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/models/conversion_settings.dart';
 import '../../core/models/photo_info.dart';
 import '../svg/models/svg_info.dart';
+import '../svg/services/svg_source_fixer.dart';
 import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../app/theme_controller.dart';
 import 'widgets/gif_weight_help_sheet.dart';
@@ -164,20 +165,32 @@ class _HomePageState extends State<HomePage> {
         dialogTitle: 'Escolha um SVG',
       );
 
-      final path = picked?.path;
-      if (path == null) {
+      final pickedPath = picked?.path;
+      if (pickedPath == null) {
         if (mounted) setState(() => _loading = false);
         return;
       }
 
+      // Conserta os casos que o leitor recusava (compactado, UTF-16, ângulo
+      // em "deg", sem tamanho) — ver `svg_source_fixer.dart`.
+      final String path;
       final PictureInfo pictureInfo;
       try {
+        path = await prepareSvgForEditing(pickedPath);
         pictureInfo = await vg.loadPicture(SvgFileLoader(File(path)), null);
-      } catch (_) {
+      } on SvgOpenException catch (e) {
         if (mounted) {
           setState(() {
             _loading = false;
-            _error = 'Não foi possível ler este arquivo como SVG.';
+            _error = e.message;
+          });
+        }
+        return;
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+            _error = _svgErrorMessage(e);
           });
         }
         return;
@@ -209,6 +222,22 @@ class _HomePageState extends State<HomePage> {
         });
       }
     }
+  }
+
+  /// Mensagem para um SVG que o leitor recusou, com o motivo quando dá para
+  /// reconhecer — em vez de sempre o mesmo "não foi possível ler".
+  static String _svgErrorMessage(Object error) {
+    final text = error.toString();
+    if (text.contains('did not specify dimensions')) {
+      return 'Este SVG não informa o tamanho (width/height ou viewBox).';
+    }
+    if (text.contains('Invalid double') || text.contains('FormatException')) {
+      return 'Este SVG tem um número ou medida que o app não entende.';
+    }
+    if (text.contains('decode') || text.contains('Decode')) {
+      return 'Este SVG traz uma imagem embutida que não deu para ler.';
+    }
+    return 'Não foi possível ler este arquivo como SVG.';
   }
 
   /// Abre o seletor de arquivos permitindo escolher várias fotos de uma vez
