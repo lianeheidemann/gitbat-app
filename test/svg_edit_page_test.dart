@@ -42,6 +42,7 @@ void main() {
     expect(find.text('Editar SVG'), findsOneWidget);
     expect(find.text('Recorte'), findsWidgets);
     expect(find.text('Girar'), findsWidgets);
+    expect(find.text('Borda'), findsWidgets);
     expect(find.text('Fundo'), findsWidgets);
     expect(find.text('Filtro'), findsWidgets);
     expect(find.text('Opacidade'), findsWidgets);

@@ -22,7 +22,13 @@ import '../../core/ui/app_bar_title.dart';
 import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
+import '../../core/models/frame_settings.dart';
+import '../../core/ui/frame/border_ring.dart';
+import '../photo/widgets/photo_placement_view.dart';
 import '../../core/ui/frame/frame_color_row.dart';
+import '../../core/ui/frame/frame_sliders.dart';
+import '../../core/ui/frame/frame_style_picker.dart';
+import '../../core/ui/frame/frame_thumb_shell.dart';
 import '../../core/ui/panel_rows.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/crop_size_fields.dart';
@@ -107,6 +113,9 @@ class _SvgEditPageState extends State<SvgEditPage> {
 
   /// Aba "Stickers" aberta — atualizado a cada build, antes da prévia.
   bool _stickersTabActive = false;
+
+  /// Gestos de posicionar o desenho ligados — atualizado a cada build.
+  bool _placementGestures = true;
 
   @override
   void initState() {
@@ -211,6 +220,12 @@ class _SvgEditPageState extends State<SvgEditPage> {
       ),
     ),
     EditorSection(
+      icon: Icons.check_box_outline_blank_rounded,
+      title: 'Borda',
+      value: _settings.border.style.label,
+      builder: (_) => _borderSection(),
+    ),
+    EditorSection(
       icon: Icons.wallpaper_rounded,
       title: 'Fundo',
       value: _settings.transparentBackground ? 'Transparente' : 'Cor',
@@ -273,6 +288,10 @@ class _SvgEditPageState extends State<SvgEditPage> {
         active != null && sections[active].title == 'Recorte';
     final textTabActive = active != null && sections[active].title == 'Texto';
     _stickersTabActive = active != null && sections[active].title == 'Stickers';
+    // Arrastar/pinçar/girar o desenho vale fora das abas que usam o toque
+    // para outra coisa (Recorte, Texto e Stickers).
+    _placementGestures =
+        !showCropHandles && !textTabActive && !_stickersTabActive;
 
     return Scaffold(
       appBar: AppBar(
@@ -516,6 +535,16 @@ class _SvgEditPageState extends State<SvgEditPage> {
     if (_settings.opacity < 1) {
       content = Opacity(opacity: _settings.opacity, child: content);
     }
+    // Posição livre com os dedos e as alças, como em "Editar imagem".
+    content = PhotoPlacementView(
+      placement: _settings.placement,
+      enabled: _placementGestures,
+      mirrored: false,
+      onGestureStart: _pushUndoCheckpoint,
+      onChanged: (placement) =>
+          _update(_settings.copyWith(placement: placement), pushUndo: false),
+      child: content,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -525,8 +554,70 @@ class _SvgEditPageState extends State<SvgEditPage> {
       ),
       clipBehavior: Clip.antiAlias,
       child: _settings.transparentBackground
-          ? content
-          : ColoredBox(color: _settings.backgroundColor, child: content),
+          ? BorderedPreview(frame: _settings.border, child: content)
+          : ColoredBox(
+              color: _settings.backgroundColor,
+              child: BorderedPreview(frame: _settings.border, child: content),
+            ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Seção "Borda"
+  // ---------------------------------------------------------------------
+
+  /// Mesmos controles da aba "Borda" de Editar imagem/vídeo: estilo, cor,
+  /// espessura e arredondamento dos cantos.
+  Widget _borderSection() {
+    final theme = Theme.of(context);
+    final border = _settings.border;
+    void set(FrameSettings next, {bool pushUndo = true}) =>
+        _update(_settings.copyWith(border: next), pushUndo: pushUndo);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FrameStylePicker(
+          active: border.style,
+          onSelected: (style) => set(frameWithStyle(border, style)),
+        ),
+        if (border.style != FrameStyle.none) ...[
+          const SizedBox(height: 18),
+          SectionCard(
+            children: [
+              PanelColorRow(
+                label: 'Cor da borda',
+                color: border.color,
+                onTap: () => _pickColor(
+                  title: 'Cor da borda',
+                  selectedColor: border.color,
+                  onSelected: (color) => set(
+                    _settings.border.copyWith(color: color),
+                    pushUndo: false,
+                  ),
+                ),
+              ),
+              Divider(
+                height: 13,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+              FrameThicknessRow(
+                frame: border,
+                onChangeStart: _pushUndoCheckpoint,
+                onChanged: (next) => set(next, pushUndo: false),
+              ),
+              Divider(
+                height: 13,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+              CornerRadiusRow(
+                frame: border,
+                onChangeStart: _pushUndoCheckpoint,
+                onChanged: (next) => set(next, pushUndo: false),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 

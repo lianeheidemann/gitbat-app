@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// Contorno em forma de pasta: retângulo arredondado com uma abinha no canto
@@ -35,33 +37,45 @@ class FolderTabShape extends ShapeBorder {
 
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
-    final body = Rect.fromLTRB(
-      rect.left,
-      rect.top + tabHeight,
-      rect.right,
-      rect.bottom,
-    );
-    final r = Radius.circular(radius);
+    // Contorno desenhado de uma vez só (abinha + corpo), sem unir duas
+    // formas com `Path.combine`: no celular (Impeller) essa união saía vazia
+    // em pastas de rótulo curto ("Black", nomes curtos), e a pasta inteira
+    // sumia da barra.
+    final bodyTop = rect.top + tabHeight;
+    final r = radius
+        .clamp(0.0, math.min(rect.width / 2, (rect.bottom - bodyTop) / 2))
+        .toDouble();
+    final tabR = math.min(r, tabHeight);
     final tabWidth = (rect.width * tabWidthRatio).clamp(
       radius * 4,
       rect.width * 0.7,
     );
-    // A abinha é um retângulo baixinho encostado no topo esquerdo do corpo,
-    // com os dois cantos de cima arredondados; a união com o corpo apaga a
-    // emenda entre os dois, deixando um contorno só.
-    final tab = RRect.fromLTRBAndCorners(
-      body.left,
-      rect.top,
-      body.left + tabWidth,
-      body.top + radius,
-      topLeft: r,
-      topRight: r,
-    );
-    return Path.combine(
-      PathOperation.union,
-      Path()..addRRect(RRect.fromRectAndRadius(body, r)),
-      Path()..addRRect(tab),
-    );
+    final tabRight = rect.left + tabWidth;
+    return Path()
+      ..moveTo(rect.left, rect.top + tabR)
+      ..arcToPoint(
+        Offset(rect.left + tabR, rect.top),
+        radius: Radius.circular(tabR),
+      )
+      ..lineTo(tabRight - tabR, rect.top)
+      ..arcToPoint(
+        Offset(tabRight, rect.top + tabR),
+        radius: Radius.circular(tabR),
+      )
+      ..lineTo(tabRight, bodyTop)
+      ..lineTo(rect.right - r, bodyTop)
+      ..arcToPoint(Offset(rect.right, bodyTop + r), radius: Radius.circular(r))
+      ..lineTo(rect.right, rect.bottom - r)
+      ..arcToPoint(
+        Offset(rect.right - r, rect.bottom),
+        radius: Radius.circular(r),
+      )
+      ..lineTo(rect.left + r, rect.bottom)
+      ..arcToPoint(
+        Offset(rect.left, rect.bottom - r),
+        radius: Radius.circular(r),
+      )
+      ..close();
   }
 
   @override
