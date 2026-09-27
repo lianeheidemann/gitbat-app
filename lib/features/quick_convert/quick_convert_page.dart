@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -559,18 +560,31 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
     try {
       // WebP animado: o intermediário que o FFmpeg entende só é gerado
       // agora, e não ao escolher o arquivo.
-      final video = needsWebpIntermediate(widget.video)
-          ? await probeAnimatedWebp(widget.video.path, _ffmpeg)
+      // A barra é dividida: primeira metade para preparar os quadros,
+      // segunda para a conversão em si.
+      final intermediate = needsWebpIntermediate(widget.video);
+      final video = intermediate
+          ? await probeAnimatedWebp(
+              widget.video.path,
+              _ffmpeg,
+              maxWidth: widget.targetWidth,
+              onProgress: (value) {
+                if (mounted) setState(() => _progress = value / 2);
+              },
+            )
           : widget.video;
-      if (!mounted) return;
+      if (!mounted || _cancelling) return;
       final file = await _ffmpeg.quickConvert(
         video: video,
         format: widget.format,
         targetWidth: widget.targetWidth,
         onProgress: (value) {
-          if (mounted) setState(() => _progress = value);
+          if (mounted) {
+            setState(() => _progress = intermediate ? 0.5 + value / 2 : value);
+          }
         },
       );
+      if (_cancelling) return;
 
       if (!mounted) return;
       setState(() {
@@ -578,19 +592,15 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
         _phase = _ConvertPhase.done;
       });
     } on FfmpegException catch (e) {
-      if (!mounted) return;
-      // Cancelar faz o FFmpeg falhar de propósito: aí o popup só fecha.
-      if (_cancelling) {
-        Navigator.of(context).pop();
-        return;
-      }
+      // Cancelar faz o FFmpeg falhar de propósito: o popup já fechou.
+      if (!mounted || _cancelling) return;
       setState(() {
         _error = e.message;
         _errorLogs = e.logs.trim().isEmpty ? null : e.logs;
         _phase = _ConvertPhase.failed;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || _cancelling) return;
       setState(() {
         _error = 'Algo deu errado durante a conversão.';
         _phase = _ConvertPhase.failed;
@@ -598,9 +608,14 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
     }
   }
 
-  Future<void> _cancel() async {
-    setState(() => _cancelling = true);
-    await _ffmpeg.cancel();
+  /// Fecha o popup na hora e manda o FFmpeg parar em segundo plano — sem
+  /// esperar a resposta dele, que podia não vir e deixava a tela presa em
+  /// "Cancelando…".
+  void _cancel() {
+    if (_cancelling) return;
+    _cancelling = true;
+    unawaited(_ffmpeg.cancel().catchError((_) {}));
+    Navigator.of(context).pop();
   }
 
   Future<void> _save() async {

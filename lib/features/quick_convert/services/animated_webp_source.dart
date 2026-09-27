@@ -98,7 +98,19 @@ bool needsWebpIntermediate(VideoInfo video) =>
 /// Converte o WebP animado em [path] num `.mov` temporário e devolve o
 /// [VideoInfo] dele — com o nome e o tamanho do arquivo **original**, para
 /// o cartão da tela e o formato de origem continuarem sendo "WebP".
-Future<VideoInfo> probeAnimatedWebp(String path, FfmpegService ffmpeg) async {
+///
+/// Com [maxWidth] os quadros já são decodificados nessa largura (mantendo a
+/// proporção) — um WebP de 1080×1920 com centenas de quadros passava
+/// gigabytes de pixels ao FFmpeg só para depois serem reduzidos. Enquanto os
+/// quadros vão sendo escritos, [onProgress] recebe a fração pronta (0–1).
+/// Se [FfmpegService.cancel] for chamado, para no quadro seguinte com um
+/// [FfmpegException].
+Future<VideoInfo> probeAnimatedWebp(
+  String path,
+  FfmpegService ffmpeg, {
+  int? maxWidth,
+  void Function(double progress)? onProgress,
+}) async {
   final temp = await getTemporaryDirectory();
   final dir = await Directory(
     '${temp.path}/webp_${DateTime.now().millisecondsSinceEpoch}',
@@ -112,8 +124,18 @@ Future<VideoInfo> probeAnimatedWebp(String path, FfmpegService ffmpeg) async {
   final int height;
   final int frameCount;
   final double fps;
+  int? decodeWidth;
   {
-    final codec = await ui.instantiateImageCodec(bytes);
+    final info = parseAnimatedWebp(bytes);
+    if (maxWidth != null && info != null && maxWidth < info.width) {
+      // Par, que o H.264 e o redimensionamento do FFmpeg preferem.
+      decodeWidth = (maxWidth ~/ 2 * 2).clamp(2, info.width);
+    }
+  }
+  Future<ui.Codec> openCodec() =>
+      ui.instantiateImageCodec(bytes, targetWidth: decodeWidth);
+  {
+    final codec = await openCodec();
     try {
       frameCount = codec.frameCount;
       final first = await codec.getNextFrame();
@@ -127,9 +149,10 @@ Future<VideoInfo> probeAnimatedWebp(String path, FfmpegService ffmpeg) async {
   }
 
   Future<void> writeFrames(IOSink sink) async {
-    final codec = await ui.instantiateImageCodec(bytes);
+    final codec = await openCodec();
     try {
       for (var i = 0; i < frameCount; i++) {
+        if (ffmpeg.isCancelled) throw FfmpegException('Conversão cancelada.');
         final frame = await codec.getNextFrame();
         // Cru (sem codificar PNG no Flutter, que era o lento), com alfa
         // "reto", que é o que o FFmpeg espera em rgba.
@@ -145,6 +168,7 @@ Future<VideoInfo> probeAnimatedWebp(String path, FfmpegService ffmpeg) async {
         // Espera o FFmpeg ler antes de decodificar o próximo, para não
         // acumular quadros na memória.
         await sink.flush();
+        onProgress?.call((i + 1) / frameCount);
       }
     } finally {
       codec.dispose();

@@ -719,7 +719,8 @@ class FfmpegService {
     required String scratchDir,
     required Future<void> Function(IOSink sink) writeFrames,
   }) async {
-    _cancelled = false;
+    // Sem zerar `_cancelled`: um Cancelar tocado enquanto os quadros ainda
+    // eram preparados tem que valer aqui também.
     const step = 'leitura do WebP animado';
     List<String> args(String input) => rawRgbaToMovArgs(
       input: input,
@@ -754,7 +755,10 @@ class FfmpegService {
         await Future.any([write(), done.then((_) => Completer<void>().future)]);
         return;
       } catch (_) {
-        // Cai para o arquivo abaixo.
+        // Cancelado: nada de recomeçar pelo arquivo abaixo (era o que
+        // deixava o app parado depois do Cancelar).
+        if (_cancelled) throw FfmpegException('Conversão cancelada.');
+        // Senão, cai para o arquivo abaixo.
       } finally {
         unawaited(FFmpegKitConfig.closeFFmpegPipe(pipePath).catchError((_) {}));
       }
@@ -888,6 +892,10 @@ class FfmpegService {
       outputPath,
     ];
   }
+
+  /// `true` depois de [cancel] — quem escreve quadros para o FFmpeg (ver
+  /// [rawRgbaToMov]) consulta para parar na hora.
+  bool get isCancelled => _cancelled;
 
   Future<void> cancel() async {
     _cancelled = true;
