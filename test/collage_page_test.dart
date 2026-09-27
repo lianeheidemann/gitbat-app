@@ -1058,12 +1058,10 @@ void main() {
 
     await tester.tap(find.text('Áreas'));
     await tester.pumpAndSettle();
-    // Sem foto selecionada, nenhuma alça.
-    expect(find.byType(CollageDividerHandle), findsNothing);
-
-    // Tocar numa foto mostra as alças dela (duas fotos: uma alça só).
-    await tester.tap(find.byType(CollageCellView).first);
-    await tester.pumpAndSettle();
+    // A aba já abre com a primeira foto selecionada, com as alças dela
+    // (duas fotos: uma alça só) e sem o texto de explicação.
+    expect(find.textContaining('Toque numa foto'), findsNothing);
+    expect(find.text('Área selecionada'), findsOneWidget);
     final handle = find.byType(CollageDividerHandle);
     expect(handle, findsOneWidget);
     expect(
@@ -1102,6 +1100,38 @@ void main() {
     await tester.tap(find.text('Tamanhos iguais'));
     await tester.pumpAndSettle();
     expect(cellSizes(), before);
+  });
+
+  testWidgets('aba "Áreas": "Bloquear proporção" mostra o cadeado na foto', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+
+    final badge = find.byKey(const ValueKey('collageAreaLockBadge'));
+    expect(badge, findsNothing);
+    final lock = find.byKey(const ValueKey('areaLockAspectSwitch'));
+    await tester.ensureVisible(lock);
+    await tester.pumpAndSettle();
+    await tester.tap(lock);
+    await tester.pumpAndSettle();
+    expect(badge, findsOneWidget);
+    // No canto de cima à direita da foto selecionada (a primeira).
+    final cell = tester.getRect(find.byType(CollageCellView).first);
+    final at = tester.getRect(badge);
+    expect(cell.contains(at.center), isTrue);
+    expect(at.center.dx, greaterThan(cell.center.dx));
+    expect(at.center.dy, lessThan(cell.center.dy));
+
+    await tester.tap(lock);
+    await tester.pumpAndSettle();
+    expect(badge, findsNothing);
   });
 
   testWidgets('aba "Áreas": arrastar dentro da foto move a imagem', (
@@ -1198,10 +1228,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Áreas'));
     await tester.pumpAndSettle();
-    expect(find.text('Área selecionada'), findsNothing);
-
-    await tester.tap(find.byType(CollageCellView).first);
-    await tester.pumpAndSettle();
+    // Já abre com a primeira foto selecionada.
     expect(find.text('Área selecionada'), findsOneWidget);
     expect(find.text('Aplicar às semelhantes'), findsNothing);
 

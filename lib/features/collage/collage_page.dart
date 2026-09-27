@@ -164,7 +164,7 @@ class _CollagePageState extends State<CollagePage> {
   _CollageTab? _activeTab = _CollageTab.layout;
 
   /// Foto tocada na aba "Áreas" — só ela mostra as alças de redimensionar.
-  /// `null` = nenhuma (a aba abre sem alças até tocar numa foto).
+  /// `null` = a primeira foto (a aba já abre com ela selecionada).
   int? _selectedAreaCell;
 
   /// Divisor sendo arrastado agora na aba "Áreas", para destacar as fotos
@@ -843,9 +843,32 @@ class _CollagePageState extends State<CollagePage> {
   /// Foto selecionada na aba "Áreas", se ela ainda existe no layout atual
   /// (desfazer ou trocar de layout pode ter tirado células).
   int? get _validSelectedAreaCell {
-    final index = _selectedAreaCell;
-    if (index == null || index >= _settings.cells.length) return null;
-    return index;
+    if (_settings.cells.isEmpty) return null;
+    final index = _selectedAreaCell ?? 0;
+    return index < _settings.cells.length ? index : 0;
+  }
+
+  /// Arrasto de uma alça da aba "Áreas". Com "Bloquear proporção", a foto
+  /// selecionada cresce/encolhe nas duas direções juntas (como nos sliders),
+  /// mantendo o formato; sem o bloqueio, só o divisor arrastado se move.
+  void _dragDivider(CollageDivider divider, double delta, Size contentSize) {
+    final layout = _settings.layout;
+    final moved = layout.resizedBy(
+      divider,
+      delta,
+      contentSize,
+      outerMarginRatio: _settings.outerMarginRatio,
+      innerMarginRatio: _settings.innerMarginRatio,
+    );
+    final cell = _validSelectedAreaCell;
+    var next = moved;
+    if (_lockAreaAspect && cell != null) {
+      final factor = divider.vertical
+          ? moved.widthFractionOf(cell) / layout.widthFractionOf(cell)
+          : moved.heightFractionOf(cell) / layout.heightFractionOf(cell);
+      next = layout.scaledArea(cell, factor);
+    }
+    _update(_settings.copyWith(layout: next), pushUndo: false);
   }
 
   /// Tamanho da área de conteúdo (dentro da borda) — o espaço de
@@ -888,6 +911,28 @@ class _CollagePageState extends State<CollagePage> {
               ),
             ),
           ),
+      // Cadeado no canto da foto selecionada enquanto "Bloquear proporção"
+      // está ligado.
+      if (_lockAreaAspect &&
+          selected != null &&
+          selected < geometry.cellRects.length)
+        Positioned(
+          key: const ValueKey('collageAreaLockBadge'),
+          left: geometry.cellRects[selected].right - 26,
+          top: geometry.cellRects[selected].top + 6,
+          width: 20,
+          height: 20,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              child: Icon(
+                Icons.lock_rounded,
+                size: 12,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ),
     ];
   }
 
@@ -932,18 +977,7 @@ class _CollagePageState extends State<CollagePage> {
               setState(() => _draggingDivider = handle.divider);
             },
             onDragEnd: () => setState(() => _draggingDivider = null),
-            onDrag: (delta) => _update(
-              _settings.copyWith(
-                layout: _settings.layout.resizedBy(
-                  handle.divider,
-                  delta,
-                  contentSize,
-                  outerMarginRatio: _settings.outerMarginRatio,
-                  innerMarginRatio: _settings.innerMarginRatio,
-                ),
-              ),
-              pushUndo: false,
-            ),
+            onDrag: (delta) => _dragDivider(handle.divider, delta, contentSize),
           ),
         ),
     ];

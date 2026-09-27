@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/collage_layout.dart';
 
-/// Painel da aba "Áreas". Sem foto selecionada, só a explicação e
-/// "Tamanhos iguais". Com uma foto tocada na prévia, o cartão "Área
+/// Painel da aba "Áreas". Sem foto (montagem vazia), só "Tamanhos iguais".
+/// Com a foto selecionada na prévia (a primeira, ao abrir a aba), o cartão "Área
 /// selecionada": largura e altura dela em % (da largura disponível e da
 /// altura da coluna dela), "Bloquear proporção" (os dois mudam juntos,
 /// mantendo o formato da área), "Redefinir área" e "Tamanhos iguais".
@@ -47,24 +47,14 @@ class CollageAreasPanel extends StatelessWidget {
       label: const Text('Tamanhos iguais'),
     );
     if (cell == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Toque numa foto para ajustar a área dela: arraste as alças nas '
-            'laterais ou use os controles que aparecem aqui. Arrastar dentro '
-            'da foto move a imagem. Trocar o layout ou o número de fotos '
-            'volta tudo ao tamanho padrão.',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          Align(alignment: Alignment.centerRight, child: resetAll),
-        ],
-      );
+      return Align(alignment: Alignment.centerRight, child: resetAll);
     }
 
     final (wLo, wHi) = layout.widthFractionRange;
     final (hLo, hHi) = layout.heightFractionRange;
+    // Com um lado fixo neste layout (ex.: uma fileira só), manter o formato
+    // impede o outro de mudar — avisa em vez de parecer que não funciona.
+    final lockFreezes = lockAspect && (wHi <= wLo || hHi <= hLo);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -113,9 +103,15 @@ class CollageAreasPanel extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
                   children: [
-                    const SizedBox(
+                    SizedBox(
                       width: 32,
-                      child: Icon(Icons.lock_outline_rounded, size: 18),
+                      child: Icon(
+                        lockAspect
+                            ? Icons.lock_rounded
+                            : Icons.lock_open_rounded,
+                        size: 18,
+                        color: lockAspect ? theme.colorScheme.primary : null,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -132,6 +128,20 @@ class CollageAreasPanel extends StatelessWidget {
                   ],
                 ),
               ),
+              if (lockFreezes)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    wHi <= wLo
+                        ? 'A largura é fixa neste layout, então com a '
+                              'proporção bloqueada o tamanho não muda.'
+                        : 'A altura é fixa neste layout, então com a '
+                              'proporção bloqueada o tamanho não muda.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
