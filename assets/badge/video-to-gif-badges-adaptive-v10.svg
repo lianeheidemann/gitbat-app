@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1540" height="92" viewBox="0 0 1540 92" role="img" aria-labelledby="title desc">
+  <title id="title">Badges de tecnologias do projeto</title>
+  <desc id="desc">Flutter, Dart, Android, FFmpeg e licença proprietária, em paleta azul e ciano adaptável ao tema claro e escuro.</desc>
+  <style>
+    :root { color-scheme: light dark; }
+    .card { fill:#F7FAFF; stroke:#4F8FFF; stroke-width:2.4; }
+    .title { fill:#101B33; font:700 20px Inter,Segoe UI,Arial,sans-serif; }
+    .sub { fill:#52627C; font:500 16px Inter,Segoe UI,Arial,sans-serif; }
+    .blue { fill:#5B9CFF; }
+    .cyan { fill:#20D5E8; }
+    .line-blue { fill:none; stroke:#5B9CFF; stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+    @media (prefers-color-scheme: dark) {
+      .card { fill:#111A2D; stroke:#48A7FF; }
+      .title { fill:#F4F8FF; }
+      .sub { fill:#B8C8E2; }
+      .blue { fill:#66A7FF; }
+      .cyan { fill:#24D7E7; }
+      .line-blue { stroke:#66A7FF; }
+    }
+  </style>
+
+  <g transform="translate(1 1)">
+    <rect class="card" width="292" height="90" rx="25"/>
+    <g transform="translate(28 22)">
+      <path class="blue" d="M0 23 22 1h17L17 23l22 22H22z"/>
+      <path class="cyan" d="m17 23 11-11h17L34 23 45 34H28z"/>
+    </g>
+    <text class="title" x="87" y="36">Flutter</text><text class="sub" x="87" y="62">3.44 or newer</text>
+  </g>
+
+  <g transform="translate(313 1)">
+    <rect class="card" width="280" height="90" rx="25"/>
+    <g transform="translate(25 23)">
+      <path class="blue" d="m0 15 14-14h20l11 11-8 31H16L0 27z"/>
+      <path class="cyan" d="m14 1 23 42H16L0 15z" opacity=".9"/>
+      <path fill="#0F5FBF" d="m0 27 16 16h21L22 27z" opacity=".78"/>
+    </g>
+    <text class="title" x="87" y="36">Dart</text><text class="sub" x="87" y="62">3.12 or newer</text>
+  </g>
+
+  <g transform="translate(613 1)">
+    <rect class="card" width="300" height="90" rx="25"/>
+    <g transform="translate(29 24)">
+      <path class="cyan" d="M2 17h45v23a6 6 0 0 1-6 6H8a6 6 0 0 1-6-6z"/>
+      <path class="cyan" d="M7 16a18 18 0 0 1 35 0z"/>
+      <path class="line-blue" d="m11 2 5 7M38 2l-5 7" stroke-width="2.7"/>
+      <circle fill="#111A2D" cx="15" cy="15" r="2"/><circle fill="#111A2D" cx="34" cy="15" r="2"/>
+    </g>
+    <text class="title" x="88" y="36">Android</text><text class="sub" x="88" y="62">7.0 or newer</text>
+  </g>
+
+  <g transform="translate(933 1)">
+    <rect class="card" width="280" height="90" rx="25"/>
+    <g transform="translate(27 20)">
+      <path class="cyan" d="M3 0h45L35 12H0zm-3 17h45L32 29H0zm0 17h45L32 46H0z"/>
+      <path class="blue" d="M21 0h14L12 46H0z" opacity=".9"/>
+    </g>
+    <text class="title" x="87" y="36">FFmpeg</text><text class="sub" x="87" y="62">6.0 or newer</text>
+  </g>
+
+  <g transform="translate(1233 1)">
+    <rect class="card" width="306" height="90" rx="25"/>
+    <g transform="translate(31 21)">
+      <rect class="line-blue" x="3" y="20" width="38" height="31" rx="7"/>
+      <path class="line-blue" d="M11 20v-8a11 11 0 0 1 22 0v8"/>
+      <circle class="cyan" cx="22" cy="35" r="4"/><rect class="cyan" x="20" y="35" width="4" height="9" rx="2"/>
+    </g>
+    <text class="title" x="92" y="36">License</text><text class="sub" x="92" y="62">Proprietary</text>
+  </g>
+</svg>
