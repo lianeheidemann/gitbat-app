@@ -785,7 +785,8 @@ class CollageLayout {
       outerMarginRatio: outerMarginRatio,
       innerMarginRatio: innerMarginRatio,
     );
-    const tolerance = 0.5;
+    // Bem apertado: mesmo passos de arrasto pequenininhos contam.
+    const tolerance = 0.01;
     final before = rectsOf(this);
     var next = resizedBy(
       divider,
