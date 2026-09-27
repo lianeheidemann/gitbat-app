@@ -144,7 +144,7 @@ void main() {
     });
 
     test(
-      '"Expandir sem cortar" pinta o fundo da janela com a cor escolhida',
+      'o fundo da janela sai com a cor escolhida em qualquer ajuste',
       () async {
         FrameSettings expand(ContentFitMode fit) => FrameSettings(
           imageFrame: _ceramica,
@@ -162,14 +162,14 @@ void main() {
           ),
         );
         expect(_rgbAt(colored, 0.5, 0.2), 0x00FF00);
-        // "Encaixar" (via ajuste automático) mantém as barras pretas.
+        // "Encaixar" também usa a cor escolhida nas barras (antes, preto).
         final fitted = await _decode(
           await composeFramedPhoto(
             photo: photo,
             frame: expand(ContentFitMode.fit),
           ),
         );
-        expect(_rgbAt(fitted, 0.5, 0.2), 0x000000);
+        expect(_rgbAt(fitted, 0.5, 0.2), 0x00FF00);
       },
     );
 

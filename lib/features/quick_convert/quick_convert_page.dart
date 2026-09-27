@@ -26,9 +26,12 @@ import 'services/animated_webp_source.dart';
 /// informações no lugar, e o botão de escolher continua visível para trocar
 /// quantas vezes quiser.
 ///
-/// Aceita qualquer formato que o FFmpeg saiba abrir — vídeo, GIF ou WebP. Usa
-/// `FileType.media` (seletor de mídia estilo galeria, aceitando vídeo e imagem
-/// no mesmo seletor), validando depois se o conteúdo pode ser convertido.
+/// Aceita MP4, GIF e WebP ([quickConvertSourceExtensions]) — o seletor do
+/// sistema só deixa escolher esses —, validando depois se o conteúdo pode
+/// ser convertido.
+/// Extensões que "Converter formato" aceita como origem.
+const quickConvertSourceExtensions = ['mp4', 'gif', 'webp'];
+
 class QuickConvertPage extends StatefulWidget {
   const QuickConvertPage({super.key, this.initialVideo});
 
@@ -140,8 +143,11 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
     setState(() => _loading = true);
 
     try {
+      // Só os formatos que esta tela converte: o seletor do sistema mostra
+      // apenas MP4, GIF e WebP (o resto aparece apagado).
       final picked = await FilePicker.pickFile(
-        type: FileType.media,
+        type: FileType.custom,
+        allowedExtensions: quickConvertSourceExtensions,
         dialogTitle: 'Escolha um arquivo',
       );
 

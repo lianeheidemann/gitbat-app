@@ -813,7 +813,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
     if (fit != ContentFitMode.expand) {
       return ColoredBox(
-        color: Colors.black,
+        color: _frame.expandBackgroundColor,
         child: ClipRect(
           child: photo(
             fit == ContentFitMode.fill ? BoxFit.cover : BoxFit.contain,
@@ -1150,6 +1150,19 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         // escolhida, não há arte para deitar nem canvas próprio para
         // dimensionar.
         if (_frame.hasFixedAspect) ...[
+          const SizedBox(height: 18),
+          SectionCard(
+            children: [
+              // Fundo de dentro da janela da moldura, em qualquer ajuste
+              // (antes só em "Expandir sem cortar"; nos outros era preto).
+              PanelColorRow(
+                key: const ValueKey('frameWindowColorRow'),
+                label: 'Cor do fundo da moldura',
+                color: _frame.expandBackgroundColor,
+                onTap: _pickExpandBackgroundColor,
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           SectionCard(children: [_frameResolutionSelector()]),
           // O giro da moldura fica por último, sozinho: é um botão só.
