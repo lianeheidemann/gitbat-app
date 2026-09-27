@@ -172,9 +172,9 @@ class _CollagePageState extends State<CollagePage> {
   /// que ele está redimensionando.
   CollageDivider? _draggingDivider;
 
-  /// Fotos com "Bloquear proporção" ligado no cartão "Área selecionada":
-  /// largura e altura delas mudam juntas, mantendo o formato. Cada foto tem
-  /// o seu — ligar numa não trava as outras.
+  /// Fotos com "Travar área" ligado no cartão "Área selecionada": o tamanho
+  /// delas não muda mais — sem alças, sliders apagados, e nenhuma vizinha
+  /// consegue empurrá-las. Cada foto tem o seu.
   final Set<int> _lockedAreaCells = {};
 
   /// Se a foto selecionada agora está com a proporção bloqueada.
@@ -845,34 +845,46 @@ class _CollagePageState extends State<CollagePage> {
     if (_settings.cells.length >= CollageLayout.maxCustomCells) {
       return const [];
     }
-    const size = 28.0;
-    const inset = 6.0;
+    // Bolinha pequena encostada na borda, por dentro; a área de toque é
+    // maior que o desenho para o dedo acertar.
+    const dot = 20.0;
+    const touch = 32.0;
+    const inset = 2.0;
     final scheme = Theme.of(context).colorScheme;
     final buttons = <Widget>[];
     for (var i = 0; i < geometry.cellRects.length; i++) {
       final r = geometry.cellRects[i];
+      const d = inset + dot / 2;
       final centers = {
-        CollageSide.left: Offset(r.left + inset + size / 2, r.center.dy),
-        CollageSide.right: Offset(r.right - inset - size / 2, r.center.dy),
-        CollageSide.top: Offset(r.center.dx, r.top + inset + size / 2),
-        CollageSide.bottom: Offset(r.center.dx, r.bottom - inset - size / 2),
+        CollageSide.left: Offset(r.left + d, r.center.dy),
+        CollageSide.right: Offset(r.right - d, r.center.dy),
+        CollageSide.top: Offset(r.center.dx, r.top + d),
+        CollageSide.bottom: Offset(r.center.dx, r.bottom - d),
       };
       for (final MapEntry(key: side, value: c) in centers.entries) {
         buttons.add(
           Positioned(
             key: ValueKey('collageAddSlot_${i}_${side.name}'),
-            left: c.dx - size / 2,
-            top: c.dy - size / 2,
-            width: size,
-            height: size,
-            child: Material(
-              color: scheme.primary,
-              shape: const CircleBorder(),
-              elevation: 2,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => _addSlot(i, side),
-                child: Icon(Icons.add, size: 18, color: scheme.onPrimary),
+            left: c.dx - touch / 2,
+            top: c.dy - touch / 2,
+            width: touch,
+            height: touch,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _addSlot(i, side),
+              child: Center(
+                child: Container(
+                  width: dot,
+                  height: dot,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x40000000), blurRadius: 3),
+                    ],
+                  ),
+                  child: Icon(Icons.add, size: 14, color: scheme.onPrimary),
+                ),
               ),
             ),
           ),
@@ -915,39 +927,31 @@ class _CollagePageState extends State<CollagePage> {
   }
 
   /// Largura ou altura nova (fração) da foto selecionada, vinda dos sliders
-  /// do cartão "Área selecionada". Com "Bloquear proporção", a outra medida
-  /// acompanha na mesma proporção.
+  /// do cartão "Área selecionada" (apagados com a área travada).
   void _resizeSelectedArea({double? width, double? height}) {
     final cell = _validSelectedAreaCell;
-    if (cell == null) return;
+    if (cell == null || _lockAreaAspect) return;
     final layout = _settings.layout;
-    final CollageLayout next;
-    if (_lockAreaAspect) {
-      final factor = width != null
-          ? width / layout.widthFractionOf(cell)
-          : height! / layout.heightFractionOf(cell);
-      next = layout.scaledArea(cell, factor);
-    } else if (width != null) {
-      next = layout.withWidthFraction(cell, width);
-    } else {
-      next = layout.withHeightFraction(cell, height!);
-    }
+    final next = width != null
+        ? layout.withWidthFraction(cell, width)
+        : layout.withHeightFraction(cell, height!);
     if (_breaksLockedAreas(_settings.layout, next)) return;
     _update(_settings.copyWith(layout: next), pushUndo: false);
   }
 
-  /// Se [next] muda o formato (largura ÷ altura) de alguma foto com
-  /// "Bloquear proporção" ligado. Uma foto travada nunca muda de formato: o
-  /// arrasto ou o controle que faria isso simplesmente não tem efeito —
-  /// inclusive quando quem está sendo redimensionada é uma vizinha dela.
-  /// "Redefinir área" e "Tamanhos iguais" continuam valendo (são pedidos
-  /// explícitos de voltar ao padrão).
+  /// Se [next] muda o tamanho de alguma foto com "Travar área" ligado. Uma
+  /// foto travada nunca muda de tamanho: o arrasto ou o controle que faria
+  /// isso simplesmente não tem efeito — inclusive quando quem está sendo
+  /// redimensionada é uma vizinha dela. "Tamanhos iguais" continua valendo
+  /// (é um pedido explícito de voltar ao padrão).
   bool _breaksLockedAreas(CollageLayout before, CollageLayout next) {
     for (final cell in _lockedAreaCells) {
       if (cell >= _settings.cells.length) continue;
-      final r0 = before.widthFractionOf(cell) / before.heightFractionOf(cell);
-      final r1 = next.widthFractionOf(cell) / next.heightFractionOf(cell);
-      if ((r1 / r0 - 1).abs() > 0.005) return true;
+      final dw = (next.widthFractionOf(cell) - before.widthFractionOf(cell))
+          .abs();
+      final dh = (next.heightFractionOf(cell) - before.heightFractionOf(cell))
+          .abs();
+      if (dw > 1e-4 || dh > 1e-4) return true;
     }
     return false;
   }
@@ -960,26 +964,16 @@ class _CollagePageState extends State<CollagePage> {
     return index < _settings.cells.length ? index : 0;
   }
 
-  /// Arrasto de uma alça da aba "Áreas". Com "Bloquear proporção", a foto
-  /// selecionada cresce/encolhe nas duas direções juntas (como nos sliders),
-  /// mantendo o formato; sem o bloqueio, só o divisor arrastado se move.
+  /// Arrasto de uma alça da aba "Áreas": só o divisor arrastado se move, e
+  /// nada acontece se isso mudar o tamanho de uma área travada.
   void _dragDivider(CollageDivider divider, double delta, Size contentSize) {
-    final layout = _settings.layout;
-    final moved = layout.resizedBy(
+    final next = _settings.layout.resizedBy(
       divider,
       delta,
       contentSize,
       outerMarginRatio: _settings.outerMarginRatio,
       innerMarginRatio: _settings.innerMarginRatio,
     );
-    final cell = _validSelectedAreaCell;
-    var next = moved;
-    if (_lockAreaAspect && cell != null) {
-      final factor = divider.vertical
-          ? moved.widthFractionOf(cell) / layout.widthFractionOf(cell)
-          : moved.heightFractionOf(cell) / layout.heightFractionOf(cell);
-      next = layout.scaledArea(cell, factor);
-    }
     if (_breaksLockedAreas(_settings.layout, next)) return;
     _update(_settings.copyWith(layout: next), pushUndo: false);
   }
@@ -1025,7 +1019,7 @@ class _CollagePageState extends State<CollagePage> {
             ),
           ),
       // Cadeado no canto de cima, à esquerda (o da direita é do "..."), de
-      // cada foto com "Bloquear proporção" ligado.
+      // cada foto com "Travar área" ligado.
       for (final i in _lockedAreaCells)
         if (i < geometry.cellRects.length)
           Positioned(
@@ -1054,7 +1048,8 @@ class _CollagePageState extends State<CollagePage> {
   /// prévia; a exportação só vê os pesos, que são proporcionais.
   List<Widget> _dividerHandles(CollageGeometry geometry) {
     final selected = _validSelectedAreaCell;
-    if (selected == null) return const [];
+    // Área travada: sem alças, o tamanho dela não muda.
+    if (selected == null || _lockAreaAspect) return const [];
     final thickness = geometry.borderThickness;
     final contentSize = _contentSizeOf(geometry);
     final handles = _settings.layout.handlesAround(

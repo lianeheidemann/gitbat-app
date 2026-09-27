@@ -1229,6 +1229,32 @@ void main() {
     expect(sizes(), before, reason: 'a vizinha travada não deixa mudar');
   });
 
+  testWidgets('aba "Áreas": área travada fica sem alças e sem sliders', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CollageDividerHandle), findsWidgets);
+
+    final lock = find.byKey(const ValueKey('areaLockAspectSwitch'));
+    await tester.ensureVisible(lock);
+    await tester.pumpAndSettle();
+    await tester.tap(lock);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CollageDividerHandle), findsNothing);
+    final width = tester.widget<Slider>(
+      find.byKey(const ValueKey('areaWidthSlider')),
+    );
+    expect(width.onChanged, isNull);
+  });
+
   testWidgets('aba "Áreas": arrastar dentro da foto move a imagem', (
     tester,
   ) async {

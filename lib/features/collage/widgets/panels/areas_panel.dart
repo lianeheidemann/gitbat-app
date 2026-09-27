@@ -5,8 +5,9 @@ import '../../models/collage_layout.dart';
 /// Painel da aba "Áreas". Sem foto (montagem vazia), só "Tamanhos iguais".
 /// Com a foto selecionada na prévia (a primeira, ao abrir a aba), o cartão "Área
 /// selecionada": largura e altura dela em % (da largura disponível e da
-/// altura da coluna dela), "Bloquear proporção" (os dois mudam juntos,
-/// mantendo o formato da área), "Redefinir área" e "Tamanhos iguais".
+/// altura da coluna dela), "Travar área" (o tamanho dela não muda mais, nem
+/// pelas alças nem empurrado pelas vizinhas), "Redefinir área" e "Tamanhos
+/// iguais".
 class CollageAreasPanel extends StatelessWidget {
   const CollageAreasPanel({
     super.key,
@@ -52,9 +53,6 @@ class CollageAreasPanel extends StatelessWidget {
 
     final (wLo, wHi) = layout.widthFractionRange;
     final (hLo, hHi) = layout.heightFractionRange;
-    // Com um lado fixo neste layout (ex.: uma fileira só), manter o formato
-    // impede o outro de mudar — avisa em vez de parecer que não funciona.
-    final lockFreezes = lockAspect && (wHi <= wLo || hHi <= hLo);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -82,6 +80,7 @@ class CollageAreasPanel extends StatelessWidget {
                 value: layout.widthFractionOf(cell),
                 min: wLo,
                 max: wHi,
+                enabled: !lockAspect,
                 onChangeStart: onChangeStart,
                 onChanged: onWidthChanged,
               ),
@@ -92,6 +91,7 @@ class CollageAreasPanel extends StatelessWidget {
                 value: layout.heightFractionOf(cell),
                 min: hLo,
                 max: hHi,
+                enabled: !lockAspect,
                 onChangeStart: onChangeStart,
                 onChanged: onHeightChanged,
               ),
@@ -116,7 +116,7 @@ class CollageAreasPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Bloquear proporção',
+                        'Travar área',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -128,15 +128,12 @@ class CollageAreasPanel extends StatelessWidget {
                   ],
                 ),
               ),
-              if (lockFreezes)
+              if (lockAspect)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
-                    wHi <= wLo
-                        ? 'A largura é fixa neste layout, então com a '
-                              'proporção bloqueada o tamanho não muda.'
-                        : 'A altura é fixa neste layout, então com a '
-                              'proporção bloqueada o tamanho não muda.',
+                    'Área travada: o tamanho dela não muda. Destrave para '
+                    'redimensionar.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -150,7 +147,7 @@ class CollageAreasPanel extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: onResetArea,
+                onPressed: lockAspect ? null : onResetArea,
                 icon: const Icon(Icons.restart_alt_rounded, size: 18),
                 label: const Text('Redefinir área'),
               ),
@@ -174,9 +171,13 @@ class _AreaSliderRow extends StatelessWidget {
     required this.value,
     required this.min,
     required this.max,
+    this.enabled = true,
     required this.onChangeStart,
     required this.onChanged,
   });
+
+  /// `false` com a área travada: o slider fica apagado.
+  final bool enabled;
 
   final Key sliderKey;
   final IconData icon;
@@ -190,7 +191,7 @@ class _AreaSliderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fixed = max <= min;
+    final fixed = max <= min || !enabled;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(

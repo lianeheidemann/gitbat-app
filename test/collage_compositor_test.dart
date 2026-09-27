@@ -777,4 +777,59 @@ void main() {
       expect(centerPixel[0], lessThan(60));
     },
   );
+
+  test(
+    'foto decodificada menor (exportação animada) sai igual, com recorte',
+    () async {
+      // Foto "original" de 100×100 marcada como tal na célula, mas entregue
+      // ao compositor em 50×50: esquerda vermelha, direita azul.
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, 25, 50),
+        Paint()..color = const Color(0xFFFF0000),
+      );
+      canvas.drawRect(
+        const Rect.fromLTWH(25, 0, 25, 50),
+        Paint()..color = const Color(0xFF0000FF),
+      );
+      final picture = recorder.endRecording();
+      final small = await picture.toImage(50, 50);
+      picture.dispose();
+      try {
+        for (final fit in CollageCellFitMode.values) {
+          final settings = CollageSettings(
+            layout: CollageLayout.row(1),
+            aspectRatio: 1,
+            cells: [
+              CollageCellSettings(
+                photoPath: 'x.png',
+                photoWidth: 100,
+                photoHeight: 100,
+                fitMode: fit,
+                manualCrop: const CropRect(x: 60, y: 0, width: 40, height: 100),
+              ),
+            ],
+          );
+          final bytes = await composeCollageFrame(
+            settings: settings,
+            outputWidth: 100,
+            cellImages: [small],
+          );
+          final codec = await ui.instantiateImageCodec(bytes);
+          final frame = await codec.getNextFrame();
+          final data = await frame.image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          );
+          final at = (50 * 100 + 50) * 4;
+          expect(data!.getUint8(at + 2), greaterThan(200), reason: '$fit azul');
+          expect(data.getUint8(at), lessThan(50), reason: '$fit sem vermelho');
+          frame.image.dispose();
+          codec.dispose();
+        }
+      } finally {
+        small.dispose();
+      }
+    },
+  );
 }

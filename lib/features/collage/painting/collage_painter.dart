@@ -238,9 +238,17 @@ void paintCollageCell(
   final paint = Paint()
     ..filterQuality = FilterQuality.high
     ..colorFilter = cell.colorFilter;
+  // Os retângulos de origem são em pixels da foto original; a exportação
+  // animada pode decodificar a foto menor (só o que a célula precisa), então
+  // eles são levados para a escala da imagem recebida.
+  final sx = cell.photoWidth > 0 ? photoImage.width / cell.photoWidth : 1.0;
+  final sy = cell.photoHeight > 0 ? photoImage.height / cell.photoHeight : 1.0;
+  Rect scaled(Rect r) => (sx == 1 && sy == 1)
+      ? r
+      : Rect.fromLTRB(r.left * sx, r.top * sy, r.right * sx, r.bottom * sy);
   switch (cell.fitMode) {
     case CollageCellFitMode.cover:
-      final src = cell.coverSrcRect(contentRect.size);
+      final src = scaled(cell.coverSrcRect(contentRect.size));
       if (src != Rect.zero) {
         final (destWidth, destHeight) = rotatedFootprint(
           contentRect.width,
@@ -268,7 +276,7 @@ void paintCollageCell(
         final offset = cell.containDisplayOffset(contentRect.size);
         canvas.drawImageRect(
           photoImage,
-          cell.manualCropSrcRect,
+          scaled(cell.manualCropSrcRect),
           Rect.fromCenter(
             center: offset,
             width: display.width,
