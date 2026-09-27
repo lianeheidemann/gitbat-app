@@ -28,7 +28,16 @@ class CollageCellView extends StatefulWidget {
     this.onGestureStart,
     this.interactive = true,
     this.canvasWidth,
+    this.selected,
+    this.onSelectedChanged,
   });
+
+  /// Seleção controlada pela tela: com [selected] definido, só uma foto da
+  /// montagem fica selecionada por vez (a tela decide qual), e
+  /// [onSelectedChanged] avisa quando o toque pede para selecionar ou
+  /// soltar esta. Sem ele, a célula guarda a seleção sozinha.
+  final bool? selected;
+  final ValueChanged<bool>? onSelectedChanged;
 
   /// Largura da montagem inteira, que decide a espessura da borda própria
   /// (ver [CollageCellSettings.borderThicknessFor]). Sem ela, vale o dobro
@@ -100,6 +109,17 @@ class _CollageCellViewState extends State<CollageCellView> {
     return (r - nearest).abs() <= _angleSnap ? nearest : r;
   }
 
+  bool get _isSelected => widget.selected ?? _selected;
+
+  void _setSelected(bool value) {
+    if (value == _isSelected) return;
+    if (widget.onSelectedChanged != null) {
+      widget.onSelectedChanged!(value);
+    } else {
+      setState(() => _selected = value);
+    }
+  }
+
   @override
   void didUpdateWidget(covariant CollageCellView oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -164,10 +184,8 @@ class _CollageCellViewState extends State<CollageCellView> {
     _startRotation = widget.cell.rotation;
     _freeOffsetX = widget.cell.offsetX;
     _freeOffsetY = widget.cell.offsetY;
-    setState(() {
-      _active = true;
-      _selected = true;
-    });
+    setState(() => _active = true);
+    _setSelected(true);
     _pendingSlop =
         details.focalPoint - (_lastPointerDown ?? details.focalPoint);
   }
@@ -238,6 +256,7 @@ class _CollageCellViewState extends State<CollageCellView> {
   Widget build(BuildContext context) {
     final cell = widget.cell;
     final theme = Theme.of(context);
+    final showSelection = cell.hasPhoto && widget.interactive;
     final outerRadius =
         widget.cellSize.shortestSide *
         cell.cornerRatio.clamp(0.0, CollageCellSettings.maxCornerRatio);
@@ -289,7 +308,7 @@ class _CollageCellViewState extends State<CollageCellView> {
                   onDoubleTap: cell.hasPhoto ? _toggleFitMode : null,
                   // Tocar na foto mostra/esconde as alças.
                   onTap: cell.hasPhoto
-                      ? () => setState(() => _selected = !_selected)
+                      ? () => _setSelected(!_isSelected)
                       : widget.onMenu,
                   child: Stack(
                     fit: StackFit.expand,
@@ -300,9 +319,21 @@ class _CollageCellViewState extends State<CollageCellView> {
                       // que mostrar o fundo real da montagem pelos buracos,
                       // como a exportação faz — antes o cinza só sumia ao
                       // trocar para "contain" com o duplo toque.
+                      // Com contorno: no tema claro o cinza do espaço vazio
+                      // quase some contra o fundo da prévia.
                       if (!cell.hasPhoto)
-                        ColoredBox(
-                          color: theme.colorScheme.surfaceContainerHigh,
+                        DecoratedBox(
+                          key: const ValueKey('emptyCellPlaceholder'),
+                          decoration: BoxDecoration(
+                            color: theme.brightness == Brightness.light
+                                ? theme.colorScheme.surfaceContainerHighest
+                                : theme.colorScheme.surfaceContainerHigh,
+                            border: Border.all(
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.55,
+                              ),
+                            ),
+                          ),
                         ),
                       // Fundo próprio da foto, por baixo dela e por cima do
                       // placeholder — mesma camada que `paintCollageCell`
@@ -358,8 +389,9 @@ class _CollageCellViewState extends State<CollageCellView> {
                 child: ColoredBox(color: Color(0xFFFF4FD8)),
               ),
             ),
-          if (_selected && cell.hasPhoto) ..._handles(theme),
-          if (cell.hasPhoto)
+          if (_isSelected && showSelection) ..._handles(theme),
+          // O "..." só aparece com a foto selecionada (tocada).
+          if (_isSelected && showSelection)
             Positioned(
               right: -6,
               top: -6,
