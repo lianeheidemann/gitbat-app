@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dialog_title.dart';
 
 /// Diálogo de uma caixa de texto só. Devolve o texto digitado pelo
 /// `Navigator.pop`, ou `null` quando a pessoa cancela.
@@ -41,7 +42,7 @@ class _TextInputDialogState extends State<TextInputDialog> {
     // teclado e a pessoa acha que confirmou sem ter confirmado nada.
     final singleLine = widget.maxLines == 1;
     return AlertDialog(
-      title: Text(widget.title),
+      title: DialogTitle(widget.title),
       content: TextField(
         controller: _controller,
         autofocus: true,
@@ -49,13 +50,7 @@ class _TextInputDialogState extends State<TextInputDialog> {
         textInputAction: singleLine ? TextInputAction.done : null,
         onSubmitted: singleLine ? (_) => _submit() : null,
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('OK')),
-      ],
+      actions: [FilledButton(onPressed: _submit, child: const Text('OK'))],
     );
   }
 }

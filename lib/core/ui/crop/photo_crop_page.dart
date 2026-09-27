@@ -8,6 +8,7 @@ import 'crop_controller.dart';
 import '../checkerboard_background.dart';
 import 'crop_overlay.dart';
 import 'crop_size_fields.dart';
+import '../dialog_title.dart';
 
 /// Proporções oferecidas na fileira de baixo da [PhotoCropPage] — as mesmas
 /// de todo recorte do app (`AspectPreset.presets`), com "Livre" no lugar de
@@ -379,7 +380,7 @@ class _CustomRatioDialogState extends State<_CustomRatioDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Proporção personalizada'),
+      title: DialogTitle('Proporção personalizada'),
       content: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -413,13 +414,7 @@ class _CustomRatioDialogState extends State<_CustomRatioDialog> {
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(onPressed: _confirm, child: const Text('Usar')),
-      ],
+      actions: [FilledButton(onPressed: _confirm, child: const Text('Usar'))],
     );
   }
 }

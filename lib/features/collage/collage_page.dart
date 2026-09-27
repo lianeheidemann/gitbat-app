@@ -47,6 +47,7 @@ import 'widgets/panels/layout_panel.dart';
 import 'widgets/panels/areas_panel.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/saved_dialog.dart';
+import '../../core/ui/dialog_title.dart';
 
 /// Geometria do sticker/texto selecionado, na medida necessária para
 /// posicionar as alças de redimensionar/girar por fora dele (ver
@@ -1511,13 +1512,9 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remover imagem de fundo?'),
+        title: DialogTitle('Remover imagem de fundo?'),
         content: Text('"${asset.label}" vai ser removida da lista.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Remover'),
@@ -1679,7 +1676,7 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Apagar pasta?'),
+        title: DialogTitle('Apagar pasta?'),
         content: Text(
           inFolder == 0
               ? '"${folder.name}" vai ser apagada.'
@@ -1688,10 +1685,6 @@ class _CollagePageState extends State<CollagePage> {
                     'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Apagar'),
@@ -1769,7 +1762,7 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remover sticker?'),
+        title: DialogTitle('Remover sticker?'),
         content: Text(
           inUse.isEmpty
               ? '"${asset.label}" vai ser removido da lista.'
@@ -1778,10 +1771,6 @@ class _CollagePageState extends State<CollagePage> {
                     '${inUse.length == 1 ? 'vez' : 'vezes'}.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Remover'),
@@ -1978,7 +1967,7 @@ class _CollagePageState extends State<CollagePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remover fonte?'),
+        title: DialogTitle('Remover fonte?'),
         content: Text(
           inUse.isEmpty
               ? '"${font.label}" vai sair da lista de fontes.'
@@ -1987,10 +1976,6 @@ class _CollagePageState extends State<CollagePage> {
                     'para a fonte padrão.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Remover'),

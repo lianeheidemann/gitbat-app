@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../models/image_frame.dart';
 import '../../services/bundled_frame_store.dart';
 import 'frame_thumb_shell.dart';
+import '../dialog_title.dart';
 
 /// Fileira horizontal de miniaturas das molduras de imagem: "sem moldura",
 /// as prontas do app, as importadas pela pessoa e, no fim, o botão de
@@ -205,13 +206,9 @@ Future<bool> confirmRemoveImportedFrame(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Remover moldura?'),
+      title: DialogTitle('Remover moldura?'),
       content: Text('"${asset.label}" vai ser removida da lista.'),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancelar'),
-        ),
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
           child: const Text('Remover'),
