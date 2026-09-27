@@ -677,23 +677,28 @@ class _CollagePageState extends State<CollagePage> {
         // estado do painel aberto, não algo que a aba herda.
         _panelCollapsed = false;
       }),
-      child: SizedBox(
-        width: 60,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(_tabIcon(tab), size: 20, color: color),
-            const SizedBox(height: 4),
-            Text(
-              _tabLabel(tab),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+      // Pelo menos 60 de largura, crescendo para rótulos mais longos
+      // ("Configurações") em vez de cortá-los.
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(_tabIcon(tab), size: 20, color: color),
+              const SizedBox(height: 4),
+              Text(
+                _tabLabel(tab),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -722,7 +727,7 @@ class _CollagePageState extends State<CollagePage> {
     _CollageTab.color => 'Cor',
     _CollageTab.stickers => 'Stickers',
     _CollageTab.text => 'Texto',
-    _CollageTab.settings => 'Ajustes',
+    _CollageTab.settings => 'Configurações',
   };
 
   // ---------------------------------------------------------------------
@@ -779,6 +784,7 @@ class _CollagePageState extends State<CollagePage> {
                                 CollageCellView(
                                   cell: _settings.cells[i],
                                   cellSize: geometry.cellRects[i].size,
+                                  canvasWidth: geometry.canvasSize.width,
                                   // Com "Stickers" ou "Texto" aberto no rodapé, a
                                   // foto para de responder a gesto — só um dos
                                   // dois grupos (fotos, ou stickers/texto) pode
@@ -1433,7 +1439,18 @@ class _CollagePageState extends State<CollagePage> {
       CollageLayoutKind.grid3x3 => const CollageLayout(
         kind: CollageLayoutKind.grid3x3,
       ),
-      CollageLayoutKind.freeGrid => CollageLayout.grid(2, 2),
+      // Mantém as colunas/linhas do layout atual (uma 3×3 continua 3×3);
+      // só os botões de + e − da grade livre mudam isso.
+      CollageLayoutKind.freeGrid => CollageLayout.grid(
+        _settings.layout.columnCount.clamp(
+          CollageLayout.minFreeGridSpan,
+          CollageLayout.maxFreeGridSpan,
+        ),
+        _settings.layout.rowCount.clamp(
+          CollageLayout.minFreeGridSpan,
+          CollageLayout.maxFreeGridSpan,
+        ),
+      ),
     };
     _applyLayout(layout);
   }

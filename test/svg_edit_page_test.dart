@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:video_to_gif/core/ui/editor_tabs_footer.dart';
 import 'package:video_to_gif/features/svg/models/svg_info.dart';
 import 'package:video_to_gif/features/svg/svg_edit_page.dart';
 
@@ -44,7 +45,8 @@ void main() {
     expect(find.text('Fundo'), findsWidgets);
     expect(find.text('Filtro'), findsWidgets);
     expect(find.text('Opacidade'), findsWidgets);
-    expect(find.text('Ajustes'), findsWidgets);
+    await _showTab(tester, 'Configurações');
+    expect(find.text('Configurações'), findsWidgets);
   });
 
   testWidgets('escolher uma proporção trava o recorte e some com as abas '
@@ -76,4 +78,20 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+}
+
+/// Rola a barra de abas até [label] aparecer (as abas do fim ficam fora da
+/// tela e a lista só constrói o que está visível).
+Future<void> _showTab(WidgetTester tester, String label) async {
+  await tester.scrollUntilVisible(
+    find.text(label),
+    120,
+    scrollable: find
+        .descendant(
+          of: find.byType(EditorTabsFooter),
+          matching: find.byType(Scrollable),
+        )
+        .last,
+  );
+  await tester.pumpAndSettle();
 }

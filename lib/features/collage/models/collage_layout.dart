@@ -104,6 +104,11 @@ class CollageLayout {
   /// Número de fotos que esta organização comporta.
   int get cellCount => _effectiveColumns * _effectiveRows;
 
+  /// Colunas e linhas que este layout ocupa de fato (os prontos, como a
+  /// grade 3×3, também) — para trocar para "Grade livre" sem mudar a grade.
+  int get columnCount => _effectiveColumns;
+  int get rowCount => _effectiveRows;
+
   /// Retângulos de cada célula dentro de um canvas de [canvasSize], já
   /// aplicando [outerMarginRatio] (da borda da montagem até as fotos) e
   /// [innerMarginRatio] (só entre as fotos) — ambos proporcionais ao menor
@@ -493,7 +498,7 @@ class CollageLayout {
   );
 
   static const minFreeGridSpan = 1;
-  static const maxFreeGridSpan = 4;
+  static const maxFreeGridSpan = 6;
 
   /// Faixa de contagem de fotos para os layouts [CollageLayoutKind.row]/
   /// [CollageLayoutKind.column] — mesmos limites já usados como padrão ao

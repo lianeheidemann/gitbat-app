@@ -179,9 +179,14 @@ class CollageCellSettings {
     _effectiveHeight,
   );
 
-  double borderThicknessFor(double cellWidth) {
-    if (cellWidth <= 0) return borderThicknessAtReference;
-    return borderThicknessAtReference * (cellWidth / referenceWidth);
+  /// Espessura da borda própria em pixels numa montagem de [canvasWidth] de
+  /// largura. Proporcional à montagem inteira — como se toda foto tivesse
+  /// metade da largura dela —, e não à área da própria foto: assim,
+  /// redimensionar as áreas (aba "Áreas") não engrossa nem afina as bordas,
+  /// e todas as fotos com a mesma espessura escolhida ficam iguais.
+  double borderThicknessFor(double canvasWidth) {
+    if (canvasWidth <= 0) return borderThicknessAtReference;
+    return borderThicknessAtReference * (canvasWidth / (referenceWidth * 2));
   }
 
   /// Retângulo de origem (em pixels da foto decodificada, na orientação

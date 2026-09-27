@@ -254,7 +254,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
     EditorSection(
       icon: Icons.settings_rounded,
       title: 'Configurações',
-      label: 'Ajustes',
+      label: 'Configurações',
       builder: (_) => const PreviewSettingsPanel(),
     ),
   ];

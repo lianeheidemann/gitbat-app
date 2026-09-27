@@ -24,7 +24,15 @@ class CollageCellView extends StatefulWidget {
     required this.onMenu,
     this.onGestureStart,
     this.interactive = true,
+    this.canvasWidth,
   });
+
+  /// Largura da montagem inteira, que decide a espessura da borda própria
+  /// (ver [CollageCellSettings.borderThicknessFor]). Sem ela, vale o dobro
+  /// da largura da célula.
+  final double? canvasWidth;
+
+  double get _borderCanvasWidth => canvasWidth ?? cellSize.width * 2;
 
   final CollageCellSettings cell;
   final Size cellSize;
@@ -65,7 +73,7 @@ class _CollageCellViewState extends State<CollageCellView> {
   /// a matemática de recorte/enquadramento (e os próprios gestos) opera
   /// sobre esse tamanho menor, nunca sobre [CollageCellView.cellSize] cru.
   Size get _contentSize {
-    final thickness = widget.cell.borderThicknessFor(widget.cellSize.width);
+    final thickness = widget.cell.borderThicknessFor(widget._borderCanvasWidth);
     final w = (widget.cellSize.width - thickness * 2).clamp(
       0.0,
       widget.cellSize.width,
@@ -169,7 +177,7 @@ class _CollageCellViewState extends State<CollageCellView> {
     final outerRadius =
         widget.cellSize.shortestSide *
         cell.cornerRatio.clamp(0.0, CollageCellSettings.maxCornerRatio);
-    final borderThickness = cell.borderThicknessFor(widget.cellSize.width);
+    final borderThickness = cell.borderThicknessFor(widget._borderCanvasWidth);
     final innerRadius = (outerRadius - borderThickness).clamp(0.0, outerRadius);
     final contentSize = _contentSize;
 

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:video_to_gif/core/ui/editor_tabs_footer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_to_gif/core/models/collage_text.dart';
 import 'package:video_to_gif/core/models/crop_rect.dart';
@@ -120,6 +121,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await _showTab(tester, 'Texto');
     await tester.tap(find.text('Texto').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'oi');
@@ -131,4 +133,20 @@ void main() {
     expect(find.text('Tamanho da fonte'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+}
+
+/// Rola a barra de abas até [label] aparecer (as abas do fim ficam fora da
+/// tela e a lista só constrói o que está visível).
+Future<void> _showTab(WidgetTester tester, String label) async {
+  await tester.scrollUntilVisible(
+    find.text(label),
+    120,
+    scrollable: find
+        .descendant(
+          of: find.byType(EditorTabsFooter),
+          matching: find.byType(Scrollable),
+        )
+        .last,
+  );
+  await tester.pumpAndSettle();
 }

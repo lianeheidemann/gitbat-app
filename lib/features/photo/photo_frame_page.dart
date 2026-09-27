@@ -412,7 +412,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         builder: (_) => _contentFitSection(),
       ),
     // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Girar →
-    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Ajustes.
+    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Configurações.
     EditorSection(
       icon: Icons.wallpaper_rounded,
       title: 'Fundo',
@@ -443,7 +443,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     EditorSection(
       icon: Icons.settings_rounded,
       title: 'Configurações',
-      label: 'Ajustes',
+      label: 'Configurações',
       builder: (_) => const PreviewSettingsPanel(),
     ),
   ];
