@@ -81,3 +81,25 @@ class CollageSticker {
     );
   }
 }
+
+/// Busca/substituição por `id` numa lista de stickers — as telas com a aba
+/// "Stickers" fora da Montagem (foto, vídeo e SVG) guardam só a lista.
+extension CollageStickerListOps on List<CollageSticker> {
+  /// Próximo `zIndex` livre, para o sticker novo nascer por cima.
+  int get nextStickerZIndex =>
+      isEmpty ? 0 : map((s) => s.zIndex).reduce((a, b) => a > b ? a : b) + 1;
+
+  CollageSticker? findSticker(String id) {
+    for (final item in this) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
+
+  List<CollageSticker> replacingSticker(String id, CollageSticker item) => [
+    for (final s in this) s.id == id ? item : s,
+  ];
+
+  List<CollageSticker> removingSticker(String id) =>
+      where((s) => s.id != id).toList();
+}

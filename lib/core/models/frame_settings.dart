@@ -1,5 +1,6 @@
 import 'dart:ui' show Color;
 
+import 'collage_sticker.dart';
 import 'collage_text.dart';
 import 'color_adjustments.dart';
 import 'crop_rect.dart';
@@ -109,6 +110,7 @@ class FrameSettings {
     this.adjustments = ColorAdjustments.neutral,
     this.crop,
     this.texts = const [],
+    this.stickers = const [],
     this.outputTransform = OutputTransform.identity,
     this.frameQuarterTurns = 0,
     this.expandBackgroundColor = const Color(0xFF000000),
@@ -179,6 +181,11 @@ class FrameSettings {
   /// (ver `CollageTextItem`), com o centro normalizado ao canvas final
   /// (incluindo moldura e fundo), não só à foto.
   final List<CollageTextItem> texts;
+
+  /// Stickers sobrepostos (aba "Stickers"), mesmo modelo e mesma
+  /// interação da Montagem, com o centro normalizado ao canvas final — ver
+  /// [texts]. Desenhados por baixo dos textos.
+  final List<CollageSticker> stickers;
 
   /// Giro e espelhamento da aba "Girar" — ver [OutputTransform].
   ///
@@ -298,6 +305,7 @@ class FrameSettings {
     CropRect? crop,
     bool clearCrop = false,
     List<CollageTextItem>? texts,
+    List<CollageSticker>? stickers,
     OutputTransform? outputTransform,
     int? frameQuarterTurns,
     Color? expandBackgroundColor,
@@ -318,6 +326,7 @@ class FrameSettings {
       adjustments: adjustments ?? this.adjustments,
       crop: clearCrop ? null : (crop ?? this.crop),
       texts: texts ?? this.texts,
+      stickers: stickers ?? this.stickers,
       outputTransform: outputTransform ?? this.outputTransform,
       frameQuarterTurns: (frameQuarterTurns ?? this.frameQuarterTurns) % 4,
       expandBackgroundColor:

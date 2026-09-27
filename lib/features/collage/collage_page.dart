@@ -12,7 +12,7 @@ import 'models/collage_cell.dart';
 import 'models/collage_export.dart';
 import 'models/collage_layout.dart';
 import 'models/collage_settings.dart';
-import 'models/collage_sticker.dart';
+import '../../core/models/collage_sticker.dart';
 import '../../core/models/collage_text.dart';
 import '../../core/models/photo_info.dart';
 import 'services/collage_animation.dart';

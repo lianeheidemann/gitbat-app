@@ -1,5 +1,6 @@
 import 'dart:ui' show Color, ColorFilter;
 
+import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
@@ -37,6 +38,7 @@ class SvgEditSettings {
     this.adjustments = ColorAdjustments.neutral,
     this.opacity = 1.0,
     this.texts = const [],
+    this.stickers = const [],
   });
 
   /// `null` = o SVG inteiro, no tamanho nativo (`SvgInfo.width`/`height`).
@@ -77,6 +79,10 @@ class SvgEditSettings {
   /// e da opacidade (ver `svg_xml_editor.dart`'s `applyTextsSvg`).
   final List<CollageTextItem> texts;
 
+  /// Stickers sobrepostos (aba "Stickers"), com o centro normalizado ao
+  /// resultado final, como [texts]. Desenhados por baixo dos textos.
+  final List<CollageSticker> stickers;
+
   /// Filtro equivalente ao [filterType] para a prévia (widget), com os
   /// mesmos coeficientes usados na exportação (`svg_xml_editor.dart`'s
   /// `applyFilterSvg`) — preto e branco reaproveita
@@ -113,6 +119,7 @@ class SvgEditSettings {
     ColorAdjustments? adjustments,
     double? opacity,
     List<CollageTextItem>? texts,
+    List<CollageSticker>? stickers,
   }) {
     return SvgEditSettings(
       crop: clearCrop ? null : (crop ?? this.crop),
@@ -126,6 +133,7 @@ class SvgEditSettings {
       adjustments: adjustments ?? this.adjustments,
       opacity: opacity ?? this.opacity,
       texts: texts ?? this.texts,
+      stickers: stickers ?? this.stickers,
     );
   }
 }

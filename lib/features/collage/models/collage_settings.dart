@@ -4,7 +4,7 @@ import '../../../core/models/aspect_preset.dart';
 import 'collage_background.dart';
 import 'collage_cell.dart';
 import 'collage_layout.dart';
-import 'collage_sticker.dart';
+import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
 import '../../../core/models/default_colors.dart';
 import '../../../core/models/photo_info.dart';

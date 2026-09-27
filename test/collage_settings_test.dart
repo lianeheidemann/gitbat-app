@@ -4,7 +4,7 @@ import 'package:video_to_gif/features/collage/models/collage_background.dart';
 import 'package:video_to_gif/features/collage/models/collage_cell.dart';
 import 'package:video_to_gif/features/collage/models/collage_layout.dart';
 import 'package:video_to_gif/features/collage/models/collage_settings.dart';
-import 'package:video_to_gif/features/collage/models/collage_sticker.dart';
+import 'package:video_to_gif/core/models/collage_sticker.dart';
 import 'package:video_to_gif/core/models/photo_info.dart';
 
 const _photoA = PhotoInfo(path: '/tmp/a.jpg', width: 100, height: 200);
