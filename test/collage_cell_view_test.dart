@@ -442,4 +442,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('cellCenterGuideVertical')), findsNothing);
   });
+
+  testWidgets('o "..." fica inteiro dentro da célula', (tester) async {
+    await pumpLiveCell(
+      tester,
+      CollageCellSettings(
+        photoPath: photoPath,
+        photoWidth: 100,
+        photoHeight: 100,
+      ),
+    );
+    await tester.tap(find.byType(CollageCellView));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    final cell = tester.getRect(find.byType(CollageCellView));
+    final menu = tester.getRect(find.byKey(const ValueKey('cellMenuButton')));
+    expect(cell.contains(menu.topLeft), isTrue);
+    expect(menu.right, lessThanOrEqualTo(cell.right));
+    expect(menu.top, greaterThanOrEqualTo(cell.top));
+    expect(menu.width, lessThanOrEqualTo(24));
+  });
 }

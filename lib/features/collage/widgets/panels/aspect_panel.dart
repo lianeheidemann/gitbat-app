@@ -31,7 +31,12 @@ class CollageAspectPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _panelValueLine(context, _customAspectLabel()),
+        // Com "x:y" o valor fica sempre à vista, mesmo quando o slider passa
+        // por um formato pronto — sumir e voltar fazia o painel pular.
+        _panelValueLine(
+          context,
+          custom ? settings.aspectRatio.toStringAsFixed(2) : null,
+        ),
         Wrap(
           spacing: 6,
           runSpacing: 6,
@@ -70,7 +75,14 @@ class CollageAspectPanel extends StatelessWidget {
             CollageSettings.minAspectRatio,
             CollageSettings.maxAspectRatio,
           ),
-          onChangeStart: (_) => actions.pushUndoCheckpoint(),
+          // Arrastar é proporção livre: fica em "x:y" o tempo todo. Antes, ao
+          // passar por um formato pronto (3:2, por exemplo) o chip dele era
+          // marcado, os campos de "x:y" sumiam e o slider mudava de lugar no
+          // meio do arrasto — parecia uma travada.
+          onChangeStart: (_) {
+            actions.pushUndoCheckpoint();
+            onCustomSelected(true);
+          },
           onChanged: (v) => actions.update(
             settings.copyWith(aspectRatio: v),
             pushUndo: false,

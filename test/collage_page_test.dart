@@ -1410,7 +1410,6 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(cells(), 9);
-    expect(find.byKey(const ValueKey('customLayoutHint')), findsOneWidget);
     final add = find.byKey(const ValueKey('collageAddSlot_4_right'));
     expect(add, findsOneWidget);
     final before = tester.getSize(find.byType(CollageCellView).at(4));
@@ -1465,5 +1464,96 @@ void main() {
     await tester.pumpAndSettle();
     expect(handles, findsNothing);
     expect(menus, findsNothing);
+  });
+
+  testWidgets('"Personalizada": alças de "Áreas" somem ao trocar de aba', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    for (final label in ['Grade 3x3', 'Personalizada']) {
+      final chip = find.text(label);
+      await tester.ensureVisible(chip);
+      await tester.pumpAndSettle();
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+    // Foto do meio da linha de cima: vizinhas à esquerda, à direita e
+    // embaixo — duas alças verticais, que antes tinham a mesma chave.
+    await tester.tap(find.byType(CollageCellView).at(1));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    final handles = find.byType(CollageDividerHandle);
+    expect(handles.evaluate().length, greaterThanOrEqualTo(3));
+    final keys = [
+      for (final e
+          in find
+              .ancestor(of: handles, matching: find.byType(Positioned))
+              .evaluate())
+        e.widget.key,
+    ];
+    expect(keys.toSet().length, keys.length, reason: 'chaves únicas');
+
+    await tester.tap(find.text('Borda'));
+    await tester.pumpAndSettle();
+    expect(handles, findsNothing);
+  });
+
+  testWidgets('"Personalizada": arrastar em passos pequenos move a área '
+      'travada sem mudar o tamanho dela', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    for (final label in ['Grade 3x3', 'Personalizada']) {
+      final chip = find.text(label);
+      await tester.ensureVisible(chip);
+      await tester.pumpAndSettle();
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+
+    // Trava a foto do meio da linha de cima.
+    await tester.tap(find.byType(CollageCellView).at(1));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    final lock = find.byKey(const ValueKey('areaLockAspectSwitch'));
+    await tester.ensureVisible(lock);
+    await tester.pumpAndSettle();
+    await tester.tap(lock);
+    await tester.pumpAndSettle();
+
+    // Seleciona a da esquerda e arrasta a alça da direita dela aos
+    // pouquinhos.
+    await tester.tap(find.byType(CollageCellView).at(0));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    Rect rectOf(int i) => tester.getRect(find.byType(CollageCellView).at(i));
+    final lockedBefore = rectOf(1);
+    final handle = find.byType(CollageDividerHandle).first;
+    final gesture = await tester.startGesture(tester.getCenter(handle));
+    await gesture.moveBy(const Offset(20, 0));
+    await tester.pump();
+    for (var i = 0; i < 60; i++) {
+      await gesture.moveBy(const Offset(0.3, 0));
+      await tester.pump();
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    final lockedAfter = rectOf(1);
+    expect(lockedAfter.width, closeTo(lockedBefore.width, 0.1));
+    expect(lockedAfter.height, closeTo(lockedBefore.height, 0.1));
+    expect(lockedAfter.left, greaterThan(lockedBefore.left + 10));
   });
 }

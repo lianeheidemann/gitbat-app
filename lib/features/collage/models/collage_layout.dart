@@ -767,6 +767,105 @@ class CollageLayout {
     );
   }
 
+  /// [resizedBy] respeitando as áreas travadas ([locked]): elas não mudam
+  /// de tamanho, mas podem andar inteiras — quando o divisor arrastado
+  /// encosta numa travada, o divisor do outro lado dela anda junto, e quem
+  /// encolhe é a vizinha seguinte. `null` quando não tem como (a travada
+  /// está na beirada da montagem, ou a vizinha não tem mais espaço).
+  CollageLayout? resizedKeepingLocked(
+    CollageDivider divider,
+    double delta,
+    Size canvasSize, {
+    required Set<int> locked,
+    required double outerMarginRatio,
+    required double innerMarginRatio,
+  }) {
+    List<Rect> rectsOf(CollageLayout l) => l.cellRectsFor(
+      canvasSize,
+      outerMarginRatio: outerMarginRatio,
+      innerMarginRatio: innerMarginRatio,
+    );
+    // Bem apertado: mesmo passos de arrasto pequenininhos contam.
+    const tolerance = 0.01;
+    final before = rectsOf(this);
+    var next = resizedBy(
+      divider,
+      delta,
+      canvasSize,
+      outerMarginRatio: outerMarginRatio,
+      innerMarginRatio: innerMarginRatio,
+    );
+    // Cada passo desloca uma travada; várias travadas em fila pedem mais
+    // de um.
+    for (var step = 0; step <= cellCount; step++) {
+      final after = rectsOf(next);
+      int? broken;
+      for (final cell in locked) {
+        if (cell >= before.length || cell >= after.length) continue;
+        if ((after[cell].width - before[cell].width).abs() > tolerance ||
+            (after[cell].height - before[cell].height).abs() > tolerance) {
+          broken = cell;
+          break;
+        }
+      }
+      if (broken == null) return next;
+
+      final orig = before[broken];
+      final cur = after[broken];
+      final vertical = divider.vertical;
+      if (vertical
+          ? (cur.height - orig.height).abs() > tolerance
+          : (cur.width - orig.width).abs() > tolerance) {
+        return null; // mudou no outro eixo: não dá para compensar
+      }
+      // Qual beirada da travada andou: a outra acompanha na mesma medida.
+      final nearMoved = vertical
+          ? (cur.left - orig.left).abs() >= (cur.right - orig.right).abs()
+          : (cur.top - orig.top).abs() >= (cur.bottom - orig.bottom).abs();
+      final double shift;
+      if (vertical) {
+        shift = nearMoved
+            ? (cur.left + orig.width) - cur.right
+            : (cur.right - orig.width) - cur.left;
+      } else {
+        shift = nearMoved
+            ? (cur.top + orig.height) - cur.bottom
+            : (cur.bottom - orig.height) - cur.top;
+      }
+      if (shift.abs() <= tolerance) return null;
+      // O divisor do lado que ainda não andou.
+      CollageDivider? far;
+      for (final h in next.handlesAround(
+        broken,
+        canvasSize,
+        outerMarginRatio: outerMarginRatio,
+        innerMarginRatio: innerMarginRatio,
+      )) {
+        if (h.divider.vertical != vertical) continue;
+        final onFarSide = vertical
+            ? (nearMoved
+                  ? h.center.dx > cur.center.dx
+                  : h.center.dx < cur.center.dx)
+            : (nearMoved
+                  ? h.center.dy > cur.center.dy
+                  : h.center.dy < cur.center.dy);
+        if (onFarSide) {
+          far = h.divider;
+          break;
+        }
+      }
+      if (far == null) return null;
+      next = next.resizedBy(
+        far,
+        shift,
+        canvasSize,
+        outerMarginRatio: outerMarginRatio,
+        innerMarginRatio: innerMarginRatio,
+      );
+    }
+    return null;
+  }
+
   /// [count] fotos lado a lado, uma única linha.
   factory CollageLayout.row(int count) =>
       CollageLayout(kind: CollageLayoutKind.row, columns: count, rows: 1);

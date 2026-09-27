@@ -19,30 +19,34 @@ class BorderedPreview extends StatelessWidget {
     if (frame.style == FrameStyle.none) return child;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final thickness = frame.thicknessFor(width);
-        final outerRadius = frame.cornerRadiusFor(
-          constraints.biggest.shortestSide,
-        );
-        final innerRadius = (outerRadius - thickness).clamp(0.0, outerRadius);
+        // Dentro de uma área rolável a altura (ou a largura) chega
+        // infinita: a espessura sai da medida que for finita, e o tamanho
+        // final é o do próprio conteúdo — antes o `Stack` tentava ocupar o
+        // espaço todo, estourava com altura infinita e a prévia sumia.
+        final reference = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : (constraints.maxHeight.isFinite ? constraints.maxHeight : 0.0);
+        final thickness = frame.thicknessFor(reference);
         return Stack(
-          fit: StackFit.expand,
+          // As restrições de fora chegam iguais ao conteúdo: em espaço
+          // fixo ele continua ocupando tudo, como antes.
+          fit: StackFit.passthrough,
           children: [
-            IgnorePointer(
-              child: CustomPaint(
-                painter: BorderRingPainter(
-                  color: frame.color,
-                  thickness: thickness,
-                  outerRadius: outerRadius,
-                  innerRadius: innerRadius,
-                ),
-              ),
-            ),
             Padding(
               padding: EdgeInsets.all(thickness),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(innerRadius),
+              child: ClipPath(
+                clipper: _InnerClipper(frame: frame, thickness: thickness),
                 child: child,
+              ),
+            ),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _FrameRingPainter(
+                    frame: frame,
+                    thickness: thickness,
+                  ),
+                ),
               ),
             ),
           ],
@@ -50,6 +54,52 @@ class BorderedPreview extends StatelessWidget {
       },
     );
   }
+}
+
+/// Recorte do conteúdo no retângulo arredondado de dentro — o raio sai do
+/// tamanho final (o de fora), como na exportação.
+class _InnerClipper extends CustomClipper<Path> {
+  const _InnerClipper({required this.frame, required this.thickness});
+
+  final FrameSettings frame;
+  final double thickness;
+
+  @override
+  Path getClip(Size size) {
+    final outerShortest = size.shortestSide + thickness * 2;
+    final outerRadius = frame.cornerRadiusFor(outerShortest);
+    final inner = (outerRadius - thickness).clamp(0.0, outerRadius);
+    return Path()..addRRect(
+      RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(inner)),
+    );
+  }
+
+  @override
+  bool shouldReclip(covariant _InnerClipper old) =>
+      old.frame != frame || old.thickness != thickness;
+}
+
+/// [BorderRingPainter] com os raios calculados a partir do tamanho pintado.
+class _FrameRingPainter extends CustomPainter {
+  const _FrameRingPainter({required this.frame, required this.thickness});
+
+  final FrameSettings frame;
+  final double thickness;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outerRadius = frame.cornerRadiusFor(size.shortestSide);
+    BorderRingPainter(
+      color: frame.color,
+      thickness: thickness,
+      outerRadius: outerRadius,
+      innerRadius: (outerRadius - thickness).clamp(0.0, outerRadius),
+    ).paint(canvas, size);
+  }
+
+  @override
+  bool shouldRepaint(covariant _FrameRingPainter old) =>
+      old.frame != frame || old.thickness != thickness;
 }
 
 /// Anel da borda: o retângulo arredondado de fora menos o de dentro.

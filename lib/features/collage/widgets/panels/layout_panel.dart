@@ -38,15 +38,6 @@ class CollageLayoutPanel extends StatelessWidget {
           const SizedBox(height: 14),
           _freeGridSteppers(context),
         ],
-        if (layout.kind == CollageLayoutKind.custom) ...[
-          const SizedBox(height: 14),
-          Text(
-            'Toque no + ao lado de uma foto para criar um espaço novo '
-            'daquele lado. Para tirar um espaço, use o "..." dele.',
-            key: const ValueKey('customLayoutHint'),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
         if (layout.kind == CollageLayoutKind.row ||
             layout.kind == CollageLayoutKind.column) ...[
           const SizedBox(height: 14),
@@ -159,10 +150,11 @@ class CollageLayoutPanel extends StatelessWidget {
         ),
       ),
     );
-    const gap = 3.0;
+    // Do tamanho da grade de pontinhos das outras opções.
+    const gap = 2.5;
     return SizedBox(
-      width: 30,
-      height: 30,
+      width: 22,
+      height: 22,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

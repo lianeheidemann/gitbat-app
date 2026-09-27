@@ -260,7 +260,11 @@ class _CollageCellViewState extends State<CollageCellView> {
     final outerRadius =
         widget.cellSize.shortestSide *
         cell.cornerRatio.clamp(0.0, CollageCellSettings.maxCornerRatio);
-    final borderThickness = cell.borderThicknessFor(widget._borderCanvasWidth);
+    // Sem foto não há borda (a exportação também não desenha): o recorte
+    // usa o canto de fora inteiro.
+    final borderThickness = cell.hasPhoto
+        ? cell.borderThicknessFor(widget._borderCanvasWidth)
+        : 0.0;
     final innerRadius = (outerRadius - borderThickness).clamp(0.0, outerRadius);
     final contentSize = _contentSize;
 
@@ -319,21 +323,21 @@ class _CollageCellViewState extends State<CollageCellView> {
                       // que mostrar o fundo real da montagem pelos buracos,
                       // como a exportação faz — antes o cinza só sumia ao
                       // trocar para "contain" com o duplo toque.
-                      // Com contorno: no tema claro o cinza do espaço vazio
-                      // quase some contra o fundo da prévia.
+                      // Só a cor de fundo, sem contorno: um contorno reto
+                      // aparecia quebrado nos cantos arredondados. No tema
+                      // claro o tom é mais escuro para o espaço não sumir
+                      // contra o fundo da prévia.
                       if (!cell.hasPhoto)
-                        DecoratedBox(
+                        ColoredBox(
                           key: const ValueKey('emptyCellPlaceholder'),
-                          decoration: BoxDecoration(
-                            color: theme.brightness == Brightness.light
-                                ? theme.colorScheme.surfaceContainerHighest
-                                : theme.colorScheme.surfaceContainerHigh,
-                            border: Border.all(
-                              color: theme.colorScheme.outline.withValues(
-                                alpha: 0.55,
-                              ),
-                            ),
-                          ),
+                          color: theme.brightness == Brightness.light
+                              ? Color.alphaBlend(
+                                  theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  theme.colorScheme.surfaceContainerHighest,
+                                )
+                              : theme.colorScheme.surfaceContainerHigh,
                         ),
                       // Fundo próprio da foto, por baixo dela e por cima do
                       // placeholder — mesma camada que `paintCollageCell`
@@ -357,15 +361,6 @@ class _CollageCellViewState extends State<CollageCellView> {
               ),
             ),
           ),
-          // Pousado sobre o canto do retângulo, poucos pixels para fora dele
-          // — não pode ir tão longe quanto o centro geométrico do canto
-          // (offset -15 = metade do botão de 30px): o hit-test do Flutter só
-          // enxerga toques dentro do próprio tamanho do Stack (o
-          // `clipBehavior: Clip.none` acima só afeta pintura, nunca
-          // hit-test), então um botão centralizado exatamente na quina tem
-          // seu centro geométrico bem na borda excludente do retângulo e
-          // nunca é tocável. Com -6, um botão de ~30px fica ~24px dentro da
-          // célula (centro ~9px dentro), deixando ~6px visíveis para fora.
           // Guias de centro enquanto a foto está grudada no meio da área.
           if (_active && cell.offsetX == 0)
             Positioned(
@@ -392,9 +387,11 @@ class _CollageCellViewState extends State<CollageCellView> {
           if (_isSelected && showSelection) ..._handles(theme),
           // O "..." só aparece com a foto selecionada (tocada).
           if (_isSelected && showSelection)
+            // Pequeno e por dentro do espaço, no canto de cima.
             Positioned(
-              right: -6,
-              top: -6,
+              key: const ValueKey('cellMenuButton'),
+              right: 4,
+              top: 4,
               child: _MenuButton(onTap: widget.onMenu),
             ),
         ],
@@ -481,8 +478,16 @@ class _CollageCellViewState extends State<CollageCellView> {
       Positioned.fill(
         child: IgnorePointer(
           child: DecoratedBox(
+            // Acompanha o arredondamento da própria área.
             decoration: BoxDecoration(
               border: Border.all(color: theme.colorScheme.primary, width: 1.5),
+              borderRadius: BorderRadius.circular(
+                size.shortestSide *
+                    widget.cell.cornerRatio.clamp(
+                      0.0,
+                      CollageCellSettings.maxCornerRatio,
+                    ),
+              ),
             ),
           ),
         ),
@@ -568,8 +573,8 @@ class _MenuButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: const Padding(
-          padding: EdgeInsets.all(6),
-          child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 18),
+          padding: EdgeInsets.all(4),
+          child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 14),
         ),
       ),
     );

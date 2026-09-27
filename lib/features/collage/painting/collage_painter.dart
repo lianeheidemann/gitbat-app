@@ -182,9 +182,11 @@ void paintCollageCell(
   // `CollageGeometry`, só que por célula em vez de pela montagem toda.
   // Espessura pela largura da montagem (não da área) — ver
   // [CollageCellSettings.borderThicknessFor].
-  final borderThickness = cell.borderThicknessFor(
-    canvasWidth ?? cellRect.width * 2,
-  );
+  // Espaço sem foto (só com o fundo próprio) não tem borda, como na
+  // prévia — a borda é da foto.
+  final borderThickness = photoImage == null
+      ? 0.0
+      : cell.borderThicknessFor(canvasWidth ?? cellRect.width * 2);
   final innerRadius = (outerRadius - borderThickness).clamp(0.0, outerRadius);
   final contentRect = cellRect.deflate(borderThickness);
   if (contentRect.isEmpty) return;

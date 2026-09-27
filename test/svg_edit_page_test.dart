@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_to_gif/core/ui/editor_tabs_footer.dart';
 import 'package:video_to_gif/features/svg/models/svg_info.dart';
@@ -48,6 +49,32 @@ void main() {
     expect(find.text('Opacidade'), findsWidgets);
     await _showTab(tester, 'Configurações');
     expect(find.text('Configurações'), findsWidgets);
+  });
+
+  testWidgets('escolher uma borda não some com o desenho', (tester) async {
+    tester.view.physicalSize = const Size(500, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SvgEditPage(svg: SvgInfo(path: svgPath, width: 120, height: 80)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _showTab(tester, 'Borda');
+    await tester.tap(find.text('Borda').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Borda média'));
+    await tester.pumpAndSettle();
+
+    // A prévia ficava dentro de uma área rolável (altura infinita) e a
+    // borda estourava o layout: nada era desenhado.
+    expect(tester.takeException(), isNull);
+    final picture = find.byType(SvgPicture);
+    expect(picture, findsWidgets);
+    final size = tester.getSize(picture.first);
+    expect(size.width, greaterThan(100));
+    expect(size.height, greaterThan(50));
   });
 
   testWidgets('escolher uma proporção trava o recorte e some com as abas '

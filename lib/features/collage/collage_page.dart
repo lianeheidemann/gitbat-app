@@ -176,6 +176,13 @@ class _CollagePageState extends State<CollagePage> {
   /// que ele está redimensionando.
   CollageDivider? _draggingDivider;
 
+  /// Layout de quando o arrasto da alça começou e o quanto o dedo já andou
+  /// desde então: cada evento recalcula a partir do começo, em vez de somar
+  /// passinhos — senão os passos menores que a tolerância escapavam da
+  /// compensação e uma área travada ia encolhendo aos poucos.
+  CollageLayout? _dragStartLayout;
+  double _dragTotal = 0;
+
   /// Fotos com "Travar área" ligado no cartão "Área selecionada": o tamanho
   /// delas não muda mais — sem alças, sliders apagados, e nenhuma vizinha
   /// consegue empurrá-las. Cada foto tem o seu.
@@ -320,8 +327,34 @@ class _CollagePageState extends State<CollagePage> {
       if (settings.cells.length != _settings.cells.length) {
         _selectedPhotoCell = null;
       }
+      if (settings.cells.length == _settings.cells.length - 1) {
+        _shiftAreaIndicesAfterRemoval(_settings.cells, settings.cells);
+      }
       _settings = settings;
     });
+  }
+
+  /// "Remover espaço" tira uma célula da lista: os cadeados e a seleção da
+  /// aba "Áreas" acompanham (o removido sai, os de índice maior descem 1),
+  /// senão o cadeado passava para a área vizinha.
+  void _shiftAreaIndicesAfterRemoval(
+    List<CollageCellSettings> before,
+    List<CollageCellSettings> after,
+  ) {
+    var removed = after.length;
+    for (var i = 0; i < after.length; i++) {
+      if (!identical(before[i], after[i])) {
+        removed = i;
+        break;
+      }
+    }
+    int? shift(int i) => i == removed ? null : (i > removed ? i - 1 : i);
+    final locks = {for (final i in _lockedAreaCells) ?shift(i)};
+    _lockedAreaCells
+      ..clear()
+      ..addAll(locks);
+    final area = _selectedAreaCell;
+    if (area != null) _selectedAreaCell = shift(area);
   }
 
   /// As três ações que as abas e as ações de célula devolvem para a tela.
@@ -986,17 +1019,25 @@ class _CollagePageState extends State<CollagePage> {
     return index < _settings.cells.length ? index : 0;
   }
 
-  /// Arrasto de uma alça da aba "Áreas": só o divisor arrastado se move, e
-  /// nada acontece se isso mudar o tamanho de uma área travada.
+  /// Arrasto de uma alça da aba "Áreas": o divisor arrastado se move, e
+  /// uma área travada encostada nele anda inteira sem mudar de tamanho.
   void _dragDivider(CollageDivider divider, double delta, Size contentSize) {
-    final next = _settings.layout.resizedBy(
+    // Áreas travadas não mudam de tamanho, mas andam inteiras quando a
+    // vizinha empurra (a do outro lado delas é que encolhe).
+    _dragTotal += delta;
+    final start = _dragStartLayout ?? _settings.layout;
+    final next = start.resizedKeepingLocked(
       divider,
-      delta,
+      _dragStartLayout == null ? delta : _dragTotal,
       contentSize,
+      locked: {
+        for (final c in _lockedAreaCells)
+          if (c < _settings.cells.length) c,
+      },
       outerMarginRatio: _settings.outerMarginRatio,
       innerMarginRatio: _settings.innerMarginRatio,
     );
-    if (_breaksLockedAreas(_settings.layout, next)) return;
+    if (next == null) return;
     _update(_settings.copyWith(layout: next), pushUndo: false);
   }
 
@@ -1085,9 +1126,12 @@ class _CollagePageState extends State<CollagePage> {
     return [
       for (final handle in handles)
         Positioned(
+          // Chave única por divisor: no "Personalizada" todos têm
+          // column/index -1, e chaves repetidas deixavam alças antigas
+          // presas na prévia depois de sair de "Áreas".
           key: ValueKey(
-            'collageDivider_${handle.divider.vertical ? 'v' : 'h'}'
-            '_${handle.divider.column}_${handle.divider.index}',
+            'collageDivider_${handle.divider.vertical ? 'v' : 'h'}_'
+            '${handle.divider.path ?? '${handle.divider.column}_${handle.divider.index}'}',
           ),
           left:
               thickness +
@@ -1103,9 +1147,15 @@ class _CollagePageState extends State<CollagePage> {
             divider: handle.divider,
             onDragStart: () {
               _pushUndoCheckpoint();
+              _dragStartLayout = _settings.layout;
+              _dragTotal = 0;
               setState(() => _draggingDivider = handle.divider);
             },
-            onDragEnd: () => setState(() => _draggingDivider = null),
+            onDragEnd: () {
+              _dragStartLayout = null;
+              _dragTotal = 0;
+              setState(() => _draggingDivider = null);
+            },
             onDrag: (delta) => _dragDivider(handle.divider, delta, contentSize),
           ),
         ),
