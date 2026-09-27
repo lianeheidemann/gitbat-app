@@ -219,4 +219,26 @@ void main() {
     }
     expect(seen.length, greaterThan(1), reason: 'a animação avança');
   });
+
+  test('anota as etapas e dá um respiro entre os quadros', () async {
+    final longo = '${tempDir.path}/longo.gif';
+    await writeAnimatedGif(longo, frames: 4, delayCentiseconds: 10);
+    final steps = <String>[];
+    var pauses = 0;
+    final workDir = await Directory('${tempDir.path}/etapas').create();
+    final sequence = await renderCollageFrames(
+      settings: settingsWith([longo, longo]),
+      outputWidth: 40,
+      rule: CollageDurationRule.longest,
+      workDir: workDir,
+      onStep: steps.add,
+      betweenFrames: () async => pauses++,
+    );
+    expect(pauses, sequence.frameCount);
+    expect(steps.first, startsWith('foto 1/1: abrindo longo.gif'));
+    expect(steps, contains(startsWith('foto 1/1: animada, 4 quadros')));
+    expect(steps, contains('quadro 1: lendo a animação da área 1'));
+    expect(steps, contains('quadro 1: desenhando'));
+    expect(steps, contains('quadro 1: pronto'));
+  });
 }

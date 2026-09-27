@@ -6,8 +6,6 @@ import 'dart:ui' as ui;
 import '../../quick_convert/services/animated_webp_source.dart'
     show parseAnimatedWebp;
 import '../models/collage_background.dart';
-import '../models/collage_cell.dart';
-import '../painting/collage_painter.dart' show CollageGeometry;
 import '../models/collage_export.dart';
 import '../models/collage_settings.dart';
 import 'collage_compositor.dart';
@@ -323,25 +321,38 @@ Future<CollageFrameSequence> renderCollageFrames({
   required Directory workDir,
   void Function(double progress)? onProgress,
   bool Function()? isCancelled,
+  void Function(String step)? onStep,
+  Future<void> Function()? betweenFrames,
 }) async {
   final animated = <String, _AnimatedCursor>{};
   final stills = <String, ui.Image>{};
   final backgrounds = <String, ui.Image>{};
 
   try {
-    final neededWidths = _neededPhotoWidths(settings, outputWidth);
-    for (final path in _photoPaths(settings)) {
-      final codec = await _openCodec(path, targetWidth: neededWidths[path]);
-      if (codec == null) continue;
+    final paths = _photoPaths(settings).toList();
+    for (final (k, path) in paths.indexed) {
+      final label = 'foto ${k + 1}/${paths.length}';
+      onStep?.call('$label: abrindo ${_describeFile(path)}');
+      final codec = await _openCodec(path);
+      if (codec == null) {
+        onStep?.call('$label: não deu para abrir');
+        continue;
+      }
       if (codec.frameCount > 1) {
         // Duração pelo cabeçalho (GIF/WebP), sem decodificar os pixels.
         final duration =
             await _animationDuration(path) ??
             Duration(milliseconds: codec.frameCount * 100);
+        onStep?.call(
+          '$label: animada, ${codec.frameCount} quadros, '
+          '${(duration.inMilliseconds / 1000).toStringAsFixed(1)} s',
+        );
         animated[path] = _AnimatedCursor(codec, codec.frameCount, duration);
       } else {
         try {
-          stills[path] = (await codec.getNextFrame()).image;
+          final image = (await codec.getNextFrame()).image;
+          stills[path] = image;
+          onStep?.call('$label: parada, ${image.width}×${image.height}');
         } finally {
           codec.dispose();
         }
@@ -365,19 +376,36 @@ Future<CollageFrameSequence> renderCollageFrames({
       math.min(_maxOutputFrames, (total.inMilliseconds * fps / 1000).round()),
     );
 
+    onStep?.call(
+      '$frameCount quadros de ${outputWidth}px a $fps fps '
+      '(${animated.length} animadas)',
+    );
     final pattern = '${workDir.path}/quadro_%05d.png';
     for (var index = 0; index < frameCount; index++) {
       // Entre um quadro e outro: é o ponto em que dá para parar sem deixar
       // um PNG pela metade na pasta de trabalho.
       if (isCancelled?.call() ?? false) throw CollageRenderCancelled();
+      // Os primeiros quadros são anotados passo a passo (é onde o app
+      // fechava); depois, só de vez em quando.
+      final detailed = index < 3;
+      if (!detailed && index % 20 == 0) {
+        onStep?.call('quadro ${index + 1} de $frameCount');
+      }
       final t = Duration(milliseconds: (index * 1000 / fps).round());
-      final cellImages = [
-        for (final cell in settings.cells)
-          cell.photoPath == null
-              ? null
-              : (await animated[cell.photoPath!]?.frameAt(t) ??
-                    stills[cell.photoPath!]),
-      ];
+      final cellImages = <ui.Image?>[];
+      for (final (c, cell) in settings.cells.indexed) {
+        final path = cell.photoPath;
+        final cursor = path == null ? null : animated[path];
+        if (cursor != null && detailed) {
+          onStep?.call(
+            'quadro ${index + 1}: lendo a animação da área ${c + 1}',
+          );
+        }
+        cellImages.add(
+          path == null ? null : (await cursor?.frameAt(t) ?? stills[path]),
+        );
+      }
+      if (detailed) onStep?.call('quadro ${index + 1}: desenhando');
       final bytes = await composeCollageFrame(
         settings: settings,
         outputWidth: outputWidth,
@@ -387,7 +415,11 @@ Future<CollageFrameSequence> renderCollageFrames({
       );
       final name = index.toString().padLeft(5, '0');
       await File('${workDir.path}/quadro_$name.png').writeAsBytes(bytes);
+      if (detailed) onStep?.call('quadro ${index + 1}: pronto');
       onProgress?.call((index + 1) / frameCount);
+      // Deixa a tela desenhar um quadro antes do próximo: o motor gráfico
+      // libera as texturas usadas nesse intervalo.
+      await betweenFrames?.call();
     }
 
     return CollageFrameSequence(
@@ -406,6 +438,17 @@ Future<CollageFrameSequence> renderCollageFrames({
     for (final image in backgrounds.values) {
       image.dispose();
     }
+  }
+}
+
+/// Nome e tamanho do arquivo, para o diagnóstico.
+String _describeFile(String path) {
+  final name = path.split(Platform.pathSeparator).last;
+  try {
+    final kb = File(path).lengthSync() ~/ 1024;
+    return '$name ($kb KB)';
+  } catch (_) {
+    return name;
   }
 }
 
@@ -432,75 +475,18 @@ Set<String> _backgroundPaths(CollageSettings settings) => {
       cell.background.imagePath!,
 };
 
-/// Largura (em pixels da foto) que cada foto precisa ter para sair nítida
-/// na montagem de [outputWidth] — a maior entre as células que a usam, com
-/// zoom e recorte. `null` quando precisa da foto inteira. Guardar todos os
-/// quadros de um WebP de 1080×1920 no tamanho original passava de 2 GB de
-/// memória, e a exportação morria sem salvar.
-Map<String, int?> _neededPhotoWidths(
-  CollageSettings settings,
-  int outputWidth,
-) {
-  final width = outputWidth < 2 ? 2 : outputWidth;
-  final height = (width / settings.aspectRatio).round().clamp(2, 1 << 20);
-  final geometry = CollageGeometry.of(
-    ui.Size(width.toDouble(), height.toDouble()),
-    settings,
-  );
-  final needed = <String, double>{};
-  for (var i = 0; i < settings.cells.length; i++) {
-    final cell = settings.cells[i];
-    final path = cell.photoPath;
-    if (path == null || i >= geometry.cellRects.length) continue;
-    if (cell.photoWidth <= 0) {
-      needed[path] = double.infinity;
-      continue;
-    }
-    final size = geometry.cellRects[i].size;
-    final double pixelsPerPhotoPixel;
-    if (cell.fitMode == CollageCellFitMode.cover) {
-      final src = cell.coverSrcRect(size);
-      // A foto girada é desenhada no tamanho do "footprint", maior que a
-      // célula — a diagonal cobre qualquer ângulo.
-      final dest = math.sqrt(
-        size.width * size.width + size.height * size.height,
-      );
-      pixelsPerPhotoPixel = src.width <= 0 ? 1 : dest / src.width;
-    } else {
-      final display = cell.containDisplaySize(size);
-      final src = cell.manualCropSrcRect;
-      pixelsPerPhotoPixel = src.width <= 0 ? 1 : display.width / src.width;
-    }
-    final w = cell.photoWidth * pixelsPerPhotoPixel;
-    needed[path] = math.max(needed[path] ?? 0, w);
-  }
-  return {
-    for (final MapEntry(:key, :value) in needed.entries)
-      key: value.isFinite ? value.ceil().clamp(16, 1 << 20) : null,
-  };
-}
-
-/// Abre o decodificador de [path] com no máximo [targetWidth] de largura
-/// (a proporção é mantida). `null` quando o arquivo não dá para ler.
-Future<ui.Codec?> _openCodec(String path, {int? targetWidth}) async {
+/// Abre o decodificador de [path] — do mesmo jeito que a exportação em PNG
+/// (`collage_compositor.dart`), que funciona no aparelho.
+///
+/// Antes pedia um tamanho reduzido ao motor (`ImageDescriptor` com
+/// `targetWidth`): isso não tinha efeito em GIF/WebP animados, e em foto
+/// parada (um JPG comum) **fechava o app** no celular — o registro de
+/// diagnóstico mostrou a exportação parando exatamente ao abrir a foto
+/// JPG, com só ~240 MB de memória em uso. `null` quando o arquivo não dá
+/// para ler.
+Future<ui.Codec?> _openCodec(String path) async {
   try {
-    final bytes = await File(path).readAsBytes();
-    if (targetWidth == null) return await ui.instantiateImageCodec(bytes);
-    final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
-    final descriptor = await ui.ImageDescriptor.encoded(buffer);
-    final shrink = targetWidth < descriptor.width;
-    final codec = await descriptor.instantiateCodec(
-      targetWidth: shrink ? targetWidth : null,
-      targetHeight: shrink
-          ? (descriptor.height * targetWidth / descriptor.width).round().clamp(
-              1,
-              descriptor.height,
-            )
-          : null,
-    );
-    descriptor.dispose();
-    buffer.dispose();
-    return codec;
+    return await ui.instantiateImageCodec(await File(path).readAsBytes());
   } catch (_) {
     return null;
   }

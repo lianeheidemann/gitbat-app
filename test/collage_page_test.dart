@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_to_gif/features/collage/models/collage_background.dart';
 import 'package:video_to_gif/features/collage/models/collage_cell.dart';
@@ -61,6 +62,18 @@ Future<void> _selectFirstPhoto(WidgetTester tester) async {
   await tester.tap(find.byType(CollageCellView).first);
   await tester.pump(const Duration(milliseconds: 400));
   await tester.pumpAndSettle();
+}
+
+class _SupportPaths extends PathProviderPlatform {
+  _SupportPaths(this.dir);
+
+  final String dir;
+
+  @override
+  Future<String?> getApplicationSupportPath() async => dir;
+
+  @override
+  Future<String?> getTemporaryPath() async => dir;
 }
 
 void main() {
@@ -1584,5 +1597,35 @@ void main() {
     expect(find.text('Duração'), findsOneWidget);
     expect(find.textContaining('A mais longa'), findsOneWidget);
     expect(find.textContaining('A mais curta'), findsOneWidget);
+  });
+
+  testWidgets('exportação interrompida: ao abrir de novo, mostra onde parou', (
+    tester,
+  ) async {
+    final original = PathProviderPlatform.instance;
+    PathProviderPlatform.instance = _SupportPaths(tempDir.path);
+    addTearDown(() => PathProviderPlatform.instance = original);
+    await tester.runAsync(
+      () => File('${tempDir.path}/exportacao_diagnostico.log').writeAsString(
+        'EM ANDAMENTO: WebP 1440×570, 4 áreas, Padrão\n'
+        '10:00:00  início  (300 MB)\n'
+        '10:00:01  quadro 1: lendo a animação da área 2  (812 MB)\n',
+      ),
+    );
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('interruptedExportDialog')),
+    );
+    expect(find.textContaining('lendo a animação da área 2'), findsOneWidget);
+
+    // Visto uma vez, não aparece de novo.
+    await tester.tap(find.byKey(const ValueKey('dialogCloseButton')));
+    await tester.pumpAndSettle();
+    final log = await tester.runAsync(
+      () => File('${tempDir.path}/exportacao_diagnostico.log').readAsString(),
+    );
+    expect(log, contains('FIM: relatório visto'));
   });
 }

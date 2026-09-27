@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/ffmpeg/ffmpeg_service.dart';
+import '../../../core/services/export_diagnostics.dart';
 import '../models/collage_export.dart';
 import '../models/collage_settings.dart';
 import '../painting/collage_painter.dart';
@@ -149,6 +150,8 @@ class CollageExportRunner {
     required CollageExportSize size,
     required CollageDurationRule rule,
     required ValueChanged<double> reportProgress,
+    ExportDiagnostics? diagnostics,
+    Future<void> Function()? betweenFrames,
   }) async {
     await cleanStaleExports(await getTemporaryDirectory());
     if (!format.isAnimated) {
@@ -176,7 +179,10 @@ class CollageExportRunner {
         // codificação com os 15% finais.
         onProgress: (value) => reportProgress(value * 0.85),
         isCancelled: () => _cancelled,
+        onStep: diagnostics?.step,
+        betweenFrames: betweenFrames,
       );
+      diagnostics?.step('codificando ${format.label} no FFmpeg');
       return await _ffmpeg.encodeCollageSequence(
         framePattern: sequence.pattern,
         fps: sequence.fps,

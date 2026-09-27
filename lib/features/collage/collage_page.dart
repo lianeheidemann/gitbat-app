@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'models/collage_background.dart';
@@ -19,6 +21,7 @@ import 'services/collage_animation.dart';
 import 'services/collage_export_runner.dart';
 import 'services/collage_compositor.dart';
 import '../../core/ffmpeg/ffmpeg_service.dart';
+import '../../core/services/export_diagnostics.dart';
 import '../../core/services/imported_asset_store.dart';
 import '../../core/services/imported_font_store.dart';
 import '../../core/services/output_service.dart';
@@ -226,6 +229,11 @@ class _CollagePageState extends State<CollagePage> {
   bool _saving = false;
   bool _sharing = false;
 
+  /// Durante a exportação animada a prévia sai de cena: as fotos animadas
+  /// dela (GIF/WebP em tamanho cheio, decodificando ~24 quadros por
+  /// segundo cada) competiam pela memória com a própria exportação.
+  bool _exportingAnimated = false;
+
   /// Campo de escrever texto que fica no próprio painel da aba "Texto" — o
   /// mesmo campo cria uma caixa nova e edita a selecionada, sem abrir
   /// diálogo nenhum.
@@ -254,6 +262,9 @@ class _CollagePageState extends State<CollagePage> {
   void initState() {
     super.initState();
     _loadImportedAssets();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _showInterruptedExportReport(),
+    );
     final ignored = widget.photos.length - _settings.cells.length;
     if (ignored > 0) {
       // Mais fotos do que cabe até no maior layout: avisa em vez de deixar o
@@ -490,7 +501,11 @@ class _CollagePageState extends State<CollagePage> {
                     ? null
                     : () => setState(() => _selectedPhotoCell = null),
                 child: PreviewAreaBackground(
-                  child: Center(child: MediaCheckerboard(child: _preview())),
+                  child: Center(
+                    child: _exportingAnimated
+                        ? _exportPlaceholder()
+                        : MediaCheckerboard(child: _preview()),
+                  ),
                 ),
               ),
             ),
@@ -2437,6 +2452,12 @@ class _CollagePageState extends State<CollagePage> {
       _exportSize,
       format,
     );
+    final diagnostics = await ExportDiagnostics.open();
+    diagnostics?.start(
+      '${format.label} $width×$height, ${_settings.cells.length} áreas, '
+      '${_exportSize.label}',
+    );
+    if (!mounted) return null;
     final navigator = Navigator.of(context, rootNavigator: true);
     unawaited(
       showDialog<void>(
@@ -2452,17 +2473,104 @@ class _CollagePageState extends State<CollagePage> {
       ),
     );
     try {
-      return await _buildExportFile(format);
+      // Tira a prévia animada de cena e solta os quadros dela antes de
+      // começar.
+      setState(() => _exportingAnimated = true);
+      await _nextFrame();
+      PaintingBinding.instance.imageCache
+        ..clear()
+        ..clearLiveImages();
+      diagnostics?.step('prévia pausada');
+      final file = await _buildExportFile(
+        format,
+        diagnostics: diagnostics,
+        betweenFrames: _nextFrame,
+      );
+      diagnostics?.finish('ok');
+      return file;
     } on CollageRenderCancelled {
+      diagnostics?.finish('cancelada');
       return null;
-    } on FfmpegException {
+    } on FfmpegException catch (e) {
       // Cancelar durante a codificação chega aqui como falha do FFmpeg —
       // não é erro para mostrar ao usuário.
-      if (_export.cancelled) return null;
+      if (_export.cancelled) {
+        diagnostics?.finish('cancelada');
+        return null;
+      }
+      diagnostics?.finish('erro do FFmpeg: ${e.message}');
+      rethrow;
+    } catch (e) {
+      diagnostics?.finish('erro: $e');
       rethrow;
     } finally {
       navigator.pop();
+      if (mounted) setState(() => _exportingAnimated = false);
     }
+  }
+
+  /// Espera a tela desenhar o próximo quadro — com teto, porque com o app em
+  /// segundo plano nenhum quadro é desenhado e a exportação não pode parar.
+  Future<void> _nextFrame() => SchedulerBinding.instance.endOfFrame.timeout(
+    const Duration(milliseconds: 250),
+    onTimeout: () {},
+  );
+
+  /// Lugar da prévia enquanto a exportação animada roda (atrás do pop-up).
+  Widget _exportPlaceholder() {
+    final scheme = Theme.of(context).colorScheme;
+    return AspectRatio(
+      key: const ValueKey('collageExportPlaceholder'),
+      aspectRatio: _settings.aspectRatio,
+      child: ColoredBox(color: scheme.surfaceContainerHigh),
+    );
+  }
+
+  /// Se a exportação anterior ficou pela metade (o app foi fechado no meio),
+  /// mostra onde ela parou — para dar para mandar ao suporte.
+  Future<void> _showInterruptedExportReport() async {
+    final diagnostics = await ExportDiagnostics.open();
+    final report = await diagnostics?.interruptedReport();
+    if (report == null || !mounted) return;
+    diagnostics!.markSeen();
+    final text = report.join('\n');
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('interruptedExportDialog'),
+        title: const DialogTitle('A última exportação foi interrompida'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'O app fechou enquanto salvava a montagem. Se acontecer de '
+                'novo, toque em "Copiar" e mande este texto para o suporte.',
+              ),
+              const SizedBox(height: 12),
+              SelectableText(
+                text,
+                style: Theme.of(
+                  dialogContext,
+                ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: text));
+              Navigator.of(dialogContext).pop();
+              _message('Relatório copiado.');
+            },
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            label: const Text('Copiar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _reportExportProgress(double value) {
@@ -2475,12 +2583,18 @@ class _CollagePageState extends State<CollagePage> {
     );
   }
 
-  Future<File> _buildExportFile(CollageExportFormat format) => _export.build(
+  Future<File> _buildExportFile(
+    CollageExportFormat format, {
+    ExportDiagnostics? diagnostics,
+    Future<void> Function()? betweenFrames,
+  }) => _export.build(
     settings: _settings,
     format: format,
     size: _exportSize,
     rule: _durationRule,
     reportProgress: _reportExportProgress,
+    diagnostics: diagnostics,
+    betweenFrames: betweenFrames,
   );
 
   Future<void> _save() async {
