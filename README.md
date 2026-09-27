@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="100" src="assets/icon/icon-v4.png"/>
+<img width="200" src="assets/video-to-gif-logo-adaptive.svg"/>
 
 # Video to GIF
 
