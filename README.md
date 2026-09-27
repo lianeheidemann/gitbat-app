@@ -27,8 +27,7 @@ directly on Android — animated, transparent, high-resolution and offline.**
 
 GitBat started as a simple app to convert videos into GIFs. It kept gaining
 features and grew into an app for **creating content for GitHub READMEs**:
-banners, demos, badges, collages and illustrations in **GIF, animated WebP
-and SVG**.
+banners, demos, badges, collages and illustrations in **GIF, animated WebP, SVG and PNG**.
 
 - **Transparency everywhere** — every editing screen supports a transparent
   background, so the result sits cleanly on GitHub's light and dark themes.
