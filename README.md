@@ -9,365 +9,199 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=372b4d)](https://github.com/lianeheidemann/video-to-gif/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=372b4d)](https://github.com/lianeheidemann/video-to-gif/actions/workflows/release.yml)
 
-**Turn videos and photos into animated GIF (or WebP)<br>
+**Turn videos and photos into animated GIF or WebP<br>
 directly on Android — privately and offline.**
 
 <img src="assets/linha-lilas-v3.svg"/>
 
 <img src="assets/gif/video-to-gif-interface-v2.webp"/>
 
+**[⬇ Download the latest APK](https://github.com/lianeheidemann/video-to-gif/releases/latest)**
+
 </div>
 
-## About
+## Overview
 
-Android app built with Flutter, with four editors that share the same
-editor shell, frame library and on-device export pipeline, plus a tool for
-quick format swaps:
+Video to GIF is an Android app built with Flutter. Everything runs on the
+device with FFmpeg — the app has **no internet permission**.
 
-| Tool | What it does |
+| Tool | Purpose |
 |---|---|
-| **Video to GIF/WebP** | Converts MP4, MOV, AVI, MKV, WebM and 3GP to **GIF or animated WebP** — trim, crop, speed, resolution, frame rate, colors and a decorative frame. For GIF it also **estimates the final file size before converting**. |
-| **Edit an image** | Puts the same procedural or phone-mockup frames around a single photo, with content-fit modes, color adjustment and a transparent or colored background — plus a **magic eraser** that removes an object and rebuilds the background behind it. |
-| **Edit SVG** | Crops, rotates, recolors and decorates an SVG — border, background, filter, opacity, stickers and text — and saves it **still as a vector** (`<text>`, nested `<svg>`, clip paths), editable in any SVG tool. |
-| **Photo collage** | Assembles several photos into one composition — layouts, margins, borders, stickers, imported fonts, crop and color adjustment. If any photo is animated, the whole collage exports **animated**. |
-| **Convert format** | Picks any video, GIF or WebP (animated WebP included) and re-encodes it to GIF, animated WebP or MP4, with a resolution slider — no trim, quality or preview otherwise. |
+| **Video → GIF / WebP** | Converts MP4, MOV, AVI, MKV, WebM and 3GP into GIF or animated WebP, and **estimates the GIF size before converting**. |
+| **Edit image** | Frames a single photo (border or phone mockup), adjusts color and removes objects with a **magic eraser**. |
+| **Edit SVG** | Crops, rotates, recolors and decorates an SVG, and saves it **as a vector**. |
+| **Photo collage** | Combines photos into one composition — grids, custom layouts, stickers and text. Exports animated when any photo is animated. |
+| **Convert format** | Re-encodes a video, GIF or animated WebP to GIF, WebP or MP4. |
 
-Choose the format that best fits your destination:
+| Output | Best for |
+|---|---|
+| **GIF** | Maximum compatibility; includes size estimation and destination limits. |
+| **Animated WebP** | Better color, real transparency and smaller files; has its own quality slider. |
 
-| Format | Best for | Notes |
-|---|---|---|
-| **GIF** | Broad compatibility and predictable sharing limits | Includes file-size estimation and destination compatibility checks |
-| **Animated WebP** | Better color, transparency and smaller files at similar quality | Includes a quality slider; some older apps may not play the animation |
-
-> All conversion runs on-device with FFmpeg. The app has no internet
-> permission.
->
-> **[⬇ Download the APK](https://github.com/lianeheidemann/video-to-gif/releases/latest)**
-> — installs straight onto Android, no store needed.
-
-## The problem it solves
-
-Converting video to GIF is slow, and the output size is unpredictable — the
-same settings can produce 800 KB for one video and 14 MB for another,
-depending on how much the scene moves. This app estimates the size **while
-you adjust the controls**, without converting anything, and the **Measure**
-button refines that estimate by converting two short clips and calibrating
-on their real size.
-
-> [!WARNING]
-> **The estimate is still being refined.** Before measuring it relies on
-> bitrate alone, and a few content types (e.g. moving gradients) can fall
-> outside the range even after. Full methodology and accuracy in
-> [`docs/en/HOW_THE_ESTIMATE_WORKS.md`](docs/en/HOW_THE_ESTIMATE_WORKS.md).
-
-### Shared across the app
-
-The preview area is a solid dark color on every editor; the transparency
-checkerboard (when turned on in settings) is dark too and only shows behind
-the photo, video, SVG or collage itself.
-
-The editors share one shell: a bottom tab bar where each tab opens its
-own panel over the preview, save/share/convert actions, and undo/redo. The
-last tab, **Configurações**, holds the dark-theme switch and the preview
-checkerboard toggle. Pop-ups close with an **X** in the top corner, and
-every "save to gallery" (including the video result screen) confirms with
-the same "Salvo!" pop-up. Every
-panel scrolls within a height cap, and collapsing it never drops the current
-selection. They also share one **color adjustment** panel — brightness,
-exposure, contrast, highlights, shadows, saturation, hue and temperature —
-driven by a single color matrix that the live preview and the FFmpeg export
-both use, so what you see is what gets encoded.
-
-In Editar imagem, Editar SVG and the collage, tapping the picture selects
-it: an outline appears with a **resize** handle and a **rotate** handle in
-the bottom corners. Pinch, drag or use the handles — the picture snaps to
-the center (a pink guide line shows up), to 100% size and to right angles
-when it gets close, and lets go as you keep moving. Double tap resets it.
-
-Every crop screen (photo, video, SVG and the collage photo crop) has a
-**window size** slider — 1% to 100% of the largest window of the same shape
-that fits, keeping the shape and the center — and a **Centralizar** button
-that moves the window to the middle without resizing it. Every text tab
-(photo, video, SVG and collage) has a **font size** slider from 1 to 80,
-where 1 is 1% of the image's shorter side; the resize handle keeps working
-alongside it. In the SVG editor, text is saved as real `<text>` elements —
-the file stays a vector, and the text stays editable in any SVG tool.
+## Features
 
 ### Video → GIF / WebP
 
-- Preview with a timeline, duration trim and crop (presets or custom)
-- Rotate in 90° steps and mirror horizontally or vertically — an output
-  step, so crop, frame and the size estimate keep working in the original
-  orientation (with an image frame, only the video inside it turns; see
-  below)
-- Speed 0.25x–4x, resolution as a percentage of the original (with pixel
-  preview), frame rate 5–24 fps, loop or play once
-- Output as GIF (256-color palette, two-pass conversion) or animated WebP
-  (full color, transparency, its own quality slider)
-- GIF color quality — up to 256 colors, five dithering levels, three
-  palette strategies
-- Size tab with the estimate, its confidence range and a destination
-  compatibility check, next to the "Measure" button
+- Timeline preview, trim and crop (presets or free)
+- Rotate in 90° steps and mirror
+- Speed 0.25×–4×, resolution as % of the original, 5–24 fps, loop or play once
+- GIF: up to 256 colors, five dithering levels, three palette strategies
+- **Size estimate** with a confidence range, destination checks and a
+  **Measure** button that calibrates on two short real conversions —
+  methodology in [`docs/en/HOW_THE_ESTIMATE_WORKS.md`](docs/en/HOW_THE_ESTIMATE_WORKS.md)
 
-### Frames (video and single photo)
+### Edit image
 
-Both editors split frames into two tabs: **Borda** (border) and **Moldura**
-(frame).
+- **Borda** (procedural border) and **Moldura** (bundled or imported phone
+  mockups, with automatic window detection)
+- Content fit — auto, fill, or zoom with a background color
+- **Magic eraser** — brush, lasso or rectangle; the background is rebuilt by
+  PatchMatch inpainting written in plain Dart (no model, no APK growth)
+- Transparent or solid background, color adjustment, stickers and text
 
-- **Borda** — procedural border: thin, medium or thick, with color and
-  corner rounding in 1% steps. Editar SVG has the same tab, and the border
-  is saved as vector paths
-- **Moldura** — image frame: bundled phone mockups, or your own with an
-  automatically-detected transparent window. A **90°** button, the last
-  option of the tab, turns the frame together with its content (the mockup
-  lies down, content and all)
-- Content fit — auto (fills when the proportions are close, otherwise fits
-  the whole picture with black bars), fill, or expand with zoom and a
-  **background color of your choice** inside the frame window
-- **Girar** (rotate/mirror) on both screens: without an image frame it
-  turns the finished result; with one, the frame stays upright and only the
-  photo/video inside its window turns
-- **Ajustar** (fit to content) crop on the single photo, in Editar SVG and in
-  the collage "Recortar foto": one tap trims only the fully transparent
-  margins around a PNG/SVG, snapping the crop to the visible pixels
-  (it can still be refined with the handles afterwards)
-- Transparent (real alpha on WebP/PNG) or solid-color background
+### Edit SVG
 
-### Magic eraser (single photo)
-
-- Paint over what you want gone — brush, lasso or rectangle, with a second
-  brush that takes back from the selection
-- The background behind it is rebuilt on-device by multi-scale PatchMatch
-  inpainting, written in plain Dart: **no model, no extra dependency and no
-  growth in APK size**
-- Pinch to zoom the preview for precise work; one finger paints, two zoom
-- Compact bottom panel sized for 360dp phones: a header with a badge that
-  shows whether a selection is ready, tool buttons with icons, brush size on
-  a single row, a three-way quality picker, and pill-shaped **Erase** /
-  **Clear** actions with "Undo stroke" underneath. Labels never truncate —
-  they shrink slightly to fit instead
-- Quality picker trades time for resolution. Small erases (a watermark, a
-  sign, someone far away) run at native resolution whatever you pick,
-  because only a window around the selection is processed
-- "Try again" reruns the same selection with a different seed, for when the
-  first fill doesn't convince
-- Best on sky, wall, grass, water, asphalt and sand; weakest where
-  structure has to line up behind the object (a face, text, a straight
-  architectural line) or where the erased area is a large part of the frame
+- Crop, rotate, mirror, background, filter, color, opacity and **border**
+- Stickers and text saved as real `<text>` / nested `<svg>` elements
+- Tolerant loading: gzip (`.svgz`), UTF-16 and SVGs without a declared size
 
 ### Photo collage
 
-- Layouts from a single row to a free grid (up to 6×6; switching to it
-  keeps the current rows and columns), with aspect ratio, margins and
-  borders per photo or for the whole montage. The aspect-ratio slider stays
-  on "x:y" while dragging, even when it passes a preset like 3:2
-- **Personalizada** layout for montages that aren't regular grids: a small
-  "+" on each side of every area splits it in two, with the new empty area
-  on that side (up to 16). An area leaves the montage through its "..."
-  menu ("Remover espaço")
-- Tap a photo to select it — only one at a time; tapping outside the
-  montage clears the selection. The "..." menu only shows on the selected
-  photo. Empty areas are a plain color block and never get a border, in the
-  preview or in the saved file
-- Background — transparent, solid color or an imported image, set
-  separately for the montage and for the photos inside it
-- **Áreas** tab: tap a photo to show its small resize handles on each side
-  it shares with a neighbor, and drag them; the photos being resized are
-  outlined while dragging. A top/bottom handle only moves the two photos of
-  that column; a side handle moves the two columns it separates. Dragging
-  inside a photo still moves the picture. With a photo selected, a
-  "Área selecionada" card sets its width and height in %, plus
-  "Redefinir área" (that photo back to the default size) and "Tamanhos
-  iguais" (all of them). **Travar área** fixes an area's size: its handles
-  and sliders turn off, and dragging a neighbor slides the locked area
-  along whole — the next area over is the one that shrinks. Changing the
-  layout or the photo count resets every area to the default size
-- "Remover foto" in a photo's "..." menu empties that area (undoable)
-- Photos with transparency (SVG or cut-out PNG) always show the collage
-  background through them in the preview, just like the export
-- Per-photo replace, crop, rotate and flip from the cell menu; color
-  adjustment for one photo or for all of them at once
-- Stickers (bundled or your own, organized in folders) and text with
-  imported fonts — the same "Stickers" tab is also in Editar imagem, Editar
-  vídeo and Editar SVG (exported into the photo, onto every video/GIF frame,
-  and into the SVG as a nested vector `<svg>` or an embedded `<image>`)
-- Animated export (PNG, GIF or WebP) whenever a photo in the collage is
-  itself animated — animated frames are decoded only at the size each area
-  needs, so large animated WebPs export without running out of memory
+- **Layouts** — row, column, fixed grids, free grid up to 6×6, and
+  **Personalizada**: a "+" on each side of an area splits it, for montages
+  that are not regular grids (up to 16 areas)
+- **Áreas** — drag the handles between photos or set width/height in %;
+  **Travar área** keeps an area's size fixed and slides it along when a
+  neighbor is resized
+- Aspect ratio (presets or free), margins, border and corner rounding for
+  the montage and for the photos
+- Background — transparent, color or image, for the montage and per photo
+- Per-photo replace, crop, rotate, flip, recenter and color adjustment
+- Stickers (bundled or imported, in folders) and text with imported fonts
+- Animated export (GIF or WebP) when any photo is animated, with frames
+  decoded only at the size each area needs
 
 ### Convert format
 
-Picks up any video, GIF or animated WebP from the system gallery and
-re-encodes it to GIF, WebP or MP4, with a resolution slider and the
-source's own format disabled in the picker. Static photos are rejected
-up front — there is a dedicated tool for those. Animated WebPs open
-instantly (only the header is read) and are decoded at the target size when
-converting, with progress from the first frame; **Cancelar** closes the
-dialog right away.
+- Video, GIF or animated WebP → GIF, WebP or MP4, with a resolution slider
+- Animated WebPs open instantly; conversion shows progress from the start
+  and can be cancelled at any time
 
-## How to run it
+### Common to all editors
 
-Requires Flutter 3.44+ (Dart 3.12+) and the Android SDK (API 36) with NDK
-installed.
+- One editor shell: bottom tabs, a collapsible panel, undo/redo, save and share
+- **Tap to select** the picture: resize and rotate handles, with snapping
+  to the center (pink guide), to 100% and to right angles
+- Crop with a window-size slider, **Centralizar** and **Ajustar** (trims
+  transparent margins)
+- Shared color adjustment — brightness, exposure, contrast, highlights,
+  shadows, saturation, hue and temperature — identical in preview and export
+- **Configurações** tab with dark theme and preview checkerboard
+- Confirmation pop-up on every save to the gallery
+
+## Download
+
+Each [Release](https://github.com/lianeheidemann/video-to-gif/releases)
+ships ready-to-install APKs:
+
+| File | Use |
+|---|---|
+| `arm64-v8a` | Recommended — virtually every current Android phone |
+| `armeabi-v7a` | Older 32-bit devices |
+| `universal` | Any device (larger download) |
+
+Pre-releases named `teste-N` are test builds, not stable versions.
+
+## Development
+
+**Requirements:** Flutter 3.47.0 (Dart 3.12+), Android SDK (API 36) and NDK.
 
 ```bash
 git clone https://github.com/lianeheidemann/video-to-gif.git
 cd video-to-gif
-```
-```
 flutter pub get
 flutter test
-```
-```
 flutter run
 ```
 
-### Build the release APK
-
-```bash
-flutter build apk --release
-```
-
-The APK is written to `build/app/outputs/flutter-apk/app-release.apk`. For
-split APKs per ABI instead of one universal build (smaller downloads, closer
-to what [Releases](https://github.com/lianeheidemann/video-to-gif/releases) ship), add `--split-per-abi`:
+Release build:
 
 ```bash
 flutter build apk --release --split-per-abi
 ```
 
-CI pins the Flutter version to **3.47.0** (`FLUTTER_VERSION` in
-`.github/workflows/ci.yml`). If `dart format` complains there but passes on
-your machine, run it on that same version.
+CI pins Flutter to **3.47.0** (`FLUTTER_VERSION` in the workflows). Run
+`dart format` on that version if formatting differs locally.
 
-## Structure
+### Continuous integration
+
+| Workflow | Trigger | Result |
+|---|---|---|
+| `ci.yml` | Every push and PR | Asset-list check, formatting, analysis, tests and a debug APK |
+| `release.yml` | Manual or version tag | Tests, then arm64, armeabi-v7a and universal APKs (plus the AAB when signing keys are set) in a new Release |
+| `apk-testes.yml` | Manual, any branch | A single arm64 APK in ~3 min, published as a `teste-N` pre-release; the run summary links the APK |
+
+The build workflows keep a Gradle cache between runs, and test builds are
+signed with the release key and version code, so they install over the
+published version.
+
+### Project structure
 
 ```
 lib/
-├── main.dart     # entry point — stays at the root: `flutter build` targets it by default
-├── app/          # theme, licenses and app-wide controllers
-├── core/         # code shared by two or more features
-│   ├── ffmpeg/   # probe, filter graphs and arguments for GIF/WebP/MP4
-│   ├── models/   # settings and value objects shared by the editors
-│   ├── painting/ # reusable painters
-│   ├── services/ # asset stores, output and size estimation
-│   └── ui/       # shared controls, crop tools and frame panels
-└── features/     # screens and code owned by each user-facing tool
-    ├── collage/  # photo collage, panels, compositor and export
-    ├── home/     # home screen and entry points
-    ├── photo/    # single-photo editor
-    ├── quick_convert/ # quick format conversion
-    ├── svg/      # SVG editor
-    └── video/    # video editor, conversion and result screens
-
-test/           # see "Quality" below
-tool/           # icon generation, the accuracy script and the asset-list sync
-
-assets/
-├── background/ # ready-made backgrounds for the collage
-├── fonts/      # fonts offered for collage text
-├── frame/      # ready-made image frames
-└── sticker/    # ready-made stickers, one folder per theme
-
-.github/workflows/
-├── ci.yml         # formatting, analysis, tests and a debug APK
-├── release.yml    # publishes the APKs to a Release
-└── apk-testes.yml # one quick arm64 APK as a pre-release, for testing
+├── main.dart
+├── app/          # theme, licenses, app-wide controllers
+├── core/         # shared code: ffmpeg, models, painting, services, ui
+└── features/     # one folder per tool
+    ├── collage/  ├── home/  ├── photo/
+    ├── quick_convert/  ├── svg/  └── video/
+test/             # unit, widget and golden-pixel tests
+tool/             # icon generation, accuracy script, asset-list sync
+assets/           # backgrounds, fonts, frames, stickers
+docs/             # en and pt-Br documentation
 ```
 
-The project follows a **feature-first** layout. Code that belongs to a single
-tool stays under `features/<feature>`; only genuinely reusable code lives in
-`core`. Large workflows are split into focused components instead of being
-kept inside page widgets: FFmpeg command construction is separated into
-probe, filter-graph and format-specific argument modules, while the collage
-editor has independent panels, cell actions, rendering and export services.
+The layout is **feature-first**: code owned by one tool stays in
+`features/<tool>`, and only reusable code lives in `core`. Preview and
+export share the same painters and FFmpeg argument builders, so what is
+shown is what gets saved.
 
-Shared editing behavior is also centralized. The video and photo editors use
-the same frame controls, the three image editors use the same crop controller,
-and repeated panel rows, asset thumbnails and text controls are reusable
-widgets. This keeps preview and export behavior aligned while making each
-part easier to test and change without affecting unrelated tools.
+### Adding bundled art
 
-### Adding art to the app
-
-Drop a file into `assets/fonts`, `assets/frame` or `assets/sticker` and
-build — the app reads those folders at startup, so it shows up on its own.
-Fonts are registered under a family name derived from the filename;
-frames get their transparent window auto-detected; stickers land in a
-"Novos" folder that only appears once it has something in it. A **new
-sub-folder** is the one case needing a command first, since Flutter's asset
-declaration isn't recursive:
+Drop files into `assets/fonts`, `assets/frame` or `assets/sticker` and
+build — they are discovered at startup. A **new sub-folder** also needs:
 
 ```bash
-python3 tool/sincronizar_assets.py   # rewrites the assets: list in pubspec.yaml
+python3 tool/sincronizar_assets.py
 ```
 
-CI runs this in check mode on every push, so a forgotten sub-folder can't
-reach a release unnoticed.
-
-`size_estimator.dart` is pure Dart, with no Flutter or FFmpeg dependency,
-so it's fully testable without an emulator — the same is true of
-`collage_painter.dart`, which draws both the live preview and the exported
-frames from one code path.
+CI checks this on every push.
 
 ## Quality
 
-**580+ automated tests** cover the estimation model against real FFmpeg
-output, the size and quality panels, frame and crop geometry, the export
-arguments for every format, the import stores, and the collage — framing,
-color, layout, compositing against golden pixels and the animation
-timeline. They also cover the shared crop controller introduced by the
-feature-based modularization, and the rotate/flip step applied on export.
-
-`tool/medir_precisao.py` produces five synthetic videos, from a static title
-card to incompressible noise, converts each and records the sizes; a test
-feeds those measurements back through the model and checks the error. Once
-calibrated, the prediction lands within **±1% for three of the five cases,
-−7% for the fourth**. Full table, including the cases that still miss, in
-[`docs/en/HOW_THE_ESTIMATE_WORKS.md`](docs/en/HOW_THE_ESTIMATE_WORKS.md).
-
-`.github/workflows/ci.yml` runs formatting, analysis, the full test suite
-and a debug APK build on every push — the APK build catches Gradle,
-manifest-merging and native-packaging issues the other steps can't see.
-
-Two manual workflows build installable APKs, both with a Gradle cache
-between runs so only the Dart code is recompiled:
-
-- **Release** (`release.yml`) runs the tests and publishes the arm64,
-  armeabi-v7a and universal APKs (plus the Play Store AAB when signing keys
-  are set) as a new Release.
-- **APK para testes** (`apk-testes.yml`) skips the tests and builds a single
-  arm64 APK from any branch, in about 3 minutes once the cache is warm. It
-  goes to a **pre-release** (`teste-N`, never marked "Latest"), and the
-  run's Summary links straight to the APK. It uses the same signing key and
-  version code as the latest Release, so it installs over it.
-
-## Download the APK
-
-Every published version becomes a
-[Release](https://github.com/lianeheidemann/video-to-gif/releases)
-with ready-to-install APKs — start with `arm64-v8a`, which covers
-practically every current Android phone. `universal` is larger, but works
-on any device.
+- **580+ automated tests** — size model, FFmpeg arguments, crop and frame
+  geometry, collage layout and compositing (golden pixels), animation
+  timeline, SVG export and editor interactions
+- `tool/medir_precisao.py` measures the size model against real FFmpeg
+  output; once calibrated it lands within ±1% on three of five reference
+  videos
 
 ## Stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| Interface | Flutter 3.44 (Material 3) | one codebase, with a native Android look |
-| Conversion | `ffmpeg_kit_flutter_new_video` ([FFmpeg](https://github.com/FFmpeg/FFmpeg) LGPL) | variant without GPL components (bundles libwebp for WebP export), allows closed-source distribution |
-| File picking | `file_picker` | uses the system picker, no media permission required |
-| Preview | `video_player` | shows the clip and crop frame before converting |
-| Frame and sticker art | `flutter_svg` | renders the bundled and imported vector art without losing sharpness at any output resolution |
-| Collage rendering | `dart:ui` (`PictureRecorder`) | the same painter draws the live preview and the exported frames |
-| Magic eraser | plain Dart in an `Isolate` | PatchMatch inpainting with no ML runtime and no new dependency — nothing added to the APK, and it keeps working offline |
-| Output | `gal` + `share_plus` | save to gallery and share |
+| Layer | Choice |
+|---|---|
+| UI | Flutter (Material 3) |
+| Conversion | `ffmpeg_kit_flutter_new_video` — [FFmpeg](https://github.com/FFmpeg/FFmpeg), LGPL build with libwebp |
+| Rendering | `dart:ui` — one painter for preview and export |
+| Vector art | `flutter_svg`, `xml` |
+| Files and output | `file_picker`, `gal`, `share_plus` |
+| Magic eraser | Plain Dart PatchMatch in an `Isolate` |
 
 ## License
 
-App code: Proprietary — all rights reserved (see [LICENSE](LICENSE)).
-FFmpeg: LGPL-2.1-or-later — attribution in [`NOTICE`](NOTICE), details and
-obligations in [`docs/en/LICENSES.md`](docs/en/LICENSES.md).
+App code: proprietary — all rights reserved ([LICENSE](LICENSE)).
+FFmpeg: LGPL-2.1-or-later — attribution in [`NOTICE`](NOTICE), details in
+[`docs/en/LICENSES.md`](docs/en/LICENSES.md).
 
 ---
 
