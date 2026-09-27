@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="120" src="assets/icon/icon-v2/morceguinho-icone-simples.png" alt="GitBat"/>
+<img width="160" src="assets/readme/gitbat-logo.png" alt="GitBat"/>
 
 # GitBat
 
