@@ -13,7 +13,8 @@ const collageColorSwatches = <Color>[
   Color(0xFFC9A8FF),
   Color(0xFFE57373),
   Color(0xFF58C78C),
-  Color(0xFFB8B36A),
+  // Amarelo vivo (antes, um amarelo-oliva apagado).
+  Color(0xFFFFD54F),
   Color(0xFF64B5F6),
   Color(0xFFE6A15D),
 ];

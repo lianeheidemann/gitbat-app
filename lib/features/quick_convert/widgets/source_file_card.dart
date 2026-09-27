@@ -73,6 +73,8 @@ class SourceFileCard extends StatelessWidget {
                       thumbnail!,
                       width: 56,
                       height: 56,
+                      // GIF/WebP grandes decodificam direto em miniatura.
+                      cacheWidth: 168,
                       fit: BoxFit.cover,
                       gaplessPlayback: true,
                       errorBuilder: (_, _, _) => Icon(

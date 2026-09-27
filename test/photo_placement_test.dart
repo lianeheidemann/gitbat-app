@@ -154,4 +154,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(placement(), PhotoPlacement.identity);
   });
+
+  testWidgets('Editar imagem: tocar na foto mostra alças; a de '
+      'redimensionar aumenta com um dedo e a de girar gira', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final dir = Directory.systemTemp.createTempSync('placement_handles');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final photo = (await tester.runAsync(() => _photo(dir)))!;
+    tester.view.physicalSize = const Size(500, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(home: PhotoFramePage(photo: photo)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Girar').last);
+    await tester.pumpAndSettle();
+
+    PhotoPlacement placement() => tester
+        .widget<PhotoPlacementView>(find.byType(PhotoPlacementView))
+        .placement;
+    final resize = find.byKey(const ValueKey('photoResizeHandle'));
+    expect(resize, findsNothing);
+    await tester.tap(find.byKey(const ValueKey('photoPlacementGesture')));
+    // O toque simples só vale depois do tempo de um toque duplo.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(resize, findsOneWidget);
+    expect(find.byKey(const ValueKey('photoRotateHandle')), findsOneWidget);
+
+    // Puxar a alça de canto para dentro diminui a foto.
+    await tester.drag(resize, const Offset(-160, -90));
+    await tester.pumpAndSettle();
+    expect(placement().scale, lessThan(0.9));
+
+    // Arrastar a foto na vertical também a move (a rolagem da página não
+    // pode roubar o gesto).
+    final before = placement().dy;
+    final g = await tester.startGesture(
+      tester.getCenter(find.byKey(const ValueKey('photoPlacementGesture'))),
+    );
+    for (var i = 0; i < 6; i++) {
+      await g.moveBy(const Offset(0, 10));
+      await tester.pump();
+    }
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(placement().dy, greaterThan(before));
+
+    final rotate = find.byKey(const ValueKey('photoRotateHandle'));
+    await tester.drag(rotate, const Offset(0, 80));
+    await tester.pumpAndSettle();
+    expect(placement().rotation, isNot(0));
+  });
 }
