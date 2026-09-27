@@ -376,24 +376,27 @@ class _CollageCellViewState extends State<CollageCellView> {
   List<Widget> _handles(ThemeData theme) {
     final size = widget.cellSize;
     final center = Offset(size.width / 2, size.height / 2);
+    // Bolinha encostada no canto (por dentro); a área de toque fica presa
+    // no mesmo canto, maior que o desenho.
     const touch = 40.0;
-    const inset = 4.0;
-    final resizeAt = Offset(
-      size.width - inset - touch / 2,
-      size.height - inset - touch / 2,
-    );
-    final rotateAt = Offset(inset + touch / 2, size.height - inset - touch / 2);
+    const dot = 22.0;
+    const inset = 3.0;
+    const d = inset + dot / 2;
+    final resizeAt = Offset(size.width - d, size.height - d);
+    final rotateAt = Offset(d, size.height - d);
 
     Widget handle({
       required Key key,
       required Offset at,
+      required bool right,
       required IconData icon,
       required void Function(Offset delta) onDrag,
     }) {
       return Positioned(
         key: key,
-        left: at.dx - touch / 2,
-        top: at.dy - touch / 2,
+        left: right ? null : 0,
+        right: right ? 0 : null,
+        bottom: 0,
         width: touch,
         height: touch,
         child: RawGestureDetector(
@@ -419,16 +422,23 @@ class _CollageCellViewState extends State<CollageCellView> {
                   };
                 }),
           },
-          child: Center(
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: theme.colorScheme.surface, width: 2),
+          child: Padding(
+            padding: const EdgeInsets.all(inset),
+            child: Align(
+              alignment: right ? Alignment.bottomRight : Alignment.bottomLeft,
+              child: Container(
+                width: dot,
+                height: dot,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: theme.colorScheme.surface,
+                    width: 2,
+                  ),
+                ),
+                child: Icon(icon, size: 12, color: theme.colorScheme.onPrimary),
               ),
-              child: Icon(icon, size: 13, color: theme.colorScheme.onPrimary),
             ),
           ),
         ),
@@ -448,6 +458,7 @@ class _CollageCellViewState extends State<CollageCellView> {
       handle(
         key: const ValueKey('cellResizeHandle'),
         at: resizeAt,
+        right: true,
         icon: Icons.open_in_full_rounded,
         onDrag: (delta) {
           _handlePos += delta;
@@ -463,6 +474,7 @@ class _CollageCellViewState extends State<CollageCellView> {
       handle(
         key: const ValueKey('cellRotateHandle'),
         at: rotateAt,
+        right: false,
         icon: Icons.rotate_right_rounded,
         onDrag: (delta) {
           _handlePos += delta;
