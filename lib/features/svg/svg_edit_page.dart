@@ -32,6 +32,7 @@ import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import '../../core/ui/saved_dialog.dart';
+import '../../core/services/opaque_bounds.dart';
 
 /// Sentinela do preset "Personalizado" na fileira de proporções — mesma
 /// ideia de `_customAspectPreset` em `editor_page.dart`: não é uma proporção
@@ -39,6 +40,11 @@ import '../../core/ui/saved_dialog.dart';
 /// [AspectPreset.presets], usado pra saber quando mostrar os campos de
 /// largura/altura em vez de travar a uma proporção fixa.
 const _customAspectPreset = AspectPreset('Personalizado', -1);
+
+/// "Ajustar": encosta o recorte no desenho, cortando só a margem totalmente
+/// transparente — a mesma opção de "Editar imagem" (ver
+/// `opaque_bounds.dart`). Como "Personalizado", o -2 nunca vira razão.
+const _trimAspectPreset = AspectPreset('Ajustar', -2);
 
 /// Tela de recorte/edição de um SVG — mantém o arquivo como vetor o tempo
 /// todo: a prévia é só composição de widgets (nunca mexe no XML), e o XML só
@@ -415,7 +421,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
               crop: crop == null ? null : _toDisplayCrop(crop),
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
-              freeform: _aspect == _customAspectPreset,
+              freeform: _isFreeformAspect,
             ),
           ],
         ),
@@ -492,7 +498,9 @@ class _SvgEditPageState extends State<SvgEditPage> {
   Widget _cropSection() {
     final crop = _settings.crop;
     final visiblePresets = <AspectPreset>[
-      ...AspectPreset.presets,
+      AspectPreset.presets.first,
+      _trimAspectPreset,
+      ...AspectPreset.presets.skip(1),
       _customAspectPreset,
     ];
 
@@ -509,7 +517,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
         ),
         if (crop != null) ...[
           const SizedBox(height: 18),
-          if (_aspect == _customAspectPreset) ...[
+          if (_isFreeformAspect) ...[
             CropSizeSummary(crop: crop),
             const SizedBox(height: 12),
             CropSizeInputs(
@@ -549,6 +557,10 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// remove o recorte ("Original") ou centraliza um recorte na proporção
   /// fixa selecionada.
   void _selectAspectPreset(AspectPreset preset) {
+    if (preset == _trimAspectPreset) {
+      _trimTransparentEdges();
+      return;
+    }
     setState(() {
       _aspect = preset;
 
@@ -568,9 +580,49 @@ class _SvgEditPageState extends State<SvgEditPage> {
     });
   }
 
-  /// Proporção travada pelo preset atual, ou `null` em "Personalizado".
-  double? get _lockedRatio =>
-      _aspect == _customAspectPreset ? null : _aspect.ratio;
+  /// Recorte sem proporção travada: "Personalizado" e "Ajustar".
+  bool get _isFreeformAspect =>
+      _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
+
+  /// Proporção travada pelo preset atual, ou `null` num recorte livre.
+  double? get _lockedRatio => _isFreeformAspect ? null : _aspect.ratio;
+
+  bool _trimming = false;
+
+  /// "Ajustar": rasteriza o SVG no espaço original do recorte e encosta a
+  /// janela nos pixels visíveis.
+  Future<void> _trimTransparentEdges() async {
+    if (_trimming) return;
+    setState(() => _trimming = true);
+    CropRect? bounds;
+    try {
+      bounds = await detectSvgOpaqueBounds(
+        widget.svg.path,
+        _sourceWidth,
+        _sourceHeight,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _trimming = false);
+      _message('Não foi possível ler o SVG.');
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _trimming = false);
+    if (bounds == null) {
+      _message('O SVG está todo transparente.');
+      return;
+    }
+    if (bounds.x == 0 &&
+        bounds.y == 0 &&
+        bounds.width == _sourceWidth &&
+        bounds.height == _sourceHeight) {
+      _message('O SVG não tem bordas transparentes para remover.');
+      return;
+    }
+    _aspect = _trimAspectPreset;
+    _update(_settings.copyWith(crop: bounds));
+  }
 
   void _applyCropWidth(String value) {
     final parsed = int.tryParse(value.trim());

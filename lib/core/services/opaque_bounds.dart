@@ -1,13 +1,16 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import '../../../core/models/crop_rect.dart';
+import '../models/crop_rect.dart';
+import '../painting/frame_painter.dart' show rasterizeSvgFile;
 
-// A opção "Ajustar ao conteúdo" da aba "Recorte" de "Editar imagem": acha o
-// menor retângulo que ainda contém todo pixel visível da foto, para cortar
-// só as faixas totalmente transparentes em volta do desenho.
+// A opção "Ajustar" dos recortes (Editar imagem, Editar SVG e o recorte de
+// foto da Montagem): acha o menor retângulo que ainda contém todo pixel
+// visível, para cortar só as faixas totalmente transparentes em volta do
+// desenho.
 
 /// Alfa até este valor (~3% de opacidade) conta como transparente.
 ///
@@ -74,16 +77,54 @@ CropRect? opaqueBounds(Uint8List rgba, int width, int height) {
 /// Decodifica a foto em [path] e devolve [opaqueBounds] dela. A varredura
 /// roda num isolate à parte: numa foto de 12 MP são 48 MB de bytes, o
 /// bastante para travar a tela por um instante.
-Future<CropRect?> detectOpaqueBounds(String path) async {
-  final bytes = await File(path).readAsBytes();
+///
+/// Com [width]/[height], o resultado sai nessa escala em vez da do arquivo
+/// decodificado — para quem guarda o recorte num tamanho de exibição que
+/// não bate pixel a pixel com o arquivo.
+Future<CropRect?> detectOpaqueBounds(
+  String path, {
+  int? width,
+  int? height,
+}) async {
+  final image = await _decode(await File(path).readAsBytes());
+  return _boundsOf(image, width ?? image.width, height ?? image.height);
+}
+
+/// Mesma coisa de [detectOpaqueBounds] para um SVG, medido no espaço de
+/// [width]x[height]. O desenho é rasterizado maior (até ~1024 px no lado
+/// maior) para um ícone pequeno não perder precisão na borda.
+Future<CropRect?> detectSvgOpaqueBounds(
+  String path,
+  int width,
+  int height,
+) async {
+  final longest = math.max(width, height);
+  final scale = longest <= 0 ? 1.0 : (1024 / longest).clamp(1.0, 8.0);
+  final png = await rasterizeSvgFile(
+    path,
+    (width * scale).round().clamp(1, 1 << 14),
+    (height * scale).round().clamp(1, 1 << 14),
+  );
+  return _boundsOf(await _decode(png), width, height);
+}
+
+Future<ui.Image> _decode(Uint8List bytes) async {
   final codec = await ui.instantiateImageCodec(bytes);
-  final ui.Image image;
   try {
-    image = (await codec.getNextFrame()).image;
+    return (await codec.getNextFrame()).image;
   } finally {
     codec.dispose();
   }
+}
 
+/// [opaqueBounds] de [image], convertido para o espaço [targetWidth]x
+/// [targetHeight] — arredondando para fora, para nunca cortar um pixel
+/// visível. Libera [image].
+Future<CropRect?> _boundsOf(
+  ui.Image image,
+  int targetWidth,
+  int targetHeight,
+) async {
   try {
     // `rawRgba` vem pré-multiplicado, mas o canal alfa em si não muda.
     final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
@@ -91,7 +132,22 @@ Future<CropRect?> detectOpaqueBounds(String path) async {
     final rgba = data.buffer.asUint8List();
     final width = image.width;
     final height = image.height;
-    return await Isolate.run(() => opaqueBounds(rgba, width, height));
+    final bounds = await Isolate.run(() => opaqueBounds(rgba, width, height));
+    if (bounds == null) return null;
+    if (width == targetWidth && height == targetHeight) return bounds;
+    final sx = targetWidth / width;
+    final sy = targetHeight / height;
+    final left = (bounds.x * sx).floor().clamp(0, targetWidth - 1);
+    final top = (bounds.y * sy).floor().clamp(0, targetHeight - 1);
+    final right = ((bounds.x + bounds.width) * sx).ceil().clamp(
+      left + 1,
+      targetWidth,
+    );
+    final bottom = ((bounds.y + bounds.height) * sy).ceil().clamp(
+      top + 1,
+      targetHeight,
+    );
+    return CropRect(x: left, y: top, width: right - left, height: bottom - top);
   } finally {
     image.dispose();
   }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../models/crop_rect.dart';
+import '../../services/opaque_bounds.dart';
 import 'crop_controller.dart';
 import 'crop_overlay.dart';
 import 'crop_size_fields.dart';
@@ -155,6 +156,55 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
     });
   }
 
+  static const _trimLabel = 'Ajustar';
+  bool _trimming = false;
+
+  /// "Ajustar": recorte livre encostado nos pixels visíveis da foto,
+  /// cortando só a margem totalmente transparente (`opaque_bounds.dart`).
+  Future<void> _trimTransparentEdges() async {
+    if (_trimming) return;
+    _trimming = true;
+    CropRect? bounds;
+    try {
+      bounds = await detectOpaqueBounds(
+        widget.photoPath,
+        width: widget.photoWidth,
+        height: widget.photoHeight,
+      );
+    } catch (_) {
+      bounds = null;
+      _trimming = false;
+      _snack('Não foi possível ler a imagem.');
+      return;
+    }
+    _trimming = false;
+    if (!mounted) return;
+    if (bounds == null) {
+      _snack('A imagem está toda transparente.');
+      return;
+    }
+    final found = bounds;
+    if (found.x == 0 &&
+        found.y == 0 &&
+        found.width == widget.photoWidth &&
+        found.height == widget.photoHeight) {
+      _snack('A imagem não tem bordas transparentes para remover.');
+      return;
+    }
+    setState(() {
+      _selectedLabel = _trimLabel;
+      _lockedRatio = null;
+      _crop = found;
+    });
+  }
+
+  void _snack(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
   /// Se a proporção digitada bater com um preset já na fileira (ou com "Da
   /// célula"), seleciona esse chip existente em vez de duplicar o mesmo
   /// número num chip "Personalizada…" à parte — dois chips mostrando "2:1"
@@ -269,6 +319,12 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
             for (final preset in _cropRatioPresets) ...[
               _ratioChip(preset.$1, () => _selectRatio(preset.$1, preset.$2)),
               const SizedBox(width: 8),
+              // "Ajustar" logo depois de "Livre": encosta o recorte no
+              // desenho, como em "Editar imagem" e "Editar SVG".
+              if (preset.$2 == null) ...[
+                _ratioChip(_trimLabel, _trimTransparentEdges),
+                const SizedBox(width: 8),
+              ],
             ],
             _ratioChip(
               'Da célula',

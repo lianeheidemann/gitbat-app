@@ -16,7 +16,7 @@ import 'models/eraser_mask.dart';
 import '../../core/services/imported_frame_store.dart';
 import '../../core/services/output_service.dart';
 import 'services/magic_eraser.dart';
-import 'services/opaque_bounds.dart';
+import '../../core/services/opaque_bounds.dart';
 import 'services/photo_frame_compositor.dart';
 import '../../core/ui/app_bar_title.dart';
 import '../../core/ui/checkerboard_background.dart';
@@ -57,11 +57,11 @@ const _selectableContentFitModes = [
 /// travar largura/altura entre si.
 const _customAspectPreset = AspectPreset('Personalizado', -1);
 
-/// "Ajustar ao conteúdo": também não é uma proporção (o -2 nunca vira razão).
+/// "Ajustar": também não é uma proporção (o -2 nunca vira razão).
 /// Tocar nele encosta o recorte nos pixels visíveis, cortando só a margem
 /// totalmente transparente (ver `opaque_bounds.dart`); depois disso o recorte
 /// fica livre como em "Personalizado", para a pessoa refinar se quiser.
-const _trimAspectPreset = AspectPreset('Ajustar ao conteúdo', -2);
+const _trimAspectPreset = AspectPreset('Ajustar', -2);
 
 /// Tela dedicada a aplicar uma moldura (procedural ou de imagem) a uma foto
 /// estática. Reaproveita o mesmo modelo ([FrameSettings], [ImageFrameAsset])
@@ -836,7 +836,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     });
   }
 
-  /// Recorte sem proporção travada: "Personalizado" e "Ajustar ao conteúdo".
+  /// Recorte sem proporção travada: "Personalizado" e "Ajustar".
   bool get _isFreeformAspect =>
       _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
 
@@ -851,7 +851,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final path = _photo.path;
     CropRect? bounds;
     try {
-      bounds = await detectOpaqueBounds(path);
+      bounds = await detectOpaqueBounds(
+        path,
+        width: _photo.width,
+        height: _photo.height,
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _trimming = false);

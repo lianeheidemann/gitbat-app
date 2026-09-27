@@ -115,8 +115,9 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
 - **Girar** (rotate/mirror) on both screens: without an image frame it
   turns the finished result; with one, the frame stays upright and only the
   photo/video inside its window turns
-- **Fit to content** crop on the single photo: one tap trims only the fully
-  transparent margins around a PNG, snapping the crop to the visible pixels
+- **Ajustar** (fit to content) crop on the single photo, in Editar SVG and in
+  the collage "Recortar foto": one tap trims only the fully transparent
+  margins around a PNG/SVG, snapping the crop to the visible pixels
   (it can still be refined with the handles afterwards)
 - Transparent (real alpha on WebP/PNG) or solid-color background
 
