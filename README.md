@@ -13,7 +13,11 @@ directly on Android — privately and offline.**
 
 <img src="assets/linha-morceguinho.svg"/>
 
-<img src="assets/gif/video-to-gif-interface-v3.webp"/><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/interface-v2/gitbat-interface-escuro.webp">
+  <source media="(prefers-color-scheme: light)" srcset="assets/interface-v2/gitbat-interface-claro.webp">
+  <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro.webp">
+</picture><br>
 
 **[⬇ Download the latest APK](https://github.com/lianeheidemann/gitbat-app/releases/latest)**
 
