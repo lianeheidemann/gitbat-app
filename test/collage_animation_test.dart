@@ -263,4 +263,52 @@ void main() {
     expect(afterEnd[3], 255, reason: 'a foto curta não pode sumir no fim');
     expect(last, afterEnd);
   });
+
+  test('a mesma animação em duas áreas anda junto, quadro a quadro', () async {
+    // Os quadros são lidos um por vez (sem guardar todos na memória); uma
+    // foto repetida em duas áreas usa o mesmo quadro nas duas.
+    final longo = '${tempDir.path}/longo.gif';
+    await _writeAnimatedGif(longo, frames: 8, delayCentiseconds: 10);
+    final workDir = await Directory('${tempDir.path}/par').create();
+    final sequence = await renderCollageFrames(
+      settings: settingsWith([longo, longo]),
+      outputWidth: 80,
+      rule: CollageDurationRule.longest,
+      workDir: workDir,
+    );
+    final files = workDir.listSync().whereType<File>().toList()
+      ..sort((a, b) => a.path.compareTo(b.path));
+    expect(files.length, sequence.frameCount);
+
+    Future<(List<int>, List<int>)> pixels(File file) async {
+      final codec = await ui.instantiateImageCodec(await file.readAsBytes());
+      final frame = await codec.getNextFrame();
+      try {
+        final data = await frame.image.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        );
+        List<int> at(int x) {
+          final o = (10 * frame.image.width + x) * 4;
+          return [
+            data!.getUint8(o),
+            data.getUint8(o + 1),
+            data.getUint8(o + 2),
+          ];
+        }
+
+        return (at(10), at(frame.image.width - 10));
+      } finally {
+        frame.image.dispose();
+        codec.dispose();
+      }
+    }
+
+    final seen = <String>{};
+    for (final file in files) {
+      final (left, right) = await pixels(file);
+      expect(left, right, reason: 'as duas áreas mostram o mesmo quadro');
+      seen.add(left.join(','));
+    }
+    expect(seen.length, greaterThan(1), reason: 'a animação avança');
+  });
 }
