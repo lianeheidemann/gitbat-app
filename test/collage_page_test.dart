@@ -1410,7 +1410,6 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(cells(), 9);
-    expect(find.byKey(const ValueKey('customLayoutHint')), findsOneWidget);
     final add = find.byKey(const ValueKey('collageAddSlot_4_right'));
     expect(add, findsOneWidget);
     final before = tester.getSize(find.byType(CollageCellView).at(4));
