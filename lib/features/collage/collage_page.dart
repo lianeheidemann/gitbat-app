@@ -845,34 +845,46 @@ class _CollagePageState extends State<CollagePage> {
     if (_settings.cells.length >= CollageLayout.maxCustomCells) {
       return const [];
     }
-    const size = 28.0;
-    const inset = 6.0;
+    // Bolinha pequena encostada na borda, por dentro; a área de toque é
+    // maior que o desenho para o dedo acertar.
+    const dot = 20.0;
+    const touch = 32.0;
+    const inset = 2.0;
     final scheme = Theme.of(context).colorScheme;
     final buttons = <Widget>[];
     for (var i = 0; i < geometry.cellRects.length; i++) {
       final r = geometry.cellRects[i];
+      const d = inset + dot / 2;
       final centers = {
-        CollageSide.left: Offset(r.left + inset + size / 2, r.center.dy),
-        CollageSide.right: Offset(r.right - inset - size / 2, r.center.dy),
-        CollageSide.top: Offset(r.center.dx, r.top + inset + size / 2),
-        CollageSide.bottom: Offset(r.center.dx, r.bottom - inset - size / 2),
+        CollageSide.left: Offset(r.left + d, r.center.dy),
+        CollageSide.right: Offset(r.right - d, r.center.dy),
+        CollageSide.top: Offset(r.center.dx, r.top + d),
+        CollageSide.bottom: Offset(r.center.dx, r.bottom - d),
       };
       for (final MapEntry(key: side, value: c) in centers.entries) {
         buttons.add(
           Positioned(
             key: ValueKey('collageAddSlot_${i}_${side.name}'),
-            left: c.dx - size / 2,
-            top: c.dy - size / 2,
-            width: size,
-            height: size,
-            child: Material(
-              color: scheme.primary,
-              shape: const CircleBorder(),
-              elevation: 2,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => _addSlot(i, side),
-                child: Icon(Icons.add, size: 18, color: scheme.onPrimary),
+            left: c.dx - touch / 2,
+            top: c.dy - touch / 2,
+            width: touch,
+            height: touch,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _addSlot(i, side),
+              child: Center(
+                child: Container(
+                  width: dot,
+                  height: dot,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x40000000), blurRadius: 3),
+                    ],
+                  ),
+                  child: Icon(Icons.add, size: 14, color: scheme.onPrimary),
+                ),
               ),
             ),
           ),
