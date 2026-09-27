@@ -862,7 +862,24 @@ class _CollagePageState extends State<CollagePage> {
     } else {
       next = layout.withHeightFraction(cell, height!);
     }
+    if (_breaksLockedAreas(_settings.layout, next)) return;
     _update(_settings.copyWith(layout: next), pushUndo: false);
+  }
+
+  /// Se [next] muda o formato (largura ÷ altura) de alguma foto com
+  /// "Bloquear proporção" ligado. Uma foto travada nunca muda de formato: o
+  /// arrasto ou o controle que faria isso simplesmente não tem efeito —
+  /// inclusive quando quem está sendo redimensionada é uma vizinha dela.
+  /// "Redefinir área" e "Tamanhos iguais" continuam valendo (são pedidos
+  /// explícitos de voltar ao padrão).
+  bool _breaksLockedAreas(CollageLayout before, CollageLayout next) {
+    for (final cell in _lockedAreaCells) {
+      if (cell >= _settings.cells.length) continue;
+      final r0 = before.widthFractionOf(cell) / before.heightFractionOf(cell);
+      final r1 = next.widthFractionOf(cell) / next.heightFractionOf(cell);
+      if ((r1 / r0 - 1).abs() > 0.005) return true;
+    }
+    return false;
   }
 
   /// Foto selecionada na aba "Áreas", se ela ainda existe no layout atual
@@ -893,6 +910,7 @@ class _CollagePageState extends State<CollagePage> {
           : moved.heightFractionOf(cell) / layout.heightFractionOf(cell);
       next = layout.scaledArea(cell, factor);
     }
+    if (_breaksLockedAreas(_settings.layout, next)) return;
     _update(_settings.copyWith(layout: next), pushUndo: false);
   }
 

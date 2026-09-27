@@ -1149,6 +1149,47 @@ void main() {
     expect(badge, findsNothing);
   });
 
+  testWidgets('aba "Áreas": foto travada não muda de formato quando a '
+      'vizinha é redimensionada', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+
+    // Trava a segunda foto.
+    await tester.tap(find.byType(CollageCellView).last);
+    await tester.pumpAndSettle();
+    final lock = find.byKey(const ValueKey('areaLockAspectSwitch'));
+    await tester.ensureVisible(lock);
+    await tester.pumpAndSettle();
+    await tester.tap(lock);
+    await tester.pumpAndSettle();
+
+    // Seleciona a primeira (sem trava) e tenta arrastar a alça entre elas.
+    await tester.tap(find.byType(CollageCellView).first);
+    await tester.pumpAndSettle();
+    List<Size> sizes() => tester
+        .widgetList<CollageCellView>(find.byType(CollageCellView))
+        .map((v) => v.cellSize)
+        .toList();
+    final before = sizes();
+    final handle = find.byType(CollageDividerHandle);
+    final vertical = tester
+        .widget<CollageDividerHandle>(handle)
+        .divider
+        .vertical;
+    await tester.drag(
+      handle,
+      vertical ? const Offset(80, 0) : const Offset(0, 80),
+    );
+    await tester.pumpAndSettle();
+    expect(sizes(), before, reason: 'a vizinha travada não deixa mudar');
+  });
+
   testWidgets('aba "Áreas": arrastar dentro da foto move a imagem', (
     tester,
   ) async {
