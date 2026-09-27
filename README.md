@@ -8,8 +8,8 @@
 
 <p align="center"><a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=111A2D&color=5B9CFF"></a>&nbsp;<a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=111A2D&color=20D5E8"></a></p>
 
-**Turn videos and photos into animated GIF or WebP<br>
-directly on Android — privately and offline.**
+**Create GIF, WebP and SVG content for your GitHub README<br>
+directly on Android — animated, transparent, high-resolution and offline.**
 
 <img src="assets/linha-morceguinho.svg"/>
 
@@ -25,8 +25,20 @@ directly on Android — privately and offline.**
 
 ## Overview
 
-GitBat is an Android app built with Flutter. Everything runs on the
-device with FFmpeg — the app has **no internet permission**.
+GitBat started as a simple app to convert videos into GIFs. It kept gaining
+features and grew into an app for **creating content for GitHub READMEs**:
+banners, demos, badges, collages and illustrations in **GIF, animated WebP
+and SVG**.
+
+- **Transparency everywhere** — every editing screen supports a transparent
+  background, so the result sits cleanly on GitHub's light and dark themes.
+- **Animated or still** — videos, GIFs and animated WebPs stay animated
+  through frames, collages, stickers and text.
+- **High resolution** — exports keep the original resolution by default;
+  shrinking is always your choice.
+
+It's an Android app built with Flutter. Everything runs on the device with
+FFmpeg — the app has **no internet permission**.
 
 | Tool | Purpose |
 |---|---|
