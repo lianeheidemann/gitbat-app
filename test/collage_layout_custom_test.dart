@@ -123,4 +123,61 @@ void main() {
     }
     expect(layout.cellCount, CollageLayout.maxCustomCells);
   });
+
+  group('área travada anda inteira', () {
+    CollageLayout? drag(
+      CollageLayout layout,
+      CollageDivider d,
+      double delta,
+      Set<int> locked,
+    ) => layout.resizedKeepingLocked(
+      d,
+      delta,
+      _size,
+      locked: locked,
+      outerMarginRatio: 0,
+      innerMarginRatio: 0.02,
+    );
+
+    for (final (name, layout) in [
+      ('grade', const CollageLayout(kind: CollageLayoutKind.row, columns: 3)),
+      (
+        'personalizada',
+        const CollageLayout(kind: CollageLayoutKind.row, columns: 3).toCustom(),
+      ),
+    ]) {
+      test('$name: empurrar a vizinha move a travada sem mudar o tamanho', () {
+        final before = _rects(layout, inner: 0.02);
+        final d = layout
+            .handlesAround(
+              0,
+              _size,
+              outerMarginRatio: 0,
+              innerMarginRatio: 0.02,
+            )
+            .single
+            .divider;
+        final next = drag(layout, d, 30, {1});
+        expect(next, isNotNull);
+        final after = _rects(next!, inner: 0.02);
+        expect(after[0].width, closeTo(before[0].width + 30, 0.6));
+        expect(after[1].width, closeTo(before[1].width, 0.6));
+        expect(after[1].left, closeTo(before[1].left + 30, 0.6));
+        expect(after[2].width, closeTo(before[2].width - 30, 0.6));
+      });
+
+      test('$name: travada na beirada não deixa a vizinha empurrar', () {
+        final d = layout
+            .handlesAround(
+              2,
+              _size,
+              outerMarginRatio: 0,
+              innerMarginRatio: 0.02,
+            )
+            .single
+            .divider;
+        expect(drag(layout, d, -30, {2}), isNull);
+      });
+    }
+  });
 }

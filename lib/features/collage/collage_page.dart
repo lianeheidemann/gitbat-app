@@ -986,17 +986,23 @@ class _CollagePageState extends State<CollagePage> {
     return index < _settings.cells.length ? index : 0;
   }
 
-  /// Arrasto de uma alça da aba "Áreas": só o divisor arrastado se move, e
-  /// nada acontece se isso mudar o tamanho de uma área travada.
+  /// Arrasto de uma alça da aba "Áreas": o divisor arrastado se move, e
+  /// uma área travada encostada nele anda inteira sem mudar de tamanho.
   void _dragDivider(CollageDivider divider, double delta, Size contentSize) {
-    final next = _settings.layout.resizedBy(
+    // Áreas travadas não mudam de tamanho, mas andam inteiras quando a
+    // vizinha empurra (a do outro lado delas é que encolhe).
+    final next = _settings.layout.resizedKeepingLocked(
       divider,
       delta,
       contentSize,
+      locked: {
+        for (final c in _lockedAreaCells)
+          if (c < _settings.cells.length) c,
+      },
       outerMarginRatio: _settings.outerMarginRatio,
       innerMarginRatio: _settings.innerMarginRatio,
     );
-    if (_breaksLockedAreas(_settings.layout, next)) return;
+    if (next == null) return;
     _update(_settings.copyWith(layout: next), pushUndo: false);
   }
 
