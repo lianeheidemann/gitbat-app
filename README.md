@@ -20,16 +20,17 @@ directly on Android — privately and offline.**
 
 ## About
 
-Android app built with Flutter, with three editors that share the same
-editor shell, frame library and on-device export pipeline, plus a fourth
-tool for quick format swaps:
+Android app built with Flutter, with four editors that share the same
+editor shell, frame library and on-device export pipeline, plus a tool for
+quick format swaps:
 
 | Tool | What it does |
 |---|---|
 | **Video to GIF/WebP** | Converts MP4, MOV, AVI, MKV, WebM and 3GP to **GIF or animated WebP** — trim, crop, speed, resolution, frame rate, colors and a decorative frame. For GIF it also **estimates the final file size before converting**. |
 | **Edit an image** | Puts the same procedural or phone-mockup frames around a single photo, with content-fit modes, color adjustment and a transparent or colored background — plus a **magic eraser** that removes an object and rebuilds the background behind it. |
+| **Edit SVG** | Crops, rotates, recolors and decorates an SVG — border, background, filter, opacity, stickers and text — and saves it **still as a vector** (`<text>`, nested `<svg>`, clip paths), editable in any SVG tool. |
 | **Photo collage** | Assembles several photos into one composition — layouts, margins, borders, stickers, imported fonts, crop and color adjustment. If any photo is animated, the whole collage exports **animated**. |
-| **Convert format** | Picks any video, GIF or WebP and re-encodes it to GIF, animated WebP or MP4, with a resolution slider — no trim, quality or preview otherwise. |
+| **Convert format** | Picks any video, GIF or WebP (animated WebP included) and re-encodes it to GIF, animated WebP or MP4, with a resolution slider — no trim, quality or preview otherwise. |
 
 Choose the format that best fits your destination:
 
@@ -65,13 +66,23 @@ The preview area is a solid dark color on every editor; the transparency
 checkerboard (when turned on in settings) is dark too and only shows behind
 the photo, video, SVG or collage itself.
 
-The three editors share one shell: a bottom tab bar where each tab opens its
-own panel over the preview, save/share/convert actions, and undo/redo. Every
+The editors share one shell: a bottom tab bar where each tab opens its
+own panel over the preview, save/share/convert actions, and undo/redo. The
+last tab, **Configurações**, holds the dark-theme switch and the preview
+checkerboard toggle. Pop-ups close with an **X** in the top corner, and
+every "save to gallery" (including the video result screen) confirms with
+the same "Salvo!" pop-up. Every
 panel scrolls within a height cap, and collapsing it never drops the current
 selection. They also share one **color adjustment** panel — brightness,
 exposure, contrast, highlights, shadows, saturation, hue and temperature —
 driven by a single color matrix that the live preview and the FFmpeg export
 both use, so what you see is what gets encoded.
+
+In Editar imagem, Editar SVG and the collage, tapping the picture selects
+it: an outline appears with a **resize** handle and a **rotate** handle in
+the bottom corners. Pinch, drag or use the handles — the picture snaps to
+the center (a pink guide line shows up), to 100% size and to right angles
+when it gets close, and lets go as you keep moving. Double tap resets it.
 
 Every crop screen (photo, video, SVG and the collage photo crop) has a
 **window size** slider — 1% to 100% of the largest window of the same shape
@@ -104,7 +115,8 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
 (frame).
 
 - **Borda** — procedural border: thin, medium or thick, with color and
-  corner rounding in 1% steps
+  corner rounding in 1% steps. Editar SVG has the same tab, and the border
+  is saved as vector paths
 - **Moldura** — image frame: bundled phone mockups, or your own with an
   automatically-detected transparent window. A **90°** button, the last
   option of the tab, turns the frame together with its content (the mockup
@@ -145,8 +157,18 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
 
 ### Photo collage
 
-- Layouts from a single row to a free grid, with aspect ratio, margins and
-  borders per photo or for the whole montage
+- Layouts from a single row to a free grid (up to 6×6; switching to it
+  keeps the current rows and columns), with aspect ratio, margins and
+  borders per photo or for the whole montage. The aspect-ratio slider stays
+  on "x:y" while dragging, even when it passes a preset like 3:2
+- **Personalizada** layout for montages that aren't regular grids: a small
+  "+" on each side of every area splits it in two, with the new empty area
+  on that side (up to 16). An area leaves the montage through its "..."
+  menu ("Remover espaço")
+- Tap a photo to select it — only one at a time; tapping outside the
+  montage clears the selection. The "..." menu only shows on the selected
+  photo. Empty areas are a plain color block and never get a border, in the
+  preview or in the saved file
 - Background — transparent, solid color or an imported image, set
   separately for the montage and for the photos inside it
 - **Áreas** tab: tap a photo to show its small resize handles on each side
@@ -154,10 +176,12 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
   outlined while dragging. A top/bottom handle only moves the two photos of
   that column; a side handle moves the two columns it separates. Dragging
   inside a photo still moves the picture. With a photo selected, a
-  "Área selecionada" card sets its width and height in %, with an optional
-  aspect lock, plus "Redefinir área" (that photo back to the default size)
-  and "Tamanhos iguais" (all of them). Changing the layout or the photo
-  count resets every area to the default size
+  "Área selecionada" card sets its width and height in %, plus
+  "Redefinir área" (that photo back to the default size) and "Tamanhos
+  iguais" (all of them). **Travar área** fixes an area's size: its handles
+  and sliders turn off, and dragging a neighbor slides the locked area
+  along whole — the next area over is the one that shrinks. Changing the
+  layout or the photo count resets every area to the default size
 - "Remover foto" in a photo's "..." menu empties that area (undoable)
 - Photos with transparency (SVG or cut-out PNG) always show the collage
   background through them in the preview, just like the export
@@ -168,14 +192,18 @@ Both editors split frames into two tabs: **Borda** (border) and **Moldura**
   vídeo and Editar SVG (exported into the photo, onto every video/GIF frame,
   and into the SVG as a nested vector `<svg>` or an embedded `<image>`)
 - Animated export (PNG, GIF or WebP) whenever a photo in the collage is
-  itself animated
+  itself animated — animated frames are decoded only at the size each area
+  needs, so large animated WebPs export without running out of memory
 
 ### Convert format
 
 Picks up any video, GIF or animated WebP from the system gallery and
 re-encodes it to GIF, WebP or MP4, with a resolution slider and the
 source's own format disabled in the picker. Static photos are rejected
-up front — there is a dedicated tool for those.
+up front — there is a dedicated tool for those. Animated WebPs open
+instantly (only the header is read) and are decoded at the target size when
+converting, with progress from the first frame; **Cancelar** closes the
+dialog right away.
 
 ## How to run it
 
@@ -242,8 +270,9 @@ assets/
 └── sticker/    # ready-made stickers, one folder per theme
 
 .github/workflows/
-├── ci.yml      # formatting, analysis, tests and a debug APK
-└── release.yml # publishes the APKs to a Release
+├── ci.yml         # formatting, analysis, tests and a debug APK
+├── release.yml    # publishes the APKs to a Release
+└── apk-testes.yml # one quick arm64 APK as a pre-release, for testing
 ```
 
 The project follows a **feature-first** layout. Code that belongs to a single
@@ -283,7 +312,7 @@ frames from one code path.
 
 ## Quality
 
-**412 automated tests** cover the estimation model against real FFmpeg
+**580+ automated tests** cover the estimation model against real FFmpeg
 output, the size and quality panels, frame and crop geometry, the export
 arguments for every format, the import stores, and the collage — framing,
 color, layout, compositing against golden pixels and the animation
@@ -300,6 +329,18 @@ calibrated, the prediction lands within **±1% for three of the five cases,
 `.github/workflows/ci.yml` runs formatting, analysis, the full test suite
 and a debug APK build on every push — the APK build catches Gradle,
 manifest-merging and native-packaging issues the other steps can't see.
+
+Two manual workflows build installable APKs, both with a Gradle cache
+between runs so only the Dart code is recompiled:
+
+- **Release** (`release.yml`) runs the tests and publishes the arm64,
+  armeabi-v7a and universal APKs (plus the Play Store AAB when signing keys
+  are set) as a new Release.
+- **APK para testes** (`apk-testes.yml`) skips the tests and builds a single
+  arm64 APK from any branch, in about 3 minutes once the cache is warm. It
+  goes to a **pre-release** (`teste-N`, never marked "Latest"), and the
+  run's Summary links straight to the APK. It uses the same signing key and
+  version code as the latest Release, so it installs over it.
 
 ## Download the APK
 
