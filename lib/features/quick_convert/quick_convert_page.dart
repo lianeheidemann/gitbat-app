@@ -359,13 +359,13 @@ class _PickDropzone extends StatelessWidget {
             radius: _radius,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: scheme.primary,
                     shape: BoxShape.circle,
@@ -373,20 +373,20 @@ class _PickDropzone extends StatelessWidget {
                   alignment: Alignment.center,
                   child: loading
                       ? SizedBox(
-                          width: 24,
-                          height: 24,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
+                            strokeWidth: 2.2,
                             color: scheme.onPrimary,
                           ),
                         )
                       : Icon(
                           Icons.add_rounded,
-                          size: 30,
+                          size: 22,
                           color: scheme.onPrimary,
                         ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Flexible(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

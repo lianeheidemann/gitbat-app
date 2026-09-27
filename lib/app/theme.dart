@@ -14,9 +14,9 @@ const _darkCard = Color(0xFF1A191F);
 /// sistema — inclusive aos tamanhos escritos à mão nas telas.
 const appTextScale = 0.9;
 const _appBarTitleSize = 20.0;
-const _buttonHeight = 44.0;
+const _buttonHeight = 40.0;
 const _buttonTextSize = 14.0;
-const _buttonRadius = 16.0;
+const _buttonRadius = 14.0;
 const _fieldRadius = 12.0;
 const _dialogRadius = 20.0;
 

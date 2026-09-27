@@ -2220,9 +2220,6 @@ class _CollagePageState extends State<CollagePage> {
                     FilledButton(
                       onPressed: () =>
                           Navigator.of(sheetContext).pop(selectedFormat),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
-                      ),
                       child: const Text('Continuar'),
                     ),
                   ],
