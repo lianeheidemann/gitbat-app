@@ -1114,7 +1114,8 @@ void main() {
     await tester.tap(find.text('Áreas'));
     await tester.pumpAndSettle();
 
-    final badge = find.byKey(const ValueKey('collageAreaLockBadge'));
+    final badge = find.byKey(const ValueKey('collageAreaLockBadge_0'));
+    final otherBadge = find.byKey(const ValueKey('collageAreaLockBadge_1'));
     expect(badge, findsNothing);
     final lock = find.byKey(const ValueKey('areaLockAspectSwitch'));
     await tester.ensureVisible(lock);
@@ -1122,13 +1123,27 @@ void main() {
     await tester.tap(lock);
     await tester.pumpAndSettle();
     expect(badge, findsOneWidget);
-    // No canto de cima à direita da foto selecionada (a primeira).
+    // No canto de cima à esquerda da foto selecionada (a primeira) — o da
+    // direita é do botão "...".
     final cell = tester.getRect(find.byType(CollageCellView).first);
     final at = tester.getRect(badge);
     expect(cell.contains(at.center), isTrue);
-    expect(at.center.dx, greaterThan(cell.center.dx));
+    expect(at.center.dx, lessThan(cell.center.dx));
     expect(at.center.dy, lessThan(cell.center.dy));
 
+    // O bloqueio é só dessa foto: selecionando a outra, ele aparece
+    // desligado e o cadeado da primeira continua.
+    await tester.tap(find.byType(CollageCellView).last);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(lock).value, isFalse);
+    expect(badge, findsOneWidget);
+    expect(otherBadge, findsNothing);
+
+    await tester.tap(find.byType(CollageCellView).first);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(lock).value, isTrue);
+    await tester.ensureVisible(lock);
+    await tester.pumpAndSettle();
     await tester.tap(lock);
     await tester.pumpAndSettle();
     expect(badge, findsNothing);

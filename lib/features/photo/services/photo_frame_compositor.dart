@@ -79,6 +79,8 @@ Future<Uint8List> _composeProcedural(
     final srcRect = coverSrc.shift(
       Offset(crop.x.toDouble(), crop.y.toDouble()),
     );
+    // Posição livre (arrastar/pinçar/girar na prévia), em volta da janela.
+    frame.placement.applyTo(canvas, geometry.contentRect);
     canvas.drawImageRect(
       image,
       srcRect,
@@ -214,6 +216,8 @@ Future<Uint8List> _composeImageFramed(
     case ContentFitMode.fit:
       dst = _containDstRect(turnedWidth, turnedHeight, areaRect);
   }
+  // Posição livre (arrastar/pinçar/girar na prévia), em volta da foto.
+  frame.placement.applyTo(canvas, dst);
   _drawTransformedPhoto(canvas, image, effectiveRect, dst, transform, paint);
   canvas.restore();
 

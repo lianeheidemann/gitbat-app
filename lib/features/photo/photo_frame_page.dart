@@ -37,6 +37,7 @@ import '../../core/ui/editor_tabs_footer.dart';
 import '../collage/widgets/export_progress_dialog.dart';
 import 'widgets/eraser_mask_overlay.dart';
 import 'widgets/eraser_option_button.dart';
+import 'widgets/photo_placement_view.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
@@ -231,6 +232,26 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     crop: _frame.crop,
     child: _photoPreview(BoxFit.fill),
   );
+
+  /// A foto na posição livre escolhida com os dedos (arrastar, pinçar e
+  /// girar na prévia) — ver [PhotoPlacementView]. [gestures] desliga os
+  /// gestos quando outra coisa usa os toques (aba "Texto").
+  Widget _placedPhoto(Widget photo, {required bool gestures}) =>
+      PhotoPlacementView(
+        placement: _frame.placement,
+        enabled: gestures,
+        // Espelhada por fora (sem moldura de imagem, a aba "Girar" vale
+        // para o resultado todo), o giro dos dedos se inverte para a foto.
+        mirrored:
+            _frame.finalTransform.flipHorizontal !=
+            _frame.finalTransform.flipVertical,
+        onGestureStart: _pushUndoCheckpoint,
+        onChanged: (placement) => _updateFrame(
+          _frame.copyWith(placement: placement),
+          pushUndo: false,
+        ),
+        child: photo,
+      );
 
   _EditStep get _currentStep => (frame: _frame, photo: _photo);
 
@@ -600,12 +621,15 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final Widget content;
     if (frame.imageFrame != null) {
       aspect = frame.imageFrame!.nativeAspectRatio;
-      content = _imageFramedPreview(frame.imageFrame!);
+      content = _imageFramedPreview(
+        frame.imageFrame!,
+        gestures: !textTabActive,
+      );
     } else {
       aspect = _photoAspectRatio;
       content = frame.style == FrameStyle.none
-          ? _plainPreview()
-          : _proceduralFramedPreview();
+          ? _plainPreview(gestures: !textTabActive)
+          : _proceduralFramedPreview(gestures: !textTabActive);
     }
 
     return AspectRatio(
@@ -630,7 +654,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     );
   }
 
-  Widget _plainPreview() {
+  Widget _plainPreview({required bool gestures}) {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
@@ -639,11 +663,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: _croppedPhotoPreview(),
+      child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
     );
   }
 
-  Widget _proceduralFramedPreview() {
+  Widget _proceduralFramedPreview({required bool gestures}) {
     final frame = _frame;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -657,7 +681,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
           padding: EdgeInsets.all(thickness),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(innerRadius),
-            child: _croppedPhotoPreview(),
+            child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
           ),
         );
 
@@ -671,7 +695,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     );
   }
 
-  Widget _imageFramedPreview(ImageFrameAsset asset) {
+  Widget _imageFramedPreview(ImageFrameAsset asset, {required bool gestures}) {
     final preview = AspectRatio(
       aspectRatio: asset.nativeAspectRatio,
       child: LayoutBuilder(
@@ -693,7 +717,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             children: [
               Positioned.fromRect(
                 rect: rect,
-                child: _imageFrameContentPreview(fit),
+                child: _imageFrameContentPreview(fit, gestures: gestures),
               ),
               Positioned.fill(
                 child: IgnorePointer(
@@ -709,7 +733,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     return ColoredBox(color: _frame.backgroundColor, child: preview);
   }
 
-  Widget _imageFrameContentPreview(ContentFitMode fit) {
+  Widget _imageFrameContentPreview(
+    ContentFitMode fit, {
+    required bool gestures,
+  }) {
     // Tamanho de referência qualquer, na proporção certa (a real do recorte
     // não importa aqui — `FittedBox` só olha para a proporção do filho) —
     // mesma técnica de `EditorPage._imageFrameContentPreview`. O giro da
@@ -717,13 +744,16 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     // parada.
     Widget photo(BoxFit boxFit) => FittedBox(
       fit: boxFit,
-      child: applyOutputTransform(
-        _frame.contentTransform,
-        SizedBox(
-          width: 1000,
-          height: 1000 / _photoAspectRatio,
-          child: _croppedPhotoPreview(),
+      child: _placedPhoto(
+        applyOutputTransform(
+          _frame.contentTransform,
+          SizedBox(
+            width: 1000,
+            height: 1000 / _photoAspectRatio,
+            child: _croppedPhotoPreview(),
+          ),
         ),
+        gestures: gestures,
       ),
     );
 

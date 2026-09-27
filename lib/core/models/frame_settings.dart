@@ -6,6 +6,7 @@ import 'crop_rect.dart';
 import 'default_colors.dart';
 import 'image_frame.dart';
 import 'output_transform.dart';
+import 'photo_placement.dart';
 
 /// Estilo da borda (moldura procedural) desenhada ao redor do GIF/foto. Cada
 /// estilo é só um atalho para um par de valores — espessura da borda e
@@ -111,6 +112,7 @@ class FrameSettings {
     this.outputTransform = OutputTransform.identity,
     this.frameQuarterTurns = 0,
     this.expandBackgroundColor = const Color(0xFF000000),
+    this.placement = PhotoPlacement.identity,
   });
 
   final FrameStyle style;
@@ -212,6 +214,11 @@ class FrameSettings {
   /// continuam pretas.
   final Color expandBackgroundColor;
 
+  /// Posição livre da foto dentro da janela dela (arrastar, pinçar e girar
+  /// na prévia de "Editar imagem") — ver [PhotoPlacement]. Vale só para a
+  /// foto: moldura, fundo e textos ficam onde estão.
+  final PhotoPlacement placement;
+
   /// O que girar/espelhar só o conteúdo, antes de encaixá-lo na janela da
   /// moldura de imagem: [outputTransform] quando há uma, nada quando não há.
   OutputTransform get contentTransform =>
@@ -294,6 +301,7 @@ class FrameSettings {
     OutputTransform? outputTransform,
     int? frameQuarterTurns,
     Color? expandBackgroundColor,
+    PhotoPlacement? placement,
   }) {
     return FrameSettings(
       style: style ?? this.style,
@@ -314,6 +322,7 @@ class FrameSettings {
       frameQuarterTurns: (frameQuarterTurns ?? this.frameQuarterTurns) % 4,
       expandBackgroundColor:
           expandBackgroundColor ?? this.expandBackgroundColor,
+      placement: placement ?? this.placement,
     );
   }
 }

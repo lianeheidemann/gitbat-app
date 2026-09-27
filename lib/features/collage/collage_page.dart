@@ -171,9 +171,16 @@ class _CollagePageState extends State<CollagePage> {
   /// que ele está redimensionando.
   CollageDivider? _draggingDivider;
 
-  /// "Bloquear proporção" do cartão "Área selecionada": largura e altura
-  /// mudam juntas, mantendo o formato da área.
-  bool _lockAreaAspect = false;
+  /// Fotos com "Bloquear proporção" ligado no cartão "Área selecionada":
+  /// largura e altura delas mudam juntas, mantendo o formato. Cada foto tem
+  /// o seu — ligar numa não trava as outras.
+  final Set<int> _lockedAreaCells = {};
+
+  /// Se a foto selecionada agora está com a proporção bloqueada.
+  bool get _lockAreaAspect {
+    final cell = _validSelectedAreaCell;
+    return cell != null && _lockedAreaCells.contains(cell);
+  }
 
   /// Alvo dos controles da aba "Borda e cantos": `false` = a montagem
   /// inteira, `true` = todas as fotos de uma vez. Só estado de UI (qual
@@ -531,7 +538,11 @@ class _CollagePageState extends State<CollagePage> {
       layout: _settings.layout,
       selectedCell: _validSelectedAreaCell,
       lockAspect: _lockAreaAspect,
-      onLockAspectChanged: (v) => setState(() => _lockAreaAspect = v),
+      onLockAspectChanged: (v) => setState(() {
+        final cell = _validSelectedAreaCell;
+        if (cell == null) return;
+        v ? _lockedAreaCells.add(cell) : _lockedAreaCells.remove(cell);
+      }),
       onChangeStart: _pushUndoCheckpoint,
       onWidthChanged: (f) => _resizeSelectedArea(width: f),
       onHeightChanged: (f) => _resizeSelectedArea(height: f),
@@ -911,28 +922,27 @@ class _CollagePageState extends State<CollagePage> {
               ),
             ),
           ),
-      // Cadeado no canto da foto selecionada enquanto "Bloquear proporção"
-      // está ligado.
-      if (_lockAreaAspect &&
-          selected != null &&
-          selected < geometry.cellRects.length)
-        Positioned(
-          key: const ValueKey('collageAreaLockBadge'),
-          left: geometry.cellRects[selected].right - 26,
-          top: geometry.cellRects[selected].top + 6,
-          width: 20,
-          height: 20,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: Icon(
-                Icons.lock_rounded,
-                size: 12,
-                color: Theme.of(context).colorScheme.onPrimary,
+      // Cadeado no canto de cima, à esquerda (o da direita é do "..."), de
+      // cada foto com "Bloquear proporção" ligado.
+      for (final i in _lockedAreaCells)
+        if (i < geometry.cellRects.length)
+          Positioned(
+            key: ValueKey('collageAreaLockBadge_$i'),
+            left: geometry.cellRects[i].left + 6,
+            top: geometry.cellRects[i].top + 6,
+            width: 20,
+            height: 20,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: Icon(
+                  Icons.lock_rounded,
+                  size: 12,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
             ),
           ),
-        ),
     ];
   }
 
@@ -1409,6 +1419,7 @@ class _CollagePageState extends State<CollagePage> {
           : _settings.withSharedCellStyle(const CollageCellSettings()),
     );
     _selectedAreaCell = null;
+    _lockedAreaCells.clear();
     _update(_settings.copyWith(layout: layout, cells: cells));
   }
 
