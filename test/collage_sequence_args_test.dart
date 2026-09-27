@@ -28,15 +28,34 @@ void main() {
     }
   });
 
-  test('GIF usa paleta em dois passes com transparência reservada', () {
-    final list = args(webp: false);
-    final graph = list[list.indexOf('-filter_complex') + 1];
-    expect(graph, contains('palettegen'));
-    expect(graph, contains('reserve_transparent=1'));
+  test('GIF em duas passadas: paleta num arquivo, depois o GIF', () {
+    // Passo único com `split` segurava todos os quadros na memória até a
+    // paleta ficar pronta e fechava o app em montagens longas.
+    final palette = service.collagePaletteArgs(
+      framePattern: '/tmp/quadros/quadro_%05d.png',
+      fps: 12,
+      palettePath: '/tmp/paleta.png',
+    );
+    expect(palette.join(' '), contains('palettegen=max_colors=256'));
+    expect(palette.join(' '), contains('reserve_transparent=1'));
+    expect(palette.last, '/tmp/paleta.png');
+    expect(palette.join(' '), isNot(contains('split')));
+
+    final list = service.collageSequenceArgs(
+      framePattern: '/tmp/quadros/quadro_%05d.png',
+      fps: 12,
+      outputPath: '/tmp/montagem.gif',
+      webp: false,
+      palettePath: '/tmp/paleta.png',
+    );
+    final joined = list.join(' ');
+    expect(joined, isNot(contains('split')));
+    expect(joined, isNot(contains('palettegen')));
+    expect(list, containsAllInOrder(['-i', '/tmp/paleta.png']));
+    final graph = list[list.indexOf('-lavfi') + 1];
     expect(graph, contains('paletteuse'));
     expect(graph, contains('alpha_threshold=128'));
-    // Difusão de erro em vez do quadriculado do bayer — ver o comentário em
-    // collageSequenceArgs.
+    // Difusão de erro em vez do quadriculado do bayer.
     expect(graph, contains('dither=sierra2_4a'));
     expect(list, containsAllInOrder(['-gifflags', '-transdiff']));
     expect(list, containsAllInOrder(['-loop', '0']));

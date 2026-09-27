@@ -150,6 +150,7 @@ class CollageExportRunner {
     required CollageDurationRule rule,
     required ValueChanged<double> reportProgress,
   }) async {
+    await cleanStaleExports(await getTemporaryDirectory());
     if (!format.isAnimated) {
       final bytes = await composeCollage(
         settings: settings,
@@ -187,6 +188,38 @@ class CollageExportRunner {
     } finally {
       if (await workDir.exists()) await workDir.delete(recursive: true);
     }
+  }
+
+  /// Apaga o que exportações anteriores deixaram no diretório temporário:
+  /// pastas de quadros (`montagem_quadros_*`, centenas de PNGs grandes, que
+  /// ficam para trás quando o app é fechado no meio) e arquivos finais
+  /// (`montagem_*`) com mais de [maxAge] — os recentes podem ainda estar
+  /// sendo compartilhados.
+  static Future<void> cleanStaleExports(
+    Directory temp, {
+    Duration maxAge = const Duration(minutes: 10),
+    DateTime? now,
+  }) async {
+    final limit = (now ?? DateTime.now()).subtract(maxAge);
+    try {
+      await for (final entity in temp.list(followLinks: false)) {
+        final name = entity.uri.pathSegments.lastWhere(
+          (p) => p.isNotEmpty,
+          orElse: () => '',
+        );
+        try {
+          if (entity is Directory && name.startsWith('montagem_quadros_')) {
+            await entity.delete(recursive: true);
+          } else if (entity is File &&
+              name.startsWith('montagem_') &&
+              (await entity.lastModified()).isBefore(limit)) {
+            await entity.delete();
+          }
+        } catch (_) {
+          // Um arquivo preso não impede a exportação.
+        }
+      }
+    } catch (_) {}
   }
 
   Future<File> writeTempFile(Uint8List bytes, String extension) async {

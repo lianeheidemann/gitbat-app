@@ -12,30 +12,43 @@ import '../models/collage_export.dart';
 import '../models/collage_settings.dart';
 import 'collage_compositor.dart';
 
-/// Quadros já decodificados de uma foto animada (GIF/WebP), com o instante em
-/// que cada um entra. [starts] tem o mesmo tamanho de [frames]: `starts[i]` é
-/// o tempo (do começo da animação) em que o quadro `i` aparece.
-class _AnimatedPhoto {
-  _AnimatedPhoto(this.frames, this.starts, this.duration);
+/// Uma foto animada (GIF/WebP) lida **um quadro por vez**, na ordem da
+/// linha do tempo da exportação. Guardar todos os quadros de todas as fotos
+/// antes de começar passava de gigabytes com várias animações longas, e o
+/// Android fechava o app — agora só o quadro atual de cada foto fica na
+/// memória.
+class _AnimatedCursor {
+  _AnimatedCursor(this._codec, this.frameCount, this.duration);
 
-  final List<ui.Image> frames;
-  final List<Duration> starts;
+  final ui.Codec _codec;
+  final int frameCount;
   final Duration duration;
 
-  /// Quadro que está na tela no instante [t] — passando do fim, **continua no
-  /// último quadro** em vez de sumir ou recomeçar: é o que faz uma animação
-  /// curta "esperar" a mais longa terminar.
-  ui.Image frameAt(Duration t) {
-    for (var i = starts.length - 1; i >= 0; i--) {
-      if (t >= starts[i]) return frames[i];
+  ui.Image? _current;
+  int _read = 0;
+
+  /// Quando o próximo quadro entra (o fim do [_current]).
+  Duration _nextStart = Duration.zero;
+
+  /// Quadro que está na tela no instante [t] (que só cresce entre as
+  /// chamadas) — passando do fim, **continua no último quadro** em vez de
+  /// sumir ou recomeçar: é o que faz uma animação curta "esperar" a mais
+  /// longa terminar.
+  Future<ui.Image> frameAt(Duration t) async {
+    while (_current == null ||
+        (_read < frameCount && _read < _maxOutputFrames && t >= _nextStart)) {
+      final frame = await _codec.getNextFrame();
+      _current?.dispose();
+      _current = frame.image;
+      _read++;
+      _nextStart += _frameDuration(frame.duration);
     }
-    return frames.first;
+    return _current!;
   }
 
   void dispose() {
-    for (final frame in frames) {
-      frame.dispose();
-    }
+    _current?.dispose();
+    _codec.dispose();
   }
 }
 
@@ -311,22 +324,27 @@ Future<CollageFrameSequence> renderCollageFrames({
   void Function(double progress)? onProgress,
   bool Function()? isCancelled,
 }) async {
-  final animated = <String, _AnimatedPhoto>{};
+  final animated = <String, _AnimatedCursor>{};
   final stills = <String, ui.Image>{};
   final backgrounds = <String, ui.Image>{};
 
   try {
     final neededWidths = _neededPhotoWidths(settings, outputWidth);
     for (final path in _photoPaths(settings)) {
-      final decoded = await _decodeAnimated(
-        path,
-        targetWidth: neededWidths[path],
-      );
-      if (decoded == null) continue;
-      if (decoded.frames.length > 1) {
-        animated[path] = decoded;
+      final codec = await _openCodec(path, targetWidth: neededWidths[path]);
+      if (codec == null) continue;
+      if (codec.frameCount > 1) {
+        // Duração pelo cabeçalho (GIF/WebP), sem decodificar os pixels.
+        final duration =
+            await _animationDuration(path) ??
+            Duration(milliseconds: codec.frameCount * 100);
+        animated[path] = _AnimatedCursor(codec, codec.frameCount, duration);
       } else {
-        stills[path] = decoded.frames.first;
+        try {
+          stills[path] = (await codec.getNextFrame()).image;
+        } finally {
+          codec.dispose();
+        }
       }
     }
     for (final path in _backgroundPaths(settings)) {
@@ -357,7 +375,7 @@ Future<CollageFrameSequence> renderCollageFrames({
         for (final cell in settings.cells)
           cell.photoPath == null
               ? null
-              : (animated[cell.photoPath!]?.frameAt(t) ??
+              : (await animated[cell.photoPath!]?.frameAt(t) ??
                     stills[cell.photoPath!]),
       ];
       final bytes = await composeCollageFrame(
@@ -394,12 +412,12 @@ Future<CollageFrameSequence> renderCollageFrames({
 /// FPS de saída: acompanha a animação mais "rápida" da montagem, limitado a
 /// uma faixa razoável para GIF ([_minFps] a [_maxFps]) — mais que isso só
 /// engorda o arquivo sem ganho visível.
-int _fpsFor(Iterable<_AnimatedPhoto> photos) {
+int _fpsFor(Iterable<_AnimatedCursor> photos) {
   var best = _minFps.toDouble();
   for (final photo in photos) {
     final seconds = photo.duration.inMilliseconds / 1000;
     if (seconds <= 0) continue;
-    best = math.max(best, photo.frames.length / seconds);
+    best = math.max(best, photo.frameCount / seconds);
   }
   return best.round().clamp(_minFps, _maxFps);
 }
@@ -462,45 +480,27 @@ Map<String, int?> _neededPhotoWidths(
   };
 }
 
-/// Decodifica todos os quadros de [path] (um só, quando a imagem é parada),
-/// com no máximo [targetWidth] de largura (a proporção é mantida).
-Future<_AnimatedPhoto?> _decodeAnimated(String path, {int? targetWidth}) async {
+/// Abre o decodificador de [path] com no máximo [targetWidth] de largura
+/// (a proporção é mantida). `null` quando o arquivo não dá para ler.
+Future<ui.Codec?> _openCodec(String path, {int? targetWidth}) async {
   try {
     final bytes = await File(path).readAsBytes();
-    ui.Codec codec;
-    if (targetWidth != null) {
-      final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
-      final descriptor = await ui.ImageDescriptor.encoded(buffer);
-      final shrink = targetWidth < descriptor.width;
-      codec = await descriptor.instantiateCodec(
-        targetWidth: shrink ? targetWidth : null,
-        targetHeight: shrink
-            ? (descriptor.height * targetWidth / descriptor.width)
-                  .round()
-                  .clamp(1, descriptor.height)
-            : null,
-      );
-      descriptor.dispose();
-      buffer.dispose();
-    } else {
-      codec = await ui.instantiateImageCodec(bytes);
-    }
-    try {
-      final frames = <ui.Image>[];
-      final starts = <Duration>[];
-      var elapsed = Duration.zero;
-      final count = math.min(codec.frameCount, _maxOutputFrames);
-      for (var i = 0; i < count; i++) {
-        final frame = await codec.getNextFrame();
-        frames.add(frame.image);
-        starts.add(elapsed);
-        elapsed += _frameDuration(frame.duration);
-      }
-      if (frames.isEmpty) return null;
-      return _AnimatedPhoto(frames, starts, elapsed);
-    } finally {
-      codec.dispose();
-    }
+    if (targetWidth == null) return await ui.instantiateImageCodec(bytes);
+    final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+    final descriptor = await ui.ImageDescriptor.encoded(buffer);
+    final shrink = targetWidth < descriptor.width;
+    final codec = await descriptor.instantiateCodec(
+      targetWidth: shrink ? targetWidth : null,
+      targetHeight: shrink
+          ? (descriptor.height * targetWidth / descriptor.width).round().clamp(
+              1,
+              descriptor.height,
+            )
+          : null,
+    );
+    descriptor.dispose();
+    buffer.dispose();
+    return codec;
   } catch (_) {
     return null;
   }

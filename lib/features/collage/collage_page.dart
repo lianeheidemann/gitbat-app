@@ -2338,8 +2338,10 @@ class _CollagePageState extends State<CollagePage> {
                           ],
                         ),
                       ),
+                      // Com duas ou mais animações a escolha aparece
+                      // sempre, mesmo quando elas têm a mesma duração.
                       if (selectedFormat.isAnimated &&
-                          info.hasDifferentDurations) ...[
+                          info.animatedCount > 1) ...[
                         const Divider(height: 24),
                         Text(
                           'Duração',

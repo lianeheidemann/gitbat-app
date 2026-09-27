@@ -783,8 +783,12 @@ class FfmpegService {
   ///
   /// GIF: mesmo par `palettegen`/`paletteuse` do caminho de vídeo, com
   /// `reserve_transparent`/`alpha_threshold` — a montagem pode ter fundo
-  /// transparente, e o GIF só suporta 1 bit de alfa. WebP: um passe só no
-  /// `libwebp`, que aceita alfa de verdade (ver [_webpEncodeArgs]).
+  /// transparente, e o GIF só suporta 1 bit de alfa. Em **duas passadas**
+  /// (paleta num arquivo, depois o GIF): num passo só, o `split` segurava
+  /// todos os quadros crus na memória até o `palettegen` terminar — com
+  /// centenas de quadros grandes isso passava de 1 GB e o Android fechava
+  /// o app. WebP: um passe só no `libwebp`, que aceita alfa de verdade (ver
+  /// [_webpEncodeArgs]).
   ///
   /// Os argumentos são montados por [collageSequenceArgs], separado para os
   /// testes poderem conferir a linha de comando sem rodar o FFmpeg.
@@ -804,24 +808,48 @@ class FfmpegService {
     final totalMs = (frameCount ?? 0) > 0 && fps > 0
         ? frameCount! * 1000 / fps
         : 0.0;
-    await _run(
-      collageSequenceArgs(
-        framePattern: framePattern,
-        fps: fps,
-        outputPath: outputPath,
-        webp: webp,
-        colors: colors,
-        loop: loop,
-      ),
-      step: 'exportação da montagem',
-      // Mesmo teto de [_ratio] usado por [convert] — sem ele a barra também
-      // parece travar perto do fim no WebP da montagem, pelo mesmo motivo
-      // (a montagem do contêiner WebPAnimEncoderAssemble roda numa chamada
-      // bloqueante só, depois do último quadro já ter sido "reportado").
-      onTimeMs: onProgress == null || totalMs <= 0
-          ? null
-          : (ms) => onProgress(_ratio(ms, totalMs)),
-    );
+    final palettePath = collagePalettePath(outputPath);
+    // GIF: 40% da barra para a paleta, o resto para o GIF.
+    final paletteShare = webp ? 0.0 : 0.4;
+    if (!webp) {
+      await _run(
+        collagePaletteArgs(
+          framePattern: framePattern,
+          fps: fps,
+          palettePath: palettePath,
+          colors: colors,
+        ),
+        step: 'paleta da montagem',
+        onTimeMs: onProgress == null || totalMs <= 0
+            ? null
+            : (ms) => onProgress(_ratio(ms, totalMs) * paletteShare),
+      );
+    }
+    try {
+      await _run(
+        collageSequenceArgs(
+          framePattern: framePattern,
+          fps: fps,
+          outputPath: outputPath,
+          webp: webp,
+          loop: loop,
+          palettePath: palettePath,
+        ),
+        step: 'exportação da montagem',
+        // Mesmo teto de [_ratio] usado por [convert] — sem ele a barra
+        // também parece travar perto do fim no WebP da montagem, pelo mesmo
+        // motivo (a montagem do contêiner WebPAnimEncoderAssemble roda numa
+        // chamada bloqueante só, depois do último quadro já ter sido
+        // "reportado").
+        onTimeMs: onProgress == null || totalMs <= 0
+            ? null
+            : (ms) => onProgress(
+                paletteShare + _ratio(ms, totalMs) * (1 - paletteShare),
+              ),
+      );
+    } finally {
+      _deleteQuietly(palettePath);
+    }
     onProgress?.call(1.0);
 
     final output = File(outputPath);
@@ -839,8 +867,8 @@ class FfmpegService {
     required int fps,
     required String outputPath,
     required bool webp,
-    int colors = 256,
     bool loop = true,
+    String? palettePath,
   }) {
     final input = ['-y', '-framerate', '$fps', '-i', framePattern];
     if (webp) {
@@ -870,19 +898,18 @@ class FfmpegService {
         outputPath,
       ];
     }
+    // Segunda passada do GIF: a paleta já está pronta num arquivo, então
+    // cada quadro é convertido e escrito na hora, sem acumular nada.
     return [
       ...input,
-      '-filter_complex',
-      '[0:v]split[pal_src][gif_src];'
-          '[pal_src]palettegen=max_colors=$colors:reserve_transparent=1[pal];'
-          // sierra2_4a no lugar de bayer: o padrão quadriculado do bayer
-          // aparecia em áreas lisas (parede, pele) da montagem. A difusão de
-          // erro dá degradê mais limpo; em troca pode "fervilhar" um pouco
-          // entre quadros, o que quase não se nota numa montagem de fotos.
-          '[gif_src][pal]paletteuse=dither=sierra2_4a:'
-          'alpha_threshold=128[out]',
-      '-map',
-      '[out]',
+      '-i',
+      palettePath ?? collagePalettePath(outputPath),
+      '-lavfi',
+      // sierra2_4a no lugar de bayer: o padrão quadriculado do bayer
+      // aparecia em áreas lisas (parede, pele) da montagem. A difusão de
+      // erro dá degradê mais limpo; em troca pode "fervilhar" um pouco
+      // entre quadros, o que quase não se nota numa montagem de fotos.
+      '[0:v][1:v]paletteuse=dither=sierra2_4a:alpha_threshold=128',
       '-gifflags',
       '-transdiff',
       '-loop',
@@ -892,6 +919,30 @@ class FfmpegService {
       outputPath,
     ];
   }
+
+  /// Primeira passada do GIF da montagem: só a paleta (256 cores, com uma
+  /// reservada para transparência), num PNG em [palettePath]. O
+  /// `palettegen` lê os quadros um a um e guarda só a contagem de cores.
+  @visibleForTesting
+  List<String> collagePaletteArgs({
+    required String framePattern,
+    required int fps,
+    required String palettePath,
+    int colors = 256,
+  }) => [
+    '-y',
+    '-framerate',
+    '$fps',
+    '-i',
+    framePattern,
+    '-vf',
+    'palettegen=max_colors=$colors:reserve_transparent=1',
+    palettePath,
+  ];
+
+  /// Onde fica a paleta temporária do GIF de [outputPath].
+  static String collagePalettePath(String outputPath) =>
+      '$outputPath.paleta.png';
 
   /// `true` depois de [cancel] — quem escreve quadros para o FFmpeg (ver
   /// [rawRgbaToMov]) consulta para parar na hora.
