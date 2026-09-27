@@ -6,18 +6,18 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/features/collage/models/collage_background.dart';
-import 'package:video_to_gif/features/collage/models/collage_cell.dart';
-import 'package:video_to_gif/core/models/collage_color_adjustment.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/core/services/bundled_sticker_store.dart';
-import 'package:video_to_gif/features/collage/collage_page.dart';
-import 'package:video_to_gif/features/collage/widgets/panels/areas_panel.dart';
-import 'package:video_to_gif/features/collage/widgets/collage_cell_view.dart';
-import 'package:video_to_gif/core/ui/collage_overlay_view.dart';
-import 'package:video_to_gif/core/ui/color_adjust_controls.dart';
-import 'package:video_to_gif/features/collage/widgets/folder_tab.dart';
-import 'package:video_to_gif/features/collage/widgets/target_sub_panel.dart';
+import 'package:gitbat/features/collage/models/collage_background.dart';
+import 'package:gitbat/features/collage/models/collage_cell.dart';
+import 'package:gitbat/core/models/collage_color_adjustment.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/core/services/bundled_sticker_store.dart';
+import 'package:gitbat/features/collage/collage_page.dart';
+import 'package:gitbat/features/collage/widgets/panels/areas_panel.dart';
+import 'package:gitbat/features/collage/widgets/collage_cell_view.dart';
+import 'package:gitbat/core/ui/collage_overlay_view.dart';
+import 'package:gitbat/core/ui/color_adjust_controls.dart';
+import 'package:gitbat/features/collage/widgets/folder_tab.dart';
+import 'package:gitbat/features/collage/widgets/target_sub_panel.dart';
 
 import 'helpers/animated_gif.dart';
 
@@ -778,7 +778,7 @@ void main() {
     expect(find.byTooltip('Duplicar'), findsOneWidget);
 
     // Com outra aba aberta, o texto continua na prévia mas sem nenhum
-    // controle de seleção: nem a barra de ações, nem a moldura roxa da
+    // controle de seleção: nem a barra de ações, nem a moldura de seleção da
     // CollageOverlayView (que fora da aba dona não responde a gesto).
     await tester.tap(find.text('Fundo'));
     await tester.pumpAndSettle();

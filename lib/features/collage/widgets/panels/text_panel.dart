@@ -3,9 +3,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/collage_text.dart';
-import '../../../../core/models/default_colors.dart';
 import '../../../../core/ui/color_picker_sheet.dart';
 import '../../../../core/ui/panel_rows.dart';
+import '../../../../app/editor_defaults.dart';
 
 /// Painel da aba "Texto": o campo de escrever (que também edita a caixa
 /// trazida pelo lápis da barra de seleção) e, com uma caixa selecionada, cor,
@@ -159,7 +159,8 @@ class CollageTextPanel extends StatelessWidget {
       id,
       on
           ? item.copyWith(
-              backgroundColor: item.backgroundColor ?? defaultBackgroundColor,
+              backgroundColor:
+                  item.backgroundColor ?? EditorDefaults.background,
             )
           : item.copyWith(clearBackgroundColor: true),
     );
@@ -178,7 +179,7 @@ class CollageTextPanel extends StatelessWidget {
         context,
         id: id,
         title: 'Cor do fundo do texto',
-        current: (item) => item.backgroundColor ?? defaultBackgroundColor,
+        current: (item) => item.backgroundColor ?? EditorDefaults.background,
         apply: (item, color) => item.copyWith(backgroundColor: color),
       );
 

@@ -8,7 +8,7 @@ Copy and paste it straight into the matching fields.
 ## App name (limit: 30 characters)
 
 ```
-Video to GIF
+GitBat
 ```
 
 ## Short description (limit: 80 characters)

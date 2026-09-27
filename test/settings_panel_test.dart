@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/app/app_palette.dart';
-import 'package:video_to_gif/app/theme.dart';
-import 'package:video_to_gif/app/theme_controller.dart';
-import 'package:video_to_gif/core/ui/preview_settings_panel.dart';
+import 'package:gitbat/app/app_palette.dart';
+import 'package:gitbat/app/theme.dart';
+import 'package:gitbat/app/theme_controller.dart';
+import 'package:gitbat/core/ui/preview_settings_panel.dart';
 
 // A aba "Configurações" das telas de edição troca o tema claro/escuro e a
 // paleta de cores.
@@ -45,15 +45,15 @@ void main() {
         findsOneWidget,
       );
     }
-    await tester.tap(find.byKey(const ValueKey('paletteSwatch-morceguinho')));
+    await tester.tap(find.byKey(const ValueKey('paletteSwatch-lavanda')));
     await tester.pumpAndSettle();
-    expect(paletteNotifier.value, batPalette);
-    expect(find.text('Morceguinho'), findsOneWidget);
+    expect(paletteNotifier.value, lavenderPalette);
+    expect(find.text('Lavanda'), findsOneWidget);
 
     // Ao abrir de novo, o app já nasce na paleta salva.
     paletteNotifier.value = appPalettes.first;
     await loadPalette();
-    expect(paletteNotifier.value, batPalette);
+    expect(paletteNotifier.value, lavenderPalette);
   });
 
   test('paleta desconhecida cai na padrão', () {
@@ -69,9 +69,19 @@ void main() {
         expect(theme.extension<AppAccent>()!.gradient, palette.accentGradient);
         if (brightness == Brightness.dark) {
           expect(theme.colorScheme.primary, palette.seed);
+          expect(theme.colorScheme.surface, palette.darkBackground);
           expect(theme.scaffoldBackgroundColor, palette.darkBackground);
         }
       });
     }
   }
+
+  test('a paleta oficial é a do morceguinho, com cores próprias', () {
+    expect(appPalettes.first, batPalette);
+    final dark = buildTheme(Brightness.dark).colorScheme;
+    expect(dark.surface, const Color(0xFF111929));
+    expect(dark.secondary, const Color(0xFF22D8EE));
+    final light = buildTheme(Brightness.light).colorScheme;
+    expect(light.primary, const Color(0xFF0C48A8));
+  });
 }

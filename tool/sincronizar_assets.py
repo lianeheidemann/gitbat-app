@@ -30,7 +30,7 @@ PASTAS_DE_CONTEUDO = ['assets/background', 'assets/fonts', 'assets/frame',
                       'assets/sticker']
 
 # Arquivos avulsos que continuam declarados um a um.
-AVULSOS = ['assets/icon/icon-v4.png']
+AVULSOS = ['assets/icon/icon-v2/morceguinho-icone-simples.png']
 
 IGNORADOS = {'.ds_store', 'thumbs.db'}
 

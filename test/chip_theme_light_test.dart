@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/app/theme.dart';
+import 'package:gitbat/app/theme.dart';
 
 void main() {
   for (final brightness in Brightness.values) {

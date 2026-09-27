@@ -51,6 +51,7 @@ import 'widgets/panels/areas_panel.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/ui/dialog_title.dart';
+import '../../app/editor_defaults.dart';
 
 /// Geometria do sticker/texto selecionado, na medida necessária para
 /// posicionar as alças de redimensionar/girar por fora dele (ver
@@ -135,10 +136,15 @@ class _CollagePageState extends State<CollagePage> {
   /// ver [_createStickerFolder]. `null` quando não há rolagem pendente.
   String? _pendingFolderScrollId;
 
-  late CollageSettings _settings = CollageSettings.forLayout(
-    _defaultLayoutFor(widget.photos.length),
-    widget.photos,
-  );
+  late CollageSettings _settings =
+      CollageSettings.forLayout(
+        _defaultLayoutFor(widget.photos.length),
+        widget.photos,
+        cellStyle: EditorDefaults.collageCell(),
+      ).copyWith(
+        borderColor: EditorDefaults.frame,
+        background: EditorDefaults.collageBackground(),
+      );
 
   /// Valor próprio da linha "Tudo" da aba "Margem" — só muda quando ELA é
   /// arrastada (que também iguala `outerMarginRatio`/`innerMarginRatio` a
@@ -974,7 +980,7 @@ class _CollagePageState extends State<CollagePage> {
         layout: layout,
         cells: [
           ..._settings.cells,
-          _settings.withSharedCellStyle(const CollageCellSettings()),
+          _settings.withSharedCellStyle(EditorDefaults.collageCell()),
         ],
       ),
     );
@@ -1613,7 +1619,7 @@ class _CollagePageState extends State<CollagePage> {
       layout.cellCount,
       (i) => i < oldCells.length
           ? oldCells[i]
-          : _settings.withSharedCellStyle(const CollageCellSettings()),
+          : _settings.withSharedCellStyle(EditorDefaults.collageCell()),
     );
     _selectedAreaCell = null;
     _lockedAreaCells.clear();
@@ -1642,7 +1648,7 @@ class _CollagePageState extends State<CollagePage> {
   /// então a primeira célula representa bem todas — mesma lógica de
   /// [CollageBorderPanel].
   CollageBackground get _targetBackground => _backgroundTargetsPhotos
-      ? (_firstCell?.background ?? const CollageBackground())
+      ? (_firstCell?.background ?? EditorDefaults.collageBackground())
       : _settings.background;
 
   void _applyBackground(CollageBackground background, {bool pushUndo = true}) {
@@ -1980,6 +1986,7 @@ class _CollagePageState extends State<CollagePage> {
       final item = CollageTextItem(
         id: 't_${DateTime.now().microsecondsSinceEpoch}',
         text: text,
+        color: EditorDefaults.text,
         centerX: 0.5,
         centerY: 0.5,
         zIndex: _settings.nextZIndex,
@@ -2637,7 +2644,7 @@ class _CollagePageState extends State<CollagePage> {
       await _output.share(
         file,
         mimeType: format.mimeType,
-        text: 'Montagem de fotos feita com o app Video to GIF',
+        text: 'Montagem de fotos feita com o app GitBat',
       );
     } on FfmpegException catch (e) {
       if (!mounted) return;

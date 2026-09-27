@@ -61,8 +61,8 @@ fechado, que não tem como pular nem acelerar. Comece por ele o quanto antes.
 ## Etapa 2 — Rodar o projeto pela primeira vez
 
 ```bash
-git clone https://github.com/lianeheidemann/aplicativo-video-to-gif-1.git
-cd aplicativo-video-to-gif-1
+git clone https://github.com/lianeheidemann/gitbat-app.git
+cd gitbat-app
 
 flutter pub get
 flutter test   # os testes do estimador de peso devem passar
@@ -86,16 +86,19 @@ podem mais mudar depois:
 ### 3.1 O `applicationId`
 
 É o endereço permanente do app na loja. Neste projeto está como
-`br.com.lianeheidemann.videotogif`, definido em dois lugares:
+`br.com.lianeheidemann.videotogif`, em `android/app/build.gradle.kts` →
+`applicationId`.
 
-- `android/app/build.gradle.kts` → `namespace` e `applicationId`
-- a pasta `android/app/src/main/kotlin/br/com/lianeheidemann/videotogif/`
-
-Se quiser trocar, troque nos dois e renomeie a pasta.
+Ele continua com o nome da época em que o app se chamava "Video to GIF"
+**de propósito**: trocar cria outro app, que não instala por cima do atual e
+perde a ficha da loja. O nome GitBat aparece só no que o usuário vê (3.2) e
+no pacote do código Kotlin (`namespace = "br.com.lianeheidemann.gitbat"` e a
+pasta `android/app/src/main/kotlin/br/com/lianeheidemann/gitbat/`), que
+podem mudar à vontade.
 
 ### 3.2 O nome visível
 
-Está em `android/app/src/main/AndroidManifest.xml`, no atributo
+**GitBat**. Está em `android/app/src/main/AndroidManifest.xml`, no atributo
 `android:label`. Na loja o nome pode ter no máximo **30 caracteres**.
 
 ### 3.3 O ícone
@@ -107,8 +110,13 @@ todas as densidades, mais a versão adaptativa do Android 8+:
 android/app/src/main/res/mipmap-*/ic_launcher.png
 android/app/src/main/res/mipmap-*/ic_launcher_foreground.png
 android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-assets/icone.png                                 (mestre 1024×1024)
+android/app/src/main/res/drawable-nodpi/splash_icon.png
+assets/icon/icon-v2/morceguinho-icone-simples.png  (mestre, o morceguinho)
 ```
+
+O ícone anterior, com tudo o que era gerado a partir dele, fica guardado em
+`assets/icon/icon-v1/`. A logo do topo do README (sem fundo) é
+`assets/readme/gitbat-logo.png`.
 
 Se quiser mudar o desenho ou as cores, edite `tool/gerar_icones.py` e rode:
 
@@ -135,6 +143,10 @@ começar um app novo, do zero, sem os usuários.
 > transferi-la por um caminho inseguro. Esta é a única parte do processo que
 > não dá para terceirizar nem automatizar.
 
+> Se a chave já foi criada com outro nome (ex.: `chave-upload-videotogif.jks`,
+> da época do "Video to GIF"), continue usando ela: nos comandos abaixo, troque
+> só o nome do arquivo.
+
 O `keytool` vem junto com o Java. Se você não tiver Java instalado, ele está
 dentro do Android Studio, em `<pasta-do-android-studio>/jbr/bin/keytool`.
 O Android Studio também faz isso pela interface, em
@@ -144,7 +156,7 @@ O Android Studio também faz isso pela interface, em
 
 ```bash
 keytool -genkeypair -v \
-  -keystore ~/chave-upload-videotogif.jks \
+  -keystore ~/chave-upload-gitbat.jks \
   -keyalg RSA -keysize 2048 -validity 10000 \
   -alias upload
 ```
@@ -153,7 +165,7 @@ keytool -genkeypair -v \
 
 ```bash
 keytool -genkeypair -v \
-  -keystore ~/chave-upload-videotogif.jks \
+  -keystore ~/chave-upload-gitbat.jks \
   -storepass SUA_SENHA_FORTE -keypass SUA_SENHA_FORTE \
   -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
   -dname "CN=Seu Nome, O=, L=Sua Cidade, ST=UF, C=BR"
@@ -166,7 +178,7 @@ O que importa de verdade é o arquivo e a senha.
 Confira se deu certo:
 
 ```bash
-keytool -list -v -keystore ~/chave-upload-videotogif.jks
+keytool -list -v -keystore ~/chave-upload-gitbat.jks
 ```
 
 Deve aparecer `Alias name: upload`, a validade (uns 27 anos, com
@@ -182,7 +194,7 @@ Agora crie o arquivo `android/key.properties` (copie de
 storePassword=a-senha-que-voce-escolheu
 keyPassword=a-mesma-senha
 keyAlias=upload
-storeFile=/caminho/completo/para/chave-upload-videotogif.jks
+storeFile=/caminho/completo/para/chave-upload-gitbat.jks
 ```
 
 > ⚠️ **Nunca** coloque o `.jks` nem o `key.properties` no Git. O `.gitignore`
@@ -264,9 +276,9 @@ porque não teria serventia.
 Para habilitar a assinatura de verdade, transforme o seu keystore em texto:
 
 ```bash
-base64 -w0 ~/chave-upload-videotogif.jks > chave-base64.txt
+base64 -w0 ~/chave-upload-gitbat.jks > chave-base64.txt
 # no macOS, sem a opção -w0:
-# base64 -i ~/chave-upload-videotogif.jks -o chave-base64.txt
+# base64 -i ~/chave-upload-gitbat.jks -o chave-base64.txt
 ```
 
 Em **Settings → Secrets and variables → Actions → New repository secret**,

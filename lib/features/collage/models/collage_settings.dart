@@ -152,7 +152,9 @@ class CollageSettings {
     for (final cell in cells) {
       if (cell.hasPhoto) return cell;
     }
-    return const CollageCellSettings();
+    // Sem foto nenhuma: as áreas vazias nasceram com o estilo padrão da tela
+    // (a paleta atual), que vale mais que o padrão fixo do modelo.
+    return cells.isEmpty ? const CollageCellSettings() : cells.first;
   }
 
   /// [cell] com o estilo compartilhado das outras fotos ([cellStyleTemplate])
@@ -211,13 +213,14 @@ class CollageSettings {
   /// ou descarta o excedente.
   factory CollageSettings.forLayout(
     CollageLayout layout,
-    List<PhotoInfo> photos,
-  ) {
+    List<PhotoInfo> photos, {
+    CollageCellSettings cellStyle = const CollageCellSettings(),
+  }) {
     final cellCount = layout.cellCount;
     final cells = List<CollageCellSettings>.generate(cellCount, (i) {
-      if (i >= photos.length) return const CollageCellSettings();
+      if (i >= photos.length) return cellStyle;
       final photo = photos[i];
-      return CollageCellSettings(
+      return cellStyle.copyWith(
         photoPath: photo.path,
         photoWidth: photo.width,
         photoHeight: photo.height,

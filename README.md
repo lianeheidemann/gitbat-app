@@ -1,29 +1,31 @@
 <div align="center">
 
-<img width="200" src="assets/video-to-gif-logo-adaptive.svg"/>
+<img width="160" src="assets/readme/gitbat-logo.png" alt="GitBat"/>
 
-# Video to GIF
+# GitBat
 
-<img width="460" src="assets/video-to-gif-badges-adaptive-v9.svg"/>
+<img width="460" src="assets/badge/video-to-gif-badges-adaptive-v10.svg"/>
 
-<p align="center"><a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a>&nbsp;<a href="https://github.com/lianeheidemann/video-to-gif/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/video-to-gif/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=372b4d&color=8B5CF6"></a></p>
-
-
+<p align="center"><a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=111A2D&color=5B9CFF"></a>&nbsp;<a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=111A2D&color=20D5E8"></a></p>
 
 **Turn videos and photos into animated GIF or WebP<br>
 directly on Android — privately and offline.**
 
-<img src="assets/linha-lilas-v3.svg"/>
+<img src="assets/linha-morceguinho.svg"/>
 
-<img src="assets/gif/video-to-gif-interface-v3.webp"/><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/interface-v2/gitbat-interface-escuro.webp">
+  <source media="(prefers-color-scheme: light)" srcset="assets/interface-v2/gitbat-interface-claro.webp">
+  <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro.webp">
+</picture><br><br>
 
-**[⬇ Download the latest APK](https://github.com/lianeheidemann/video-to-gif/releases/latest)**
+**[Download the latest APK](https://github.com/lianeheidemann/gitbat-app/releases/latest)**
 
 </div>
 
 ## Overview
 
-Video to GIF is an Android app built with Flutter. Everything runs on the
+GitBat is an Android app built with Flutter. Everything runs on the
 device with FFmpeg — the app has **no internet permission**.
 
 | Tool | Purpose |
@@ -97,12 +99,17 @@ device with FFmpeg — the app has **no internet permission**.
   transparent margins)
 - Shared color adjustment — brightness, exposure, contrast, highlights,
   shadows, saturation, hue and temperature — identical in preview and export
-- **Configurações** tab with dark theme and preview checkerboard
-- Confirmation pop-up on every save to the gallery
+- **Configurações** tab with dark theme, preview checkerboard and **color
+  palettes** — the official *Morceguinho* (the GitBat bat's blues and cyan)
+  plus Lavanda, Menta, Pêssego and Rosa, each in light and dark; the chosen
+  one is remembered and also sets the default background, border and text
+  colors of the editors
+- Confirmation pop-up on every save to the gallery; everything is saved to
+  the **GitBat** album and named `GitBat_YYYYMMDD_HHMMSS`
 
 ## Download
 
-Each [Release](https://github.com/lianeheidemann/video-to-gif/releases)
+Each [Release](https://github.com/lianeheidemann/gitbat-app/releases)
 ships ready-to-install APKs:
 
 | File | Use |
@@ -118,8 +125,8 @@ Pre-releases named `teste-N` are test builds, not stable versions.
 **Requirements:** Flutter 3.47.0 (Dart 3.12+), Android SDK (API 36) and NDK.
 
 ```bash
-git clone https://github.com/lianeheidemann/video-to-gif.git
-cd video-to-gif
+git clone https://github.com/lianeheidemann/gitbat-app.git
+cd gitbat-app
 flutter pub get
 flutter test
 flutter run
@@ -151,14 +158,15 @@ published version.
 ```
 lib/
 ├── main.dart
-├── app/          # theme, licenses, app-wide controllers
+├── app/          # theme, color palettes, licenses, app-wide controllers
 ├── core/         # shared code: ffmpeg, models, painting, services, ui
 └── features/     # one folder per tool
     ├── collage/  ├── home/  ├── photo/
     ├── quick_convert/  ├── svg/  └── video/
 test/             # unit, widget and golden-pixel tests
 tool/             # icon generation, accuracy script, asset-list sync
-assets/           # backgrounds, fonts, frames, stickers
+assets/           # backgrounds, fonts, frames, stickers; plus icon/,
+                  # readme/ and interface-v2/ (brand art, not in the APK)
 docs/             # en and pt-Br documentation
 ```
 
@@ -180,7 +188,7 @@ CI checks this on every push.
 
 ## Quality
 
-- **580+ automated tests** — size model, FFmpeg arguments, crop and frame
+- **610+ automated tests** — size model, FFmpeg arguments, crop and frame
   geometry, collage layout and compositing (golden pixels), animation
   timeline, SVG export and editor interactions
 - `tool/medir_precisao.py` measures the size model against real FFmpeg
@@ -197,6 +205,15 @@ CI checks this on every push.
 | Vector art | `flutter_svg`, `xml` |
 | Files and output | `file_picker`, `gal`, `share_plus` |
 | Magic eraser | Plain Dart PatchMatch in an `Isolate` |
+
+## Brand
+
+| Item | Where |
+|---|---|
+| App icon (master) | `assets/icon/icon-v2/morceguinho-icone-simples.png` — regenerate every size with `python3 tool/gerar_icones.py` |
+| README logo | `assets/readme/gitbat-logo.png` |
+| Official palette | *Morceguinho* in `lib/app/app_palette.dart` |
+| Previous identity | `assets/icon/icon-v1/` |
 
 ## License
 

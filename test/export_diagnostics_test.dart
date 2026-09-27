@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/services/export_diagnostics.dart';
+import 'package:gitbat/core/services/export_diagnostics.dart';
 
 // O registro da exportação precisa sobreviver ao app ser fechado no meio:
 // cada etapa vai para o arquivo na hora, e a próxima abertura sabe onde parou.

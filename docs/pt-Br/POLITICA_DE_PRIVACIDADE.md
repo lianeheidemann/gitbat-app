@@ -1,4 +1,4 @@
-# Política de Privacidade — Video to GIF
+# Política de Privacidade — GitBat
 
 **Última atualização:** _preencha a data em que você publicar_
 
@@ -16,7 +16,7 @@
 
 ## Resumo
 
-O aplicativo **Video to GIF** não coleta, não armazena e não compartilha
+O aplicativo **GitBat** não coleta, não armazena e não compartilha
 nenhum dado pessoal. Todo o processamento acontece dentro do seu aparelho.
 
 ## Dados coletados
@@ -42,8 +42,8 @@ acesso funciona assim:
 - Durante a conversão, arquivos temporários são gravados na pasta de cache do
   próprio aplicativo e apagados em seguida. O sistema Android também limpa
   essa pasta automaticamente.
-- O GIF final é salvo na galeria **somente quando você toca em "Salvar na
-  galeria"**.
+- O GIF final é salvo na galeria (álbum **GitBat**) **somente quando você
+  toca em "Salvar na galeria"**.
 - Desinstalar o aplicativo remove todos os arquivos temporários. Os GIFs que
   você já salvou na galeria continuam lá, pois pertencem a você.
 

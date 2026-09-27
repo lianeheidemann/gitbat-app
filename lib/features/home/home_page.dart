@@ -17,6 +17,7 @@ import '../video/editor_page.dart';
 import '../photo/photo_frame_page.dart';
 import '../quick_convert/quick_convert_page.dart';
 import '../svg/svg_edit_page.dart';
+import '../../app/editor_defaults.dart';
 
 /// Tela inicial: apresenta o app e deixa o usuário escolher um vídeo para
 /// começar a edição.
@@ -62,7 +63,9 @@ class _HomePageState extends State<HomePage> {
         MaterialPageRoute<void>(
           builder: (_) => EditorPage(
             video: video,
-            initialSettings: ConversionSettings.recommendedFor(video),
+            initialSettings: ConversionSettings.recommendedFor(
+              video,
+            ).copyWith(frame: EditorDefaults.frameSettings()),
           ),
         ),
       );
@@ -340,7 +343,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.info_outline),
             onPressed: () => showAboutDialog(
               context: context,
-              applicationName: 'Video to GIF',
+              applicationName: 'GitBat',
               applicationVersion: '1.0.0',
               applicationLegalese:
                   'Conversão feita no próprio aparelho com FFmpeg (LGPL). '
@@ -359,15 +362,15 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Image.asset(
-                  'assets/icon/icon-v4.png',
+                  'assets/icon/icon-v2/morceguinho-icone-simples.png',
                   width: 96,
                   height: 96,
                   fit: BoxFit.contain,
-                  semanticLabel: 'Ícone do conversor de vídeo para GIF',
+                  semanticLabel: 'Ícone do GitBat',
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Video to GIF',
+                  'GitBat',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,

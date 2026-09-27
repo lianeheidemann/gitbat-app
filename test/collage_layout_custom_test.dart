@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/features/collage/models/collage_layout.dart';
+import 'package:gitbat/features/collage/models/collage_layout.dart';
 
 // Layout "Personalizada": uma árvore de divisões em que o "+" de um lado de
 // um espaço o divide em dois.

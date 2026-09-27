@@ -91,10 +91,10 @@ jobs:
           # a versão — só a tag e o título do release ganham o "(build N)".
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
-            TITULO="Video to GIF $NOME"
+            TITULO="GitBat $NOME"
           else
             TAG="v$NOME-${GITHUB_RUN_NUMBER}"
-            TITULO="Video to GIF $NOME (build ${GITHUB_RUN_NUMBER})"
+            TITULO="GitBat $NOME (build ${GITHUB_RUN_NUMBER})"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "titulo=$TITULO" >> "$GITHUB_OUTPUT"
@@ -131,9 +131,9 @@ jobs:
             --build-name="$V" \
             --build-number=${{ steps.versao.outputs.codigo }}
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
-             "entrega/video-em-gif-$V-arm64-v8a.apk"
+             "entrega/gitbat-$V-arm64-v8a.apk"
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
-             "entrega/video-em-gif-$V-armeabi-v7a.apk"
+             "entrega/gitbat-$V-armeabi-v7a.apk"
 
       - name: Compilar APK universal
         run: |
@@ -142,7 +142,7 @@ jobs:
             --build-name="$V" \
             --build-number=${{ steps.versao.outputs.codigo }}
           cp build/app/outputs/flutter-apk/app-release.apk \
-             "entrega/video-em-gif-$V-universal.apk"
+             "entrega/gitbat-$V-universal.apk"
 
       - name: Compilar AAB para a Play Store
         if: steps.chave.outputs.assinado == 'sim'
@@ -152,7 +152,7 @@ jobs:
             --build-name="$V" \
             --build-number=${{ steps.versao.outputs.codigo }}
           cp build/app/outputs/bundle/release/app-release.aab \
-             "entrega/video-em-gif-$V.aab"
+             "entrega/gitbat-$V.aab"
 
       - name: Listar o que será publicado
         run: ls -lh entrega/

@@ -4,11 +4,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_to_gif/core/models/crop_rect.dart';
-import 'package:video_to_gif/core/models/photo_info.dart';
-import 'package:video_to_gif/core/ui/crop/crop_controller.dart';
-import 'package:video_to_gif/core/ui/crop/crop_overlay.dart';
-import 'package:video_to_gif/features/photo/photo_frame_page.dart';
+import 'package:gitbat/core/models/crop_rect.dart';
+import 'package:gitbat/core/models/photo_info.dart';
+import 'package:gitbat/core/ui/crop/crop_controller.dart';
+import 'package:gitbat/core/ui/crop/crop_overlay.dart';
+import 'package:gitbat/features/photo/photo_frame_page.dart';
 
 void main() {
   group('CropController: trava no centro', () {

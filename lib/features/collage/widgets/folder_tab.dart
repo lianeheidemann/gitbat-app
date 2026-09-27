@@ -98,7 +98,7 @@ class FolderTabShape extends ShapeBorder {
 
 /// Uma pasta da barra da aba "Stickers" — as embutidas, as criadas pelo
 /// usuário e o botão de criar uma nova (esse com [icon] no lugar do rótulo).
-/// Selecionada fica preenchida de roxo; solta, só com o contorno.
+/// Selecionada fica preenchida na cor principal da paleta; solta, só com o contorno.
 class FolderTab extends StatelessWidget {
   const FolderTab({
     super.key,

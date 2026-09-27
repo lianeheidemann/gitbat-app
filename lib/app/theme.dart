@@ -24,17 +24,14 @@ const _dialogRadius = 20.0;
 /// A partir da cor semente da paleta, gera um ColorScheme via Material 3 e,
 /// no modo escuro, substitui as cores de superfície pelos tons próprios da
 /// paleta (mais neutros que os gerados automaticamente).
-ThemeData buildTheme(
-  Brightness brightness, [
-  AppPalette palette = lavenderPalette,
-]) {
+ThemeData buildTheme(Brightness brightness, [AppPalette palette = batPalette]) {
   final base = ColorScheme.fromSeed(
     seedColor: palette.seed,
     brightness: brightness,
   );
   // No escuro, troca as superfícies geradas pelo ColorScheme.fromSeed por
   // tons neutros definidos à mão, mantendo a cor primária.
-  final scheme = brightness == Brightness.dark
+  final generated = brightness == Brightness.dark
       ? base.copyWith(
           primary: palette.seed,
           tertiary: palette.darkTertiary,
@@ -45,6 +42,10 @@ ThemeData buildTheme(
           surfaceContainerHighest: palette.darkContainerHighest,
         )
       : base;
+  final refine = brightness == Brightness.dark
+      ? palette.refineDark
+      : palette.refineLight;
+  final scheme = refine == null ? generated : refine(generated);
 
   const buttonText = TextStyle(
     fontSize: _buttonTextSize,

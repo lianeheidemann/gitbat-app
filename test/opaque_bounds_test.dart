@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/services/opaque_bounds.dart';
+import 'package:gitbat/core/services/opaque_bounds.dart';
 
 /// Buffer RGBA [width]x[height] todo transparente, com alfa [alpha] nos
 /// pixels listados em [visible].

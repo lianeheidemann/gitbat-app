@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/app/preview_background_controller.dart';
-import 'package:video_to_gif/core/ui/checkerboard_background.dart';
+import 'package:gitbat/app/preview_background_controller.dart';
+import 'package:gitbat/core/ui/checkerboard_background.dart';
 
 // A área de prévia é de cor sólida; o xadrez fica só atrás da mídia, do
 // tamanho exato dela.

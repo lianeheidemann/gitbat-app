@@ -107,8 +107,8 @@ class PreviewSettingsPanel extends StatelessWidget {
   }
 }
 
-/// Bolinha de uma paleta: metade na cor principal e metade no fundo escuro
-/// dela, com um anel e um "check" quando é a escolhida.
+/// Bolinha de uma paleta: a cor principal, uma faixa com a cor de destaque
+/// e o fundo escuro dela, com um anel e um "check" quando é a escolhida.
 class _PaletteSwatch extends StatelessWidget {
   const _PaletteSwatch({
     required this.palette,
@@ -151,8 +151,13 @@ class _PaletteSwatch extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  stops: const [0.5, 0.5],
-                  colors: [palette.seed, palette.darkBackground],
+                  stops: const [0.42, 0.42, 0.58, 0.58],
+                  colors: [
+                    palette.seed,
+                    palette.accentGradient.last,
+                    palette.accentGradient.last,
+                    palette.darkBackground,
+                  ],
                 ),
               ),
               child: selected

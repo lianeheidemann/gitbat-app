@@ -4,13 +4,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../models/collage_text.dart';
-import '../models/default_colors.dart';
 import '../services/imported_font_store.dart';
 import 'collage_overlay_view.dart';
 import 'panel_rows.dart';
 import '../../features/collage/painting/collage_painter.dart'
     show paintCollageTextBackground;
 import 'color_picker_sheet.dart';
+import '../../app/editor_defaults.dart';
 
 /// Caixas de texto arrastáveis sobre uma prévia — mesma interação e mesmo
 /// visual da aba "Texto" de `CollagePage` (arrastar/pinçar move e redimensiona,
@@ -623,6 +623,7 @@ class TextOverlayPanel extends StatelessWidget {
       final item = CollageTextItem(
         id: 't_${DateTime.now().microsecondsSinceEpoch}',
         text: text,
+        color: EditorDefaults.text,
         centerX: 0.5,
         centerY: 0.5,
         zIndex: texts.nextTextZIndex,
@@ -704,7 +705,8 @@ class TextOverlayPanel extends StatelessWidget {
         item.id,
         on
             ? item.copyWith(
-                backgroundColor: item.backgroundColor ?? defaultBackgroundColor,
+                backgroundColor:
+                    item.backgroundColor ?? EditorDefaults.background,
               )
             : item.copyWith(clearBackgroundColor: true),
       ),

@@ -77,7 +77,7 @@ class _ResultPageState extends State<ResultPage> {
             onPressed: () => _output.share(
               result.file,
               mimeType: result.format.mimeType,
-              text: '${result.format.shortLabel} feito com o app Video to GIF',
+              text: '${result.format.shortLabel} feito com o app GitBat',
             ),
             icon: const Icon(Icons.share_outlined),
           ),
@@ -600,8 +600,8 @@ class _GradientActionButton extends StatelessWidget {
     final accent =
         Theme.of(context).extension<AppAccent>() ??
         AppAccent(
-          gradient: lavenderPalette.accentGradient,
-          onAccent: lavenderPalette.onAccent,
+          gradient: batPalette.accentGradient,
+          onAccent: batPalette.onAccent,
         );
     final foreground = accent.onAccent;
 

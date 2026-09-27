@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_to_gif/core/models/frame_settings.dart';
-import 'package:video_to_gif/core/models/photo_placement.dart';
-import 'package:video_to_gif/features/svg/models/svg_edit_settings.dart';
-import 'package:video_to_gif/features/svg/models/svg_info.dart';
-import 'package:video_to_gif/features/svg/services/svg_xml_editor.dart';
+import 'package:gitbat/core/models/frame_settings.dart';
+import 'package:gitbat/core/models/photo_placement.dart';
+import 'package:gitbat/features/svg/models/svg_edit_settings.dart';
+import 'package:gitbat/features/svg/models/svg_info.dart';
+import 'package:gitbat/features/svg/services/svg_xml_editor.dart';
 import 'package:xml/xml.dart';
 
 // "Editar SVG": borda (aba "Borda") e posição livre do desenho saem

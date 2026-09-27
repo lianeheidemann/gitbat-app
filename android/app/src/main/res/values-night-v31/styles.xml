@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Mesma splash de values-v31, no fundo escuro do app (#101014). -->
+    <!-- Mesma splash de values-v31, no fundo escuro do app (#111929). -->
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowSplashScreenBackground">#101014</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">#101014</item>
+        <item name="android:windowSplashScreenBackground">#111929</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#111929</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     </style>
 
