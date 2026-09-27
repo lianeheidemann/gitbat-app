@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 import '../core/models/size_estimate.dart';
 
@@ -58,6 +59,11 @@ ThemeData buildTheme(Brightness brightness) {
         ? _darkBackground
         : scheme.surface,
     appBarTheme: AppBarTheme(
+      // Ícones da barra de status (hora, bateria) escuros no tema claro e
+      // claros no escuro — antes ficavam brancos sobre o fundo claro.
+      systemOverlayStyle: brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       centerTitle: false,

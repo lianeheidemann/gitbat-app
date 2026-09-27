@@ -29,7 +29,8 @@ void main() {
         matching: find.byType(ColoredBox),
       ),
     );
-    expect(box.color, previewAreaColor);
+    // Tema claro (padrão do MaterialApp): o fundo claro.
+    expect(box.color, previewAreaColorLight);
     expect(
       tester.getSize(find.byType(CheckerboardBackground)),
       const Size(120, 60),

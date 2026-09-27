@@ -717,7 +717,10 @@ class _EditorPageState extends State<EditorPage> {
     return ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(22)),
       child: ColoredBox(
-        color: const Color(0xF0000000),
+        // Escuro no tema escuro; no claro, a superfície clara do tema.
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xF0000000)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         child: _previewTimeline(player),
       ),
     );
@@ -1416,6 +1419,11 @@ class _EditorPageState extends State<EditorPage> {
           });
         }
 
+        // Cor dos traços e textos: branca no cartão escuro, a do tema no
+        // claro.
+        final fg = Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Theme.of(context).colorScheme.onSurface;
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
           child: Column(
@@ -1443,7 +1451,7 @@ class _EditorPageState extends State<EditorPage> {
                             child: Container(
                               height: 5,
                               decoration: BoxDecoration(
-                                color: Colors.white24,
+                                color: fg.withValues(alpha: 0.24),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
@@ -1465,7 +1473,7 @@ class _EditorPageState extends State<EditorPage> {
                               width: 3,
                               height: 16,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: fg,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -1475,7 +1483,7 @@ class _EditorPageState extends State<EditorPage> {
                             child: Container(
                               width: 2,
                               height: 18,
-                              color: Colors.white70,
+                              color: fg.withValues(alpha: 0.7),
                             ),
                           ),
                           Positioned(
@@ -1483,7 +1491,7 @@ class _EditorPageState extends State<EditorPage> {
                             child: Container(
                               width: 2,
                               height: 18,
-                              color: Colors.white70,
+                              color: fg.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -1497,15 +1505,24 @@ class _EditorPageState extends State<EditorPage> {
                 children: [
                   Text(
                     _formatSeconds(_settings.startSeconds),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(
+                      color: fg.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
                   ),
                   Text(
                     'Atual ${_formatSeconds(current.clamp(0, duration).toDouble())}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    style: TextStyle(
+                      color: fg.withValues(alpha: 0.54),
+                      fontSize: 11,
+                    ),
                   ),
                   Text(
                     _formatSeconds(_settings.endSeconds),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(
+                      color: fg.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
