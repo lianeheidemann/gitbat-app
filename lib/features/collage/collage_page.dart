@@ -1085,9 +1085,12 @@ class _CollagePageState extends State<CollagePage> {
     return [
       for (final handle in handles)
         Positioned(
+          // Chave única por divisor: no "Personalizada" todos têm
+          // column/index -1, e chaves repetidas deixavam alças antigas
+          // presas na prévia depois de sair de "Áreas".
           key: ValueKey(
-            'collageDivider_${handle.divider.vertical ? 'v' : 'h'}'
-            '_${handle.divider.column}_${handle.divider.index}',
+            'collageDivider_${handle.divider.vertical ? 'v' : 'h'}_'
+            '${handle.divider.path ?? '${handle.divider.column}_${handle.divider.index}'}',
           ),
           left:
               thickness +

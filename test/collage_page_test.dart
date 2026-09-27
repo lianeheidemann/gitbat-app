@@ -1466,4 +1466,43 @@ void main() {
     expect(handles, findsNothing);
     expect(menus, findsNothing);
   });
+
+  testWidgets('"Personalizada": alças de "Áreas" somem ao trocar de aba', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    for (final label in ['Grade 3x3', 'Personalizada']) {
+      final chip = find.text(label);
+      await tester.ensureVisible(chip);
+      await tester.pumpAndSettle();
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Áreas'));
+    await tester.pumpAndSettle();
+    // Foto do meio da linha de cima: vizinhas à esquerda, à direita e
+    // embaixo — duas alças verticais, que antes tinham a mesma chave.
+    await tester.tap(find.byType(CollageCellView).at(1));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    final handles = find.byType(CollageDividerHandle);
+    expect(handles.evaluate().length, greaterThanOrEqualTo(3));
+    final keys = [
+      for (final e
+          in find
+              .ancestor(of: handles, matching: find.byType(Positioned))
+              .evaluate())
+        e.widget.key,
+    ];
+    expect(keys.toSet().length, keys.length, reason: 'chaves únicas');
+
+    await tester.tap(find.text('Borda'));
+    await tester.pumpAndSettle();
+    expect(handles, findsNothing);
+  });
 }

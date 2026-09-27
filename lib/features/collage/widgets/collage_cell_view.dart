@@ -357,15 +357,6 @@ class _CollageCellViewState extends State<CollageCellView> {
               ),
             ),
           ),
-          // Pousado sobre o canto do retângulo, poucos pixels para fora dele
-          // — não pode ir tão longe quanto o centro geométrico do canto
-          // (offset -15 = metade do botão de 30px): o hit-test do Flutter só
-          // enxerga toques dentro do próprio tamanho do Stack (o
-          // `clipBehavior: Clip.none` acima só afeta pintura, nunca
-          // hit-test), então um botão centralizado exatamente na quina tem
-          // seu centro geométrico bem na borda excludente do retângulo e
-          // nunca é tocável. Com -6, um botão de ~30px fica ~24px dentro da
-          // célula (centro ~9px dentro), deixando ~6px visíveis para fora.
           // Guias de centro enquanto a foto está grudada no meio da área.
           if (_active && cell.offsetX == 0)
             Positioned(
@@ -392,9 +383,11 @@ class _CollageCellViewState extends State<CollageCellView> {
           if (_isSelected && showSelection) ..._handles(theme),
           // O "..." só aparece com a foto selecionada (tocada).
           if (_isSelected && showSelection)
+            // Pequeno e por dentro do espaço, no canto de cima.
             Positioned(
-              right: -6,
-              top: -6,
+              key: const ValueKey('cellMenuButton'),
+              right: 4,
+              top: 4,
               child: _MenuButton(onTap: widget.onMenu),
             ),
         ],
@@ -568,8 +561,8 @@ class _MenuButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: const Padding(
-          padding: EdgeInsets.all(6),
-          child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 18),
+          padding: EdgeInsets.all(4),
+          child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 14),
         ),
       ),
     );
