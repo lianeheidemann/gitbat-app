@@ -819,6 +819,9 @@ class _CollagePageState extends State<CollagePage> {
                   ),
                 ),
                 ..._overlayWidgets(size),
+                if (_activeTab == _CollageTab.layout &&
+                    _settings.layout.kind == CollageLayoutKind.custom)
+                  ..._addSlotButtons(geometry),
                 if (_activeTab == _CollageTab.areas) ...[
                   ..._areaHighlights(geometry),
                   ..._dividerHandles(geometry),
@@ -831,6 +834,66 @@ class _CollagePageState extends State<CollagePage> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// Botões "+" do layout "Personalizada": um no meio de cada lado de cada
+  /// espaço, um pouco para dentro (os "+" de duas vizinhas não se
+  /// encostam). Tocar divide aquele espaço em dois, com o novo daquele lado.
+  List<Widget> _addSlotButtons(CollageGeometry geometry) {
+    if (_settings.cells.length >= CollageLayout.maxCustomCells) {
+      return const [];
+    }
+    const size = 28.0;
+    const inset = 6.0;
+    final scheme = Theme.of(context).colorScheme;
+    final buttons = <Widget>[];
+    for (var i = 0; i < geometry.cellRects.length; i++) {
+      final r = geometry.cellRects[i];
+      final centers = {
+        CollageSide.left: Offset(r.left + inset + size / 2, r.center.dy),
+        CollageSide.right: Offset(r.right - inset - size / 2, r.center.dy),
+        CollageSide.top: Offset(r.center.dx, r.top + inset + size / 2),
+        CollageSide.bottom: Offset(r.center.dx, r.bottom - inset - size / 2),
+      };
+      for (final MapEntry(key: side, value: c) in centers.entries) {
+        buttons.add(
+          Positioned(
+            key: ValueKey('collageAddSlot_${i}_${side.name}'),
+            left: c.dx - size / 2,
+            top: c.dy - size / 2,
+            width: size,
+            height: size,
+            child: Material(
+              color: scheme.primary,
+              shape: const CircleBorder(),
+              elevation: 2,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => _addSlot(i, side),
+                child: Icon(Icons.add, size: 18, color: scheme.onPrimary),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    return buttons;
+  }
+
+  /// Divide o espaço [cell] em dois, com o novo (vazio, no estilo das
+  /// outras fotos) do lado [side].
+  void _addSlot(int cell, CollageSide side) {
+    final layout = _settings.layout.splitCell(cell, side);
+    if (identical(layout, _settings.layout)) return;
+    _update(
+      _settings.copyWith(
+        layout: layout,
+        cells: [
+          ..._settings.cells,
+          _settings.withSharedCellStyle(const CollageCellSettings()),
+        ],
       ),
     );
   }
@@ -1441,6 +1504,8 @@ class _CollagePageState extends State<CollagePage> {
       ),
       // Mantém as colunas/linhas do layout atual (uma 3×3 continua 3×3);
       // só os botões de + e − da grade livre mudam isso.
+      // Parte da montagem atual: as fotos ficam onde estavam.
+      CollageLayoutKind.custom => _settings.layout.toCustom(),
       CollageLayoutKind.freeGrid => CollageLayout.grid(
         _settings.layout.columnCount.clamp(
           CollageLayout.minFreeGridSpan,

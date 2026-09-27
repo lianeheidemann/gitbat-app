@@ -38,6 +38,15 @@ class CollageLayoutPanel extends StatelessWidget {
           const SizedBox(height: 14),
           _freeGridSteppers(context),
         ],
+        if (layout.kind == CollageLayoutKind.custom) ...[
+          const SizedBox(height: 14),
+          Text(
+            'Toque no + ao lado de uma foto para criar um espaço novo '
+            'daquele lado. Para tirar um espaço, use o "..." dele.',
+            key: const ValueKey('customLayoutHint'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
         if (layout.kind == CollageLayoutKind.row ||
             layout.kind == CollageLayoutKind.column) ...[
           const SizedBox(height: 14),
@@ -103,11 +112,12 @@ class CollageLayoutPanel extends StatelessWidget {
       CollageLayoutKind.grid2x2 => (2, 2),
       CollageLayoutKind.grid2x3 => (2, 3),
       CollageLayoutKind.grid3x3 => (3, 3),
-      CollageLayoutKind.freeGrid => (0, 0),
+      CollageLayoutKind.freeGrid || CollageLayoutKind.custom => (0, 0),
     };
     if (kind == CollageLayoutKind.freeGrid) {
       return Icon(Icons.dashboard_customize_outlined, color: color);
     }
+    if (kind == CollageLayoutKind.custom) return _customIcon(color);
     const dot = 6.0;
     const gap = 3.0;
     return Column(
@@ -135,6 +145,50 @@ class CollageLayoutPanel extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  /// Ícone do "Personalizada": espaços de tamanhos diferentes — um alto à
+  /// esquerda e dois empilhados à direita, o de baixo dividido de novo.
+  Widget _customIcon(Color color) {
+    Widget box() => Expanded(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(1.5),
+        ),
+      ),
+    );
+    const gap = 3.0;
+    return SizedBox(
+      width: 30,
+      height: 30,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          box(),
+          const SizedBox(width: gap),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                box(),
+                const SizedBox(height: gap),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      box(),
+                      const SizedBox(width: gap),
+                      box(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
