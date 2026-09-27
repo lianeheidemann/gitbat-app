@@ -361,12 +361,19 @@ class _HomePageState extends State<HomePage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Image.asset(
-                  'assets/icon/icon-v2/morceguinho-icone-simples.png',
-                  width: 96,
-                  height: 96,
-                  fit: BoxFit.contain,
-                  semanticLabel: 'Ícone do GitBat',
+                // Selos das tecnologias do app, na versão do tema atual —
+                // cópias geradas por tool/gerar_selos_do_app.py.
+                AspectRatio(
+                  aspectRatio: 1540 / 92,
+                  child: SvgPicture.asset(
+                    theme.brightness == Brightness.dark
+                        ? 'recursos/marca/gitbat-selos-escuro.svg'
+                        : 'recursos/marca/gitbat-selos-claro.svg',
+                    key: const ValueKey('homeBadges'),
+                    fit: BoxFit.contain,
+                    semanticsLabel:
+                        'Flutter, Dart, Android, FFmpeg e licença proprietária',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(

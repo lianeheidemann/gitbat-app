@@ -4,7 +4,7 @@
 
 # GitBat
 
-<img width="460" src="assets/badge/video-to-gif-badges-adaptive-v10.svg"/>
+<img width="460" src="assets/badge/gitbat-badges-adaptive-v10.svg"/>
 
 <p align="center"><a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=111A2D&color=5B9CFF"></a>&nbsp;<a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=111A2D&color=20D5E8"></a></p>
 
@@ -164,7 +164,8 @@ lib/
     ├── collage/  ├── home/  ├── photo/
     ├── quick_convert/  ├── svg/  └── video/
 test/             # unit, widget and golden-pixel tests
-tool/             # icon generation, accuracy script, asset-list sync
+tool/             # icon/badge generation, accuracy script, asset-list sync
+recursos/         # stable copies of brand art used inside the app
 assets/           # backgrounds, fonts, frames, stickers; plus icon/,
                   # readme/ and interface-v2/ (brand art, not in the APK)
 docs/             # en and pt-Br documentation
@@ -212,6 +213,7 @@ CI checks this on every push.
 |---|---|
 | App icon (master) | `assets/icon/icon-v2/morceguinho-icone-simples.png` — regenerate every size with `python3 tool/gerar_icones.py` |
 | README logo | `assets/readme/gitbat-logo.png` |
+| Tech badges | `assets/badge/gitbat-badges-adaptive-v10.svg` (README); light/dark copies for the app's home screen in `recursos/marca/` — regenerate with `python3 tool/gerar_selos_do_app.py` |
 | Official palette | *Morceguinho* in `lib/app/app_palette.dart` |
 | Previous identity | `assets/icon/icon-v1/` |
 

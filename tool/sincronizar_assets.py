@@ -30,7 +30,13 @@ PASTAS_DE_CONTEUDO = ['assets/background', 'assets/fonts', 'assets/frame',
                       'assets/sticker']
 
 # Arquivos avulsos que continuam declarados um a um.
-AVULSOS = ['assets/icon/icon-v2/morceguinho-icone-simples.png']
+# `recursos/` guarda cópias estáveis da arte que o app usa, separadas de
+# `assets/` (pasta de trabalho). Os selos são gerados por
+# tool/gerar_selos_do_app.py.
+AVULSOS = [
+    'recursos/marca/gitbat-selos-claro.svg',
+    'recursos/marca/gitbat-selos-escuro.svg',
+]
 
 IGNORADOS = {'.ds_store', 'thumbs.db'}
 
