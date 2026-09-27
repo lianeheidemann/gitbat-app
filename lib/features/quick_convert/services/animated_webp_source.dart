@@ -38,35 +38,62 @@ Future<VideoInfo> probeAnimatedWebp(String path, FfmpegService ffmpeg) async {
   final dir = await Directory(
     '${temp.path}/webp_${DateTime.now().millisecondsSinceEpoch}',
   ).create(recursive: true);
+  final bytes = await File(path).readAsBytes();
 
-  final codec = await ui.instantiateImageCodec(await File(path).readAsBytes());
-  var totalMs = 0;
-  final frameCount = codec.frameCount;
-  try {
-    for (var i = 0; i < frameCount; i++) {
-      final frame = await codec.getNextFrame();
-      // Quadros sem duração (0) contam como 100 ms, o padrão dos
-      // navegadores para animações sem tempo definido.
-      final ms = frame.duration.inMilliseconds;
-      totalMs += ms <= 0 ? 100 : ms;
-      final png = await frame.image.toByteData(format: ui.ImageByteFormat.png);
-      frame.image.dispose();
-      await File(
-        '${dir.path}/quadro_${i.toString().padLeft(5, '0')}.png',
-      ).writeAsBytes(png!.buffer.asUint8List());
+  // O primeiro quadro dá o tamanho e a taxa do intermediário (que é de taxa
+  // fixa): quadros mais longos que ele se repetem, e o tempo total fica
+  // igual ao original.
+  final int width;
+  final int height;
+  final int frameCount;
+  final double fps;
+  {
+    final codec = await ui.instantiateImageCodec(bytes);
+    try {
+      frameCount = codec.frameCount;
+      final first = await codec.getNextFrame();
+      width = first.image.width;
+      height = first.image.height;
+      fps = (1000 / webpFrameMs(first.duration)).clamp(1.0, 60.0);
+      first.image.dispose();
+    } finally {
+      codec.dispose();
     }
-  } finally {
-    codec.dispose();
   }
 
-  // Taxa média: o WebP pode ter durações diferentes por quadro, mas o
-  // intermediário é de taxa fixa — o tempo total fica igual ao original.
-  final fps = (frameCount * 1000 / totalMs).clamp(1.0, 60.0);
+  Future<void> writeFrames(IOSink sink) async {
+    final codec = await ui.instantiateImageCodec(bytes);
+    try {
+      for (var i = 0; i < frameCount; i++) {
+        final frame = await codec.getNextFrame();
+        // Cru (sem codificar PNG no Flutter, que era o lento), com alfa
+        // "reto", que é o que o FFmpeg espera em rgba.
+        final data = await frame.image.toByteData(
+          format: ui.ImageByteFormat.rawStraightRgba,
+        );
+        frame.image.dispose();
+        final pixels = data!.buffer.asUint8List();
+        final copies = webpFrameCopies(frame.duration, fps);
+        for (var c = 0; c < copies; c++) {
+          sink.add(pixels);
+        }
+        // Espera o FFmpeg ler antes de decodificar o próximo, para não
+        // acumular quadros na memória.
+        await sink.flush();
+      }
+    } finally {
+      codec.dispose();
+    }
+  }
+
   final movPath = '${dir.path}/origem.mov';
-  await ffmpeg.pngSequenceToMov(
-    framePattern: '${dir.path}/quadro_%05d.png',
+  await ffmpeg.rawRgbaToMov(
+    width: width,
+    height: height,
     fps: fps,
     outputPath: movPath,
+    scratchDir: dir.path,
+    writeFrames: writeFrames,
   );
 
   final probed = await ffmpeg.probe(movPath);
@@ -79,8 +106,22 @@ Future<VideoInfo> probeAnimatedWebp(String path, FfmpegService ffmpeg) async {
     durationSeconds: probed.durationSeconds,
     frameRate: probed.frameRate,
     bitrateBps: probed.bitrateBps,
-    fileSizeBytes: await original.length(),
+    fileSizeBytes: original.lengthSync(),
     codec: 'webp',
     rotationDegrees: probed.rotationDegrees,
   );
+}
+
+/// Duração de um quadro do WebP em ms — sem duração (0) conta como 100 ms,
+/// o padrão dos navegadores para animações sem tempo definido.
+int webpFrameMs(Duration duration) {
+  final ms = duration.inMilliseconds;
+  return ms <= 0 ? 100 : ms;
+}
+
+/// Quantas vezes um quadro de [duration] entra no intermediário de taxa
+/// fixa [fps] — pelo menos uma, para nenhum quadro sumir.
+int webpFrameCopies(Duration duration, double fps) {
+  final copies = (webpFrameMs(duration) * fps / 1000).round();
+  return copies < 1 ? 1 : copies;
 }

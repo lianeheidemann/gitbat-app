@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_to_gif/core/models/video_info.dart';
@@ -83,5 +85,36 @@ void main() {
 
     expect(find.text('gravacao'), findsOneWidget);
     expect(find.text('MP4'), findsNothing);
+  });
+  _thumbnailTests();
+}
+
+void _thumbnailTests() {
+  testWidgets('sem miniatura mostra o ícone; com ela, a imagem', (
+    tester,
+  ) async {
+    final video = _video();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SourceFileCard(video: video, extension: 'mp4'),
+        ),
+      ),
+    );
+    expect(find.byIcon(Icons.insert_drive_file_outlined), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SourceFileCard(
+            video: video,
+            extension: 'mp4',
+            thumbnail: File('/tmp/nao_existe.jpg'),
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(Image), findsOneWidget);
   });
 }
