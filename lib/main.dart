@@ -44,9 +44,44 @@ class VideoToGifApp extends StatelessWidget {
           theme: buildTheme(Brightness.light),
           darkTheme: buildTheme(Brightness.dark),
           themeMode: mode,
+          // Todo texto do app um pouco menor ([appTextScale]), por cima da
+          // escolha de fonte do sistema — inclusive os tamanhos fixos das
+          // telas, que o tema sozinho não alcança.
+          builder: (context, child) {
+            final media = MediaQuery.of(context);
+            return MediaQuery(
+              data: media.copyWith(
+                textScaler: _ScaledTextScaler(media.textScaler, appTextScale),
+              ),
+              child: child!,
+            );
+          },
           home: const HomePage(),
         );
       },
     );
   }
+}
+
+/// [base] (a escala de fonte do sistema) multiplicada por [factor].
+class _ScaledTextScaler extends TextScaler {
+  const _ScaledTextScaler(this.base, this.factor);
+
+  final TextScaler base;
+  final double factor;
+
+  @override
+  double scale(double fontSize) => base.scale(fontSize) * factor;
+
+  @override
+  double get textScaleFactor => base.scale(1) * factor;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ScaledTextScaler &&
+      other.base == base &&
+      other.factor == factor;
+
+  @override
+  int get hashCode => Object.hash(base, factor);
 }

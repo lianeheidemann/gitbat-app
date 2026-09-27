@@ -14,6 +14,7 @@ import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../core/services/output_service.dart';
 import '../../core/ui/app_bar_title.dart';
 import 'widgets/source_file_card.dart';
+import '../../core/ui/saved_dialog.dart';
 
 /// Tela única de "Converter formato": escolher o arquivo e escolher para qual
 /// formato converter acontecem no mesmo lugar.
@@ -558,11 +559,12 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
         _saving = false;
         _saved = true;
       });
+      await showSavedDialog(context, 'Arquivo salvo na galeria.');
     } on OutputException catch (e) {
       if (!mounted) return;
       // Dentro de um popup o SnackBar sairia atrás do véu do diálogo, por
-      // isso o aviso vem aqui no corpo. O sucesso não precisa de aviso: o
-      // próprio botão passa a dizer "Salvo na galeria".
+      // isso o erro vem aqui no corpo. O sucesso abre o pop-up "Salvo!"
+      // por cima, e o botão passa a dizer "Salvo na galeria".
       setState(() {
         _saving = false;
         _saveError = e.message;

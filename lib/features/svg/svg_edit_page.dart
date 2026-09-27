@@ -31,6 +31,7 @@ import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/saved_dialog.dart';
 
 /// Sentinela do preset "Personalizado" na fileira de proporções — mesma
 /// ideia de `_customAspectPreset` em `editor_page.dart`: não é uma proporção
@@ -988,7 +989,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
         allowedExtensions: ['svg'],
       );
       if (!mounted) return;
-      if (uri != null) _message('SVG salvo.');
+      if (uri != null) await showSavedDialog(context, 'SVG salvo.');
     } on SvgEditException catch (e) {
       if (!mounted) return;
       _message(e.message);

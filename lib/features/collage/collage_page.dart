@@ -46,6 +46,7 @@ import '../../core/ui/text_input_dialog.dart';
 import 'widgets/panels/layout_panel.dart';
 import 'widgets/panels/areas_panel.dart';
 import '../../core/ui/preview_settings_panel.dart';
+import '../../core/ui/saved_dialog.dart';
 
 /// Geometria do sticker/texto selecionado, na medida necessária para
 /// posicionar as alças de redimensionar/girar por fora dele (ver
@@ -2284,7 +2285,7 @@ class _CollagePageState extends State<CollagePage> {
       }
       await _output.saveToGallery(file);
       if (!mounted) return;
-      _message('Montagem salva na galeria.');
+      await showSavedDialog(context, 'Montagem salva na galeria.');
     } on OutputException catch (e) {
       if (!mounted) return;
       _message(e.message);

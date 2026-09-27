@@ -41,6 +41,7 @@ import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/saved_dialog.dart';
 
 /// Mesmos três modos apresentados ao usuário em `EditorPage` — `fit` só
 /// existe como resultado interno do ajuste automático.
@@ -290,7 +291,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       final file = await _writeTempPng(bytes);
       await _output.saveToGallery(file);
       if (!mounted) return;
-      _message('Foto salva na galeria.');
+      await showSavedDialog(context, 'Foto salva na galeria.');
     } on OutputException catch (e) {
       if (!mounted) return;
       _message(e.message);
