@@ -5,6 +5,8 @@ import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
 import '../../../core/models/default_colors.dart';
+import '../../../core/models/frame_settings.dart';
+import '../../../core/models/photo_placement.dart';
 
 /// Filtro de cor aplicado ao SVG inteiro — via `ColorFiltered` na prévia e
 /// via `<feColorMatrix>` (nativo do SVG, sem rasterizar) na exportação.
@@ -39,6 +41,8 @@ class SvgEditSettings {
     this.opacity = 1.0,
     this.texts = const [],
     this.stickers = const [],
+    this.border = const FrameSettings(),
+    this.placement = PhotoPlacement.identity,
   });
 
   /// `null` = o SVG inteiro, no tamanho nativo (`SvgInfo.width`/`height`).
@@ -83,6 +87,17 @@ class SvgEditSettings {
   /// resultado final, como [texts]. Desenhados por baixo dos textos.
   final List<CollageSticker> stickers;
 
+  /// Borda em volta do resultado (aba "Borda") — o mesmo modelo das outras
+  /// telas; aqui só `style`, `color`, `thicknessAtReference` e
+  /// `cornerRatio` importam. Sai vetorial no arquivo (ver
+  /// `applyBorderSvg`).
+  final FrameSettings border;
+
+  /// Posição livre do desenho (arrastar, pinçar, girar e as alças na
+  /// prévia), como em "Editar imagem" — ver [PhotoPlacement]. No arquivo
+  /// vira um `transform` no grupo do conteúdo (ver `applyPlacementSvg`).
+  final PhotoPlacement placement;
+
   /// Filtro equivalente ao [filterType] para a prévia (widget), com os
   /// mesmos coeficientes usados na exportação (`svg_xml_editor.dart`'s
   /// `applyFilterSvg`) — preto e branco reaproveita
@@ -120,6 +135,8 @@ class SvgEditSettings {
     double? opacity,
     List<CollageTextItem>? texts,
     List<CollageSticker>? stickers,
+    FrameSettings? border,
+    PhotoPlacement? placement,
   }) {
     return SvgEditSettings(
       crop: clearCrop ? null : (crop ?? this.crop),
@@ -134,6 +151,8 @@ class SvgEditSettings {
       opacity: opacity ?? this.opacity,
       texts: texts ?? this.texts,
       stickers: stickers ?? this.stickers,
+      border: border ?? this.border,
+      placement: placement ?? this.placement,
     );
   }
 }

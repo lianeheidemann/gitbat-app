@@ -217,23 +217,28 @@ class _EditorTabsFooterState extends State<EditorTabsFooter> {
         : theme.colorScheme.onSurfaceVariant;
     return InkWell(
       onTap: () => widget.onSelected(selected ? null : index),
-      child: SizedBox(
-        width: 60,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(section.icon, size: 20, color: color),
-            const SizedBox(height: 4),
-            Text(
-              section.barLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+      // Pelo menos 60 de largura, crescendo para rótulos mais longos
+      // ("Configurações") em vez de cortá-los.
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(section.icon, size: 20, color: color),
+              const SizedBox(height: 4),
+              Text(
+                section.barLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

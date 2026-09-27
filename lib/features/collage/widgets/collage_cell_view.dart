@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart'
+    show Drag, ImmediateMultiDragGestureRecognizer;
 import 'package:flutter/material.dart';
 
 import '../models/collage_background.dart';
@@ -24,7 +27,15 @@ class CollageCellView extends StatefulWidget {
     required this.onMenu,
     this.onGestureStart,
     this.interactive = true,
+    this.canvasWidth,
   });
+
+  /// Largura da montagem inteira, que decide a espessura da borda própria
+  /// (ver [CollageCellSettings.borderThicknessFor]). Sem ela, vale o dobro
+  /// da largura da célula.
+  final double? canvasWidth;
+
+  double get _borderCanvasWidth => canvasWidth ?? cellSize.width * 2;
 
   final CollageCellSettings cell;
   final Size cellSize;
@@ -60,12 +71,73 @@ class _CollageCellViewState extends State<CollageCellView> {
   /// sem folga em nenhum eixo, por exemplo.
   bool _checkpointPushed = false;
 
+  /// Foto tocada: mostra o contorno e as alças de redimensionar e girar,
+  /// como em "Editar imagem".
+  bool _selected = false;
+
+  /// Gesto em andamento — as guias de centro só aparecem durante ele.
+  bool _active = false;
+
+  /// Valores "livres" (sem as travas) durante o gesto: a foto gruda no
+  /// centro, em 100% e nos ângulos retos quando chega perto, e solta ao
+  /// seguir o gesto.
+  double _freeOffsetX = 0;
+  double _freeOffsetY = 0;
+  double _freeRotation = 0;
+  double _freeZoom = 1;
+
+  // Arrasto de uma alça.
+  Offset _handlePos = Offset.zero;
+  Offset _handleStart = Offset.zero;
+
+  static const _centerSnap = 0.03;
+  static const _angleSnap = 4 * math.pi / 180;
+  static const _zoomSnap = 0.03;
+
+  static double _snapAngle(double r) {
+    const quarter = math.pi / 2;
+    final nearest = (r / quarter).round() * quarter;
+    return (r - nearest).abs() <= _angleSnap ? nearest : r;
+  }
+
+  @override
+  void didUpdateWidget(covariant CollageCellView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.interactive || !widget.cell.hasPhoto) _selected = false;
+  }
+
+  void _emit({
+    double? zoom,
+    double? rotation,
+    double? offsetX,
+    double? offsetY,
+  }) {
+    final cell = widget.cell;
+    final z = zoom ?? cell.zoom;
+    final r = rotation ?? cell.rotation;
+    final x = offsetX ?? cell.offsetX;
+    final y = offsetY ?? cell.offsetY;
+    if (z == cell.zoom &&
+        r == cell.rotation &&
+        x == cell.offsetX &&
+        y == cell.offsetY) {
+      return;
+    }
+    if (!_checkpointPushed) {
+      _checkpointPushed = true;
+      widget.onGestureStart?.call();
+    }
+    widget.onChanged(
+      cell.copyWith(zoom: z, rotation: r, offsetX: x, offsetY: y),
+    );
+  }
+
   /// Tamanho disponível para a FOTO em si, descontada a borda própria da
   /// célula (se houver) — a borda ocupa uma faixa fixa ao redor, então toda
   /// a matemática de recorte/enquadramento (e os próprios gestos) opera
   /// sobre esse tamanho menor, nunca sobre [CollageCellView.cellSize] cru.
   Size get _contentSize {
-    final thickness = widget.cell.borderThicknessFor(widget.cellSize.width);
+    final thickness = widget.cell.borderThicknessFor(widget._borderCanvasWidth);
     final w = (widget.cellSize.width - thickness * 2).clamp(
       0.0,
       widget.cellSize.width,
@@ -90,6 +162,12 @@ class _CollageCellViewState extends State<CollageCellView> {
     _checkpointPushed = false;
     _startZoom = widget.cell.zoom;
     _startRotation = widget.cell.rotation;
+    _freeOffsetX = widget.cell.offsetX;
+    _freeOffsetY = widget.cell.offsetY;
+    setState(() {
+      _active = true;
+      _selected = true;
+    });
     _pendingSlop =
         details.focalPoint - (_lastPointerDown ?? details.focalPoint);
   }
@@ -97,11 +175,13 @@ class _CollageCellViewState extends State<CollageCellView> {
   void _onScaleUpdate(ScaleUpdateDetails details) {
     final cell = widget.cell;
     final contentSize = _contentSize;
-    final newZoom = (_startZoom * details.scale).clamp(
+    _freeZoom = (_startZoom * details.scale).clamp(
       CollageCellSettings.minZoom,
       CollageCellSettings.maxZoom,
     );
-    final newRotation = _startRotation + details.rotation;
+    _freeRotation = _startRotation + details.rotation;
+    final newZoom = (_freeZoom - 1).abs() <= _zoomSnap ? 1.0 : _freeZoom;
+    final newRotation = _snapAngle(_freeRotation);
 
     // Recupera o trecho que a arena de gestos engoliu antes de aceitar o
     // arrasto (o `touch slop`), pelo mesmo motivo de `CollageOverlayView`:
@@ -121,27 +201,19 @@ class _CollageCellViewState extends State<CollageCellView> {
         contentSize,
       ),
     };
-    final newOffsetX = (cell.offsetX + delta.dx).clamp(-1.0, 1.0);
-    final newOffsetY = (cell.offsetY + delta.dy).clamp(-1.0, 1.0);
-
-    if (newZoom == cell.zoom &&
-        newRotation == cell.rotation &&
-        newOffsetX == cell.offsetX &&
-        newOffsetY == cell.offsetY) {
-      return;
-    }
-    if (!_checkpointPushed) {
-      _checkpointPushed = true;
-      widget.onGestureStart?.call();
-    }
-    widget.onChanged(
-      cell.copyWith(
-        zoom: newZoom,
-        rotation: newRotation,
-        offsetX: newOffsetX,
-        offsetY: newOffsetY,
-      ),
+    _freeOffsetX = (_freeOffsetX + delta.dx).clamp(-1.0, 1.0);
+    _freeOffsetY = (_freeOffsetY + delta.dy).clamp(-1.0, 1.0);
+    _emit(
+      zoom: newZoom,
+      rotation: newRotation,
+      // Gruda no centro da área quando chega perto.
+      offsetX: _freeOffsetX.abs() <= _centerSnap ? 0.0 : _freeOffsetX,
+      offsetY: _freeOffsetY.abs() <= _centerSnap ? 0.0 : _freeOffsetY,
     );
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {
+    if (_active) setState(() => _active = false);
   }
 
   /// Duplo toque: alterna encaixar/expandir E devolve a foto ao enquadramento
@@ -169,7 +241,7 @@ class _CollageCellViewState extends State<CollageCellView> {
     final outerRadius =
         widget.cellSize.shortestSide *
         cell.cornerRatio.clamp(0.0, CollageCellSettings.maxCornerRatio);
-    final borderThickness = cell.borderThicknessFor(widget.cellSize.width);
+    final borderThickness = cell.borderThicknessFor(widget._borderCanvasWidth);
     final innerRadius = (outerRadius - borderThickness).clamp(0.0, outerRadius);
     final contentSize = _contentSize;
 
@@ -213,8 +285,12 @@ class _CollageCellViewState extends State<CollageCellView> {
                   behavior: HitTestBehavior.opaque,
                   onScaleStart: cell.hasPhoto ? _onScaleStart : null,
                   onScaleUpdate: cell.hasPhoto ? _onScaleUpdate : null,
+                  onScaleEnd: cell.hasPhoto ? _onScaleEnd : null,
                   onDoubleTap: cell.hasPhoto ? _toggleFitMode : null,
-                  onTap: cell.hasPhoto ? null : widget.onMenu,
+                  // Tocar na foto mostra/esconde as alças.
+                  onTap: cell.hasPhoto
+                      ? () => setState(() => _selected = !_selected)
+                      : widget.onMenu,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -259,6 +335,30 @@ class _CollageCellViewState extends State<CollageCellView> {
           // seu centro geométrico bem na borda excludente do retângulo e
           // nunca é tocável. Com -6, um botão de ~30px fica ~24px dentro da
           // célula (centro ~9px dentro), deixando ~6px visíveis para fora.
+          // Guias de centro enquanto a foto está grudada no meio da área.
+          if (_active && cell.offsetX == 0)
+            Positioned(
+              key: const ValueKey('cellCenterGuideVertical'),
+              left: widget.cellSize.width / 2 - 0.75,
+              width: 1.5,
+              top: 0,
+              bottom: 0,
+              child: const IgnorePointer(
+                child: ColoredBox(color: Color(0xFFFF4FD8)),
+              ),
+            ),
+          if (_active && cell.offsetY == 0)
+            Positioned(
+              key: const ValueKey('cellCenterGuideHorizontal'),
+              top: widget.cellSize.height / 2 - 0.75,
+              height: 1.5,
+              left: 0,
+              right: 0,
+              child: const IgnorePointer(
+                child: ColoredBox(color: Color(0xFFFF4FD8)),
+              ),
+            ),
+          if (_selected && cell.hasPhoto) ..._handles(theme),
           if (cell.hasPhoto)
             Positioned(
               right: -6,
@@ -268,6 +368,111 @@ class _CollageCellViewState extends State<CollageCellView> {
         ],
       ),
     );
+  }
+
+  /// Contorno da área e duas alças, como em "Editar imagem": a de baixo à
+  /// direita amplia/reduz a foto (zoom) com um dedo e a de baixo à esquerda
+  /// gira (a de cima à direita é o "...").
+  List<Widget> _handles(ThemeData theme) {
+    final size = widget.cellSize;
+    final center = Offset(size.width / 2, size.height / 2);
+    const touch = 40.0;
+    const inset = 4.0;
+    final resizeAt = Offset(
+      size.width - inset - touch / 2,
+      size.height - inset - touch / 2,
+    );
+    final rotateAt = Offset(inset + touch / 2, size.height - inset - touch / 2);
+
+    Widget handle({
+      required Key key,
+      required Offset at,
+      required IconData icon,
+      required void Function(Offset delta) onDrag,
+    }) {
+      return Positioned(
+        key: key,
+        left: at.dx - touch / 2,
+        top: at.dy - touch / 2,
+        width: touch,
+        height: touch,
+        child: RawGestureDetector(
+          behavior: HitTestBehavior.opaque,
+          gestures: {
+            ImmediateMultiDragGestureRecognizer:
+                GestureRecognizerFactoryWithHandlers<
+                  ImmediateMultiDragGestureRecognizer
+                >(ImmediateMultiDragGestureRecognizer.new, (recognizer) {
+                  recognizer.onStart = (_) {
+                    _checkpointPushed = false;
+                    _startZoom = widget.cell.zoom;
+                    _startRotation = widget.cell.rotation;
+                    _handleStart = at;
+                    _handlePos = at;
+                    setState(() => _active = true);
+                    return _CellHandleDrag(
+                      onUpdate: onDrag,
+                      onEnd: () {
+                        if (mounted) setState(() => _active = false);
+                      },
+                    );
+                  };
+                }),
+          },
+          child: Center(
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.colorScheme.surface, width: 2),
+              ),
+              child: Icon(icon, size: 13, color: theme.colorScheme.onPrimary),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return [
+      Positioned.fill(
+        child: IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.primary, width: 1.5),
+            ),
+          ),
+        ),
+      ),
+      handle(
+        key: const ValueKey('cellResizeHandle'),
+        at: resizeAt,
+        icon: Icons.open_in_full_rounded,
+        onDrag: (delta) {
+          _handlePos += delta;
+          final d0 = (_handleStart - center).distance;
+          if (d0 < 1) return;
+          final z = (_startZoom * (_handlePos - center).distance / d0).clamp(
+            CollageCellSettings.minZoom,
+            CollageCellSettings.maxZoom,
+          );
+          _emit(zoom: (z - 1).abs() <= _zoomSnap ? 1.0 : z);
+        },
+      ),
+      handle(
+        key: const ValueKey('cellRotateHandle'),
+        at: rotateAt,
+        icon: Icons.rotate_right_rounded,
+        onDrag: (delta) {
+          _handlePos += delta;
+          final turn =
+              (_handlePos - center).direction -
+              (_handleStart - center).direction;
+          _emit(rotation: _snapAngle(_startRotation + turn));
+        },
+      ),
+    ];
   }
 
   /// Espelho de `CollagePage._backgroundPreview()` para o fundo de uma única
@@ -286,6 +491,23 @@ class _CollageCellViewState extends State<CollageCellView> {
         return BackgroundImageView(path: path);
     }
   }
+}
+
+/// Arrasto de uma alça da célula: repassa o deslocamento de cada quadro.
+class _CellHandleDrag extends Drag {
+  _CellHandleDrag({required this.onUpdate, required this.onEnd});
+
+  final void Function(Offset delta) onUpdate;
+  final VoidCallback onEnd;
+
+  @override
+  void update(DragUpdateDetails details) => onUpdate(details.delta);
+
+  @override
+  void end(DragEndDetails details) => onEnd();
+
+  @override
+  void cancel() => onEnd();
 }
 
 class _MenuButton extends StatelessWidget {

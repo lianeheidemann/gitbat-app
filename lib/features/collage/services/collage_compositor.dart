@@ -101,6 +101,7 @@ Future<Uint8List> composeCollageFrame({
       cell,
       i < cellImages.length ? cellImages[i] : null,
       cellBackgroundImage: cellBackgroundImages[cell.background.imagePath],
+      canvasWidth: geometry.canvasSize.width,
     );
   }
   canvas.restore();

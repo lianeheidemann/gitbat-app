@@ -498,14 +498,16 @@ void main() {
   });
 
   group('borda por foto', () {
-    test('espessura escala proporcionalmente à largura da célula', () {
+    test('espessura acompanha a largura da montagem, não a da área', () {
       const cell = CollageCellSettings(borderThicknessAtReference: 12);
+      // Numa montagem com o dobro da largura de referência, a espessura é a
+      // escolhida — qualquer que seja o tamanho da área da foto.
       expect(
-        cell.borderThicknessFor(CollageCellSettings.referenceWidth),
+        cell.borderThicknessFor(CollageCellSettings.referenceWidth * 2),
         closeTo(12, 0.001),
       );
       expect(
-        cell.borderThicknessFor(CollageCellSettings.referenceWidth * 2),
+        cell.borderThicknessFor(CollageCellSettings.referenceWidth * 4),
         closeTo(24, 0.001),
       );
     });

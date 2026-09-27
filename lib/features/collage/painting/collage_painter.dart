@@ -162,6 +162,7 @@ void paintCollageCell(
   CollageCellSettings cell,
   ui.Image? photoImage, {
   ui.Image? cellBackgroundImage,
+  double? canvasWidth,
 }) {
   // Sem foto legível e sem fundo próprio não há nada para desenhar — uma foto
   // que o usuário apagou do aparelho não pode deixar a borda da célula
@@ -179,7 +180,11 @@ void paintCollageCell(
   // desenhado no perímetro da célula, encolhendo a área de conteúdo pela
   // mesma espessura — mesmo princípio de `paintCollageBorder`/
   // `CollageGeometry`, só que por célula em vez de pela montagem toda.
-  final borderThickness = cell.borderThicknessFor(cellRect.width);
+  // Espessura pela largura da montagem (não da área) — ver
+  // [CollageCellSettings.borderThicknessFor].
+  final borderThickness = cell.borderThicknessFor(
+    canvasWidth ?? cellRect.width * 2,
+  );
   final innerRadius = (outerRadius - borderThickness).clamp(0.0, outerRadius);
   final contentRect = cellRect.deflate(borderThickness);
   if (contentRect.isEmpty) return;

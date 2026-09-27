@@ -9,6 +9,8 @@ import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
+import '../../../core/models/frame_settings.dart';
+import '../../../core/models/photo_placement.dart';
 import '../models/svg_edit_settings.dart';
 import '../models/svg_info.dart';
 
@@ -450,6 +452,114 @@ void applyTextsSvg(XmlElement root, List<CollageTextItem> texts) {
   }
 }
 
+/// Posição livre do desenho (arrastar/pinçar/girar na prévia): o conteúdo
+/// (tudo menos `<defs>` e o fundo) vai para um `<g>` com o mesmo movimento
+/// da prévia — desloca o centro por `dx`/`dy` (frações do `viewBox`), gira e
+/// escala em volta dele. Sem mudança, nada acontece.
+void applyPlacementSvg(XmlElement root, PhotoPlacement placement) {
+  if (placement.isIdentity) return;
+  final (x, y, w, h) = _currentViewBox(root);
+  final cx = x + w / 2;
+  final cy = y + h / 2;
+  final degrees = placement.rotation * 180 / math.pi;
+  final group = XmlElement.tag('g')
+    ..setAttribute('$_marker-placement', '1')
+    ..setAttribute(
+      'transform',
+      'translate(${_num(cx + placement.dx * w)} ${_num(cy + placement.dy * h)}) '
+          'rotate(${_num(degrees)}) scale(${_num(placement.scale)}) '
+          'translate(${_num(-cx)} ${_num(-cy)})',
+    );
+  final content = [
+    for (final node in root.children)
+      if (node is XmlElement &&
+          node.name.local != 'defs' &&
+          node.getAttribute('$_marker-bg') != '1')
+        node,
+  ];
+  for (final node in content) {
+    root.children.remove(node);
+    group.children.add(node);
+  }
+  root.children.add(group);
+}
+
+/// Borda da aba "Borda" em volta do resultado, vetorial: o conteúdo (tudo
+/// menos `<defs>` e o fundo) vai para um `<g>` recortado no retângulo
+/// arredondado de dentro, e o anel entra por cima como um `<path>` com
+/// `fill-rule="evenodd"` (retângulo de fora menos o de dentro). Mesma
+/// geometria de `FrameGeometry`/`paintFrame` na foto: espessura
+/// proporcional à largura do `viewBox`, cantos ao menor lado dele. Sem
+/// borda, nada muda.
+void applyBorderSvg(XmlElement root, FrameSettings border) {
+  if (border.style == FrameStyle.none) return;
+  final (x, y, w, h) = _currentViewBox(root);
+  final t = border.thicknessFor(w).clamp(0.0, math.min(w, h) / 2);
+  final outerR = border.cornerRadiusFor(math.min(w, h));
+  final innerR = (outerR - t).clamp(0.0, outerR);
+  const clipId = 'svgedit-border-clip';
+
+  final content = [
+    for (final node in root.children)
+      if (node is XmlElement &&
+          node.name.local != 'defs' &&
+          node.getAttribute('$_marker-bg') != '1')
+        node,
+  ];
+  final group = XmlElement.tag('g')
+    ..setAttribute('$_marker-border', '1')
+    ..setAttribute('clip-path', 'url(#$clipId)');
+  for (final node in content) {
+    root.children.remove(node);
+    group.children.add(node);
+  }
+
+  final clip = XmlElement.tag('clipPath')
+    ..setAttribute('id', clipId)
+    ..children.add(
+      XmlElement.tag('path')..setAttribute(
+        'd',
+        _roundedRectPath(x + t, y + t, w - 2 * t, h - 2 * t, innerR),
+      ),
+    );
+  final defs = XmlElement.tag('defs')
+    ..setAttribute('$_marker-border', '1')
+    ..children.add(clip);
+
+  final ring = XmlElement.tag('path')
+    ..setAttribute('$_marker-border', '1')
+    ..setAttribute('fill-rule', 'evenodd')
+    ..setAttribute('fill', _colorToHex(border.color))
+    ..setAttribute(
+      'd',
+      '${_roundedRectPath(x, y, w, h, outerR)} '
+          '${_roundedRectPath(x + t, y + t, w - 2 * t, h - 2 * t, innerR)}',
+    );
+  if (border.color.a < 1) {
+    ring.setAttribute('fill-opacity', _num(border.color.a));
+  }
+
+  root.children
+    ..add(defs)
+    ..add(group)
+    ..add(ring);
+}
+
+/// Caminho SVG de um retângulo de cantos arredondados (raio [r]).
+String _roundedRectPath(double x, double y, double w, double h, double r) {
+  final rr = r.clamp(0.0, math.min(w, h) / 2);
+  if (rr <= 0) {
+    return 'M${_num(x)} ${_num(y)}H${_num(x + w)}V${_num(y + h)}'
+        'H${_num(x)}Z';
+  }
+  final a = '${_num(rr)} ${_num(rr)} 0 0 1';
+  return 'M${_num(x + rr)} ${_num(y)}'
+      'H${_num(x + w - rr)}A$a ${_num(x + w)} ${_num(y + rr)}'
+      'V${_num(y + h - rr)}A$a ${_num(x + w - rr)} ${_num(y + h)}'
+      'H${_num(x + rr)}A$a ${_num(x)} ${_num(y + h - rr)}'
+      'V${_num(y + rr)}A$a ${_num(x + rr)} ${_num(y)}Z';
+}
+
 /// Arte de um sticker já lida para entrar no SVG exportado: o texto de um
 /// sticker vetorial (que entra como `<svg>` aninhado, continua vetor) ou os
 /// bytes de um importado em PNG/JPG/etc. (que entra como `<image>`).
@@ -625,6 +735,8 @@ String renderEditedSvg(
     if (settings.opacity < 1) {
       applyOpacitySvg(root, settings.opacity);
     }
+    applyPlacementSvg(root, settings.placement);
+    applyBorderSvg(root, settings.border);
     applyStickersSvg(root, settings.stickers, stickerArt);
     applyTextsSvg(root, settings.texts);
 

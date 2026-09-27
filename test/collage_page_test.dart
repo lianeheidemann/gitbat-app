@@ -118,6 +118,35 @@ void main() {
     },
   );
 
+  testWidgets('trocar de "Grade 3x3" para "Grade livre" mantém 3×3, e a '
+      'grade livre vai até 6×6', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+    int cells() => find.byType(CollageCellView).evaluate().length;
+
+    for (final label in ['Grade 3x3', 'Grade livre']) {
+      final chip = find.text(label);
+      await tester.ensureVisible(chip);
+      await tester.pumpAndSettle();
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+    }
+    expect(cells(), 9, reason: 'continua 3×3');
+
+    // + nas colunas e nas linhas até parar em 6.
+    for (var i = 0; i < 5; i++) {
+      await tester.tap(find.byIcon(Icons.add_circle_outline).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.add_circle_outline).last);
+      await tester.pumpAndSettle();
+    }
+    expect(cells(), 36);
+  });
+
   testWidgets(
     'layout "Linha" tem contador de fotos, igual "Grade livre" já tinha',
     (tester) async {
@@ -366,8 +395,13 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
     await tester.pumpAndSettle();
 
-    final page = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(find.text('Fundo'), 200, scrollable: page);
+    // A barra de abas do rodapé (a última lista horizontal da tela).
+    final page = find
+        .byWidgetPredicate(
+          (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+        )
+        .last;
+    await tester.scrollUntilVisible(find.text('Fundo'), 120, scrollable: page);
     await tester.tap(find.text('Fundo'));
     await tester.pumpAndSettle();
 
@@ -614,8 +648,13 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
     await tester.pumpAndSettle();
 
-    final page = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(find.text('Fundo'), 200, scrollable: page);
+    // A barra de abas do rodapé (a última lista horizontal da tela).
+    final page = find
+        .byWidgetPredicate(
+          (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+        )
+        .last;
+    await tester.scrollUntilVisible(find.text('Fundo'), 120, scrollable: page);
     await tester.tap(find.text('Fundo'));
     await tester.pumpAndSettle();
 

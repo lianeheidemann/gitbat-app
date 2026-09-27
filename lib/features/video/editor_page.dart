@@ -292,7 +292,7 @@ class _EditorPageState extends State<EditorPage> {
     return [
       // Mesma ordem nas quatro telas de edição: primeiro o que é só deste
       // modo (aqui, o formato e o tempo do vídeo), depois Recorte → Girar →
-      // Borda → Moldura → Fundo → Cor → Stickers → Texto, e Ajustes no fim.
+      // Borda → Moldura → Fundo → Cor → Stickers → Texto, e Configurações no fim.
       EditorSection.fromLabeled(_formatSection(), label: 'Formato'),
       EditorSection.fromLabeled(_durationSection(), label: 'Duração'),
       EditorSection.fromLabeled(_speedSection(), label: 'Velocidade'),
@@ -371,7 +371,7 @@ class _EditorPageState extends State<EditorPage> {
       EditorSection(
         icon: Icons.settings_rounded,
         title: 'Configurações',
-        label: 'Ajustes',
+        label: 'Configurações',
         builder: (_) => const PreviewSettingsPanel(),
       ),
     ];
@@ -590,7 +590,10 @@ class _EditorPageState extends State<EditorPage> {
     // que garante a linha do tempo abaixo da moldura, não atrás dela) —
     // chamar _timelined() de novo aqui duplicava a barra "Atual Xs" quando
     // havia moldura.
-    final preview = hasFrame
+    // Na aba Recorte a prévia é sempre o vídeo original com as alças, mesmo
+    // com borda ou moldura: o recorte é medido nele, e emoldurado as alças
+    // não apareciam.
+    final preview = hasFrame && !showCropHandles
         ? _framedPreview(textTabActive)
         : _timelined(
             showCropHandles

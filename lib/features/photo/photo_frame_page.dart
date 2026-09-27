@@ -23,6 +23,7 @@ import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
 import '../../core/ui/frame/content_fit_picker.dart';
+import '../../core/ui/frame/border_ring.dart';
 import '../../core/ui/frame/frame_color_row.dart';
 import '../../core/ui/frame/frame_rotate_button.dart';
 import '../../core/ui/panel_rows.dart';
@@ -412,7 +413,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         builder: (_) => _contentFitSection(),
       ),
     // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Girar →
-    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Ajustes.
+    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Configurações.
     EditorSection(
       icon: Icons.wallpaper_rounded,
       title: 'Fundo',
@@ -443,7 +444,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     EditorSection(
       icon: Icons.settings_rounded,
       title: 'Configurações',
-      label: 'Ajustes',
+      label: 'Configurações',
       builder: (_) => const PreviewSettingsPanel(),
     ),
   ];
@@ -706,47 +707,15 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   Widget _proceduralFramedPreview({required bool gestures}) {
     final frame = _frame;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final thickness = frame.thicknessFor(width);
-        final outerRadius = frame.cornerRadiusFor(width);
-        final innerRadius = (outerRadius - thickness).clamp(0.0, outerRadius);
-
-        // A borda é só o anel em volta: o miolo não é pintado com a cor da
-        // borda, então as partes transparentes da foto continuam
-        // transparentes (ou com a cor do fundo, com ele ligado).
-        final bordered = Stack(
-          fit: StackFit.expand,
-          children: [
-            IgnorePointer(
-              child: CustomPaint(
-                painter: _BorderRingPainter(
-                  color: frame.color,
-                  thickness: thickness,
-                  outerRadius: outerRadius,
-                  innerRadius: innerRadius,
-                ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(thickness),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(innerRadius),
-                child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
-              ),
-            ),
-          ],
-        );
-
-        final rounded = ClipRRect(
-          borderRadius: BorderRadius.circular(outerRadius),
-          child: bordered,
-        );
-        if (frame.transparentBackground) return rounded;
-        return ColoredBox(color: frame.backgroundColor, child: rounded);
-      },
+    // A borda é só o anel em volta (ver [BorderedPreview]): o miolo não é
+    // pintado com a cor da borda, então as partes transparentes da foto
+    // continuam transparentes (ou com a cor do fundo, com ele ligado).
+    final bordered = BorderedPreview(
+      frame: frame,
+      child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
     );
+    if (frame.transparentBackground) return bordered;
+    return ColoredBox(color: frame.backgroundColor, child: bordered);
   }
 
   Widget _imageFramedPreview(ImageFrameAsset asset, {required bool gestures}) {
@@ -1771,41 +1740,4 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // ---------------------------------------------------------------------
   // Utilitários visuais compartilhados
   // ---------------------------------------------------------------------
-}
-
-/// Anel da borda procedural na prévia: o retângulo arredondado de fora menos
-/// o de dentro, sem preencher o miolo — mesmo desenho da exportação
-/// (`photo_frame_compositor.dart` limpa o miolo depois de `paintFrame`).
-class _BorderRingPainter extends CustomPainter {
-  const _BorderRingPainter({
-    required this.color,
-    required this.thickness,
-    required this.outerRadius,
-    required this.innerRadius,
-  });
-
-  final Color color;
-  final double thickness;
-  final double outerRadius;
-  final double innerRadius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final outer = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(outerRadius),
-    );
-    final inner = RRect.fromRectAndRadius(
-      (Offset.zero & size).deflate(thickness),
-      Radius.circular(innerRadius),
-    );
-    canvas.drawDRRect(outer, inner, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant _BorderRingPainter old) =>
-      old.color != color ||
-      old.thickness != thickness ||
-      old.outerRadius != outerRadius ||
-      old.innerRadius != innerRadius;
 }
