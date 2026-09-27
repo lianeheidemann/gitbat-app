@@ -5,6 +5,7 @@ import '../../core/models/size_estimate.dart';
 import '../../core/models/video_info.dart';
 import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../core/services/output_service.dart';
+import '../../core/ui/saved_dialog.dart';
 import '../../app/theme.dart';
 
 /// Tela final: exibe o resumo da conversão e as ações de salvar/compartilhar.
@@ -41,7 +42,10 @@ class _ResultPageState extends State<ResultPage> {
         _saving = false;
         _saved = true;
       });
-      _message('${widget.result.format.shortLabel} salvo na galeria.');
+      await showSavedDialog(
+        context,
+        '${widget.result.format.shortLabel} salvo na galeria.',
+      );
     } on OutputException catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);

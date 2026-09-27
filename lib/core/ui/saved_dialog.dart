@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Aviso de "salvo" das telas de edição (Editar imagem, Editar SVG,
-/// Montagem e Converter formato): um pop-up com ✓, a [message] e um botão
-/// OK — mais difícil de perder que um aviso passageiro no rodapé. O fluxo
-/// "Escolher vídeo" não usa: a tela de resultado dele já mostra tudo.
+/// Aviso de "salvo" do app inteiro (Editar imagem, Editar SVG, Montagem,
+/// Converter formato e a tela "GIF pronto" do vídeo): um pop-up com ✓, a
+/// [message] e um botão OK — mais difícil de perder que um aviso passageiro
+/// no rodapé.
 Future<void> showSavedDialog(BuildContext context, String message) {
   return showDialog<void>(
     context: context,
