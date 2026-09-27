@@ -17,6 +17,7 @@ import '../video/editor_page.dart';
 import '../photo/photo_frame_page.dart';
 import '../quick_convert/quick_convert_page.dart';
 import '../svg/svg_edit_page.dart';
+import '../../app/editor_defaults.dart';
 
 /// Tela inicial: apresenta o app e deixa o usuário escolher um vídeo para
 /// começar a edição.
@@ -62,7 +63,9 @@ class _HomePageState extends State<HomePage> {
         MaterialPageRoute<void>(
           builder: (_) => EditorPage(
             video: video,
-            initialSettings: ConversionSettings.recommendedFor(video),
+            initialSettings: ConversionSettings.recommendedFor(
+              video,
+            ).copyWith(frame: EditorDefaults.frameSettings()),
           ),
         ),
       );

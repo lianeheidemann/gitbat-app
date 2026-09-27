@@ -41,6 +41,7 @@ import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/services/opaque_bounds.dart';
+import '../../app/editor_defaults.dart';
 
 /// Sentinela do preset "Personalizado" na fileira de proporções — mesma
 /// ideia de `_customAspectPreset` em `editor_page.dart`: não é uma proporção
@@ -77,7 +78,10 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// conta-gotas do seletor de cor, mesma técnica de `PhotoFramePage`.
   final _colorPreviewKey = GlobalKey();
 
-  SvgEditSettings _settings = const SvgEditSettings();
+  SvgEditSettings _settings = SvgEditSettings(
+    backgroundColor: EditorDefaults.background,
+    border: EditorDefaults.frameSettings(),
+  );
 
   /// Regras de recorte compartilhadas com as telas de vídeo e foto. O SVG
   /// usa uma janela mínima menor que o padrão: 32 quebraria um ícone de

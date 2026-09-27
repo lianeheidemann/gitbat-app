@@ -45,6 +45,7 @@ import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import '../../core/ui/saved_dialog.dart';
+import '../../app/editor_defaults.dart';
 
 /// Mesmos três modos apresentados ao usuário em `EditorPage` — `fit` só
 /// existe como resultado interno do ajuste automático.
@@ -95,7 +96,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// conta-gotas do seletor de cor.
   final _colorPreviewKey = GlobalKey();
 
-  FrameSettings _frame = const FrameSettings();
+  FrameSettings _frame = EditorDefaults.frameSettings();
   List<ImageFrameAsset> _importedImageFrames = [];
 
   /// A foto em edição. Começa sendo a que chegou pela rota e é **trocada** a

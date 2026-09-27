@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/models/default_colors.dart';
+
 /// Paleta de cores da interface, escolhida na aba "Configurações" das telas
 /// de edição. Cada paleta vale para os dois temas: no claro, o esquema sai
 /// inteiro de [seed] (Material 3); no escuro, [seed] vira a cor primária e as
@@ -17,6 +19,9 @@ class AppPalette {
     required this.darkChipSelected,
     required this.accentGradient,
     required this.onAccent,
+    required this.contentBackground,
+    required this.contentFrame,
+    required this.contentText,
     this.darkTertiary,
     this.refineLight,
     this.refineDark,
@@ -41,6 +46,14 @@ class AppPalette {
   final List<Color> accentGradient;
   final Color onAccent;
 
+  /// Cores que já vêm escolhidas nas telas de edição (ver
+  /// `lib/app/editor_defaults.dart`): o fundo e a moldura/borda que aparecem
+  /// ao ligar essas opções, e a cor do texto novo. Seguem a paleta para o
+  /// que você cria já sair combinando com o app.
+  final Color contentBackground;
+  final Color contentFrame;
+  final Color contentText;
+
   /// Ajuste fino do esquema já gerado, para paletas com cores definidas uma
   /// a uma (em vez de só derivadas de [seed]).
   final ColorScheme Function(ColorScheme)? refineLight;
@@ -58,6 +71,9 @@ const lavenderPalette = AppPalette(
   darkChipSelected: Color(0xFF5D4D72),
   accentGradient: [Color(0xFFD3B4FF), Color(0xFFBC8FFF)],
   onAccent: Color(0xFF25172E),
+  contentBackground: Color(0xFFC9A8FF),
+  contentFrame: Color(0xFF8370B0),
+  contentText: Color(0xFF544181),
 );
 
 // Cores tiradas das artes do morceguinho em `assets/icon/icon-v2`.
@@ -134,6 +150,9 @@ const batPalette = AppPalette(
   darkTertiary: _batLavender,
   accentGradient: [_batBody, _batCyan],
   onAccent: _batDeepNavy,
+  contentBackground: defaultBackgroundColor,
+  contentFrame: defaultFrameColor,
+  contentText: defaultTextColor,
   refineLight: _batLight,
   refineDark: _batDark,
 );
@@ -149,6 +168,9 @@ const mintPalette = AppPalette(
   darkChipSelected: Color(0xFF3C5E50),
   accentGradient: [Color(0xFF9DE3C4), Color(0xFF6BCBA1)],
   onAccent: Color(0xFF0F2A1E),
+  contentBackground: Color(0xFFB8EBD3),
+  contentFrame: Color(0xFF2F8A66),
+  contentText: Color(0xFF13402F),
 );
 
 const peachPalette = AppPalette(
@@ -162,6 +184,9 @@ const peachPalette = AppPalette(
   darkChipSelected: Color(0xFF6E4A3C),
   accentGradient: [Color(0xFFFFC7A8), Color(0xFFFFA273)],
   onAccent: Color(0xFF331A0D),
+  contentBackground: Color(0xFFFFD3BA),
+  contentFrame: Color(0xFFC0673D),
+  contentText: Color(0xFF5A2A14),
 );
 
 const rosePalette = AppPalette(
@@ -175,6 +200,9 @@ const rosePalette = AppPalette(
   darkChipSelected: Color(0xFF6B4460),
   accentGradient: [Color(0xFFFBC1DE), Color(0xFFF291C2)],
   onAccent: Color(0xFF331026),
+  contentBackground: Color(0xFFF9C6E0),
+  contentFrame: Color(0xFFB24E86),
+  contentText: Color(0xFF5B1D42),
 );
 
 /// Todas as paletas, na ordem em que aparecem nas configurações. A primeira

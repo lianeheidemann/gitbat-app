@@ -5,6 +5,11 @@
 /// justamente ser a mesma cor nas três telas: mudar de ideia sobre o padrão
 /// é mexer num lugar só.
 ///
+/// Estes valores são os da paleta oficial (Morceguinho) e valem nos modelos
+/// criados sem contexto (testes, valores `const`). As telas de edição usam
+/// `EditorDefaults` (`lib/app/editor_defaults.dart`), que troca as três
+/// pelas cores da paleta escolhida nas configurações.
+///
 /// Nenhuma das duas liga nada sozinha. O fundo continua vindo transparente
 /// por padrão (`FrameSettings.transparentBackground` e
 /// `CollageBackgroundMode.transparent`) e a borda continua vindo com

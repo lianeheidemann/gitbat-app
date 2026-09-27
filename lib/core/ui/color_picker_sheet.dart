@@ -4,22 +4,29 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'dialog_title.dart';
+import '../../app/editor_defaults.dart';
 
 /// Swatches rápidos oferecidos antes da roda HSV completa — os mesmos em
 /// toda tela que escolhe cor (Montagem, Editar e Moldura em foto), para o
-/// app inteiro ficar consistente.
-const collageColorSwatches = <Color>[
-  Color(0xFFFFFFFF),
-  Color(0xFF000000),
-  // Azul-gelo do morceguinho, o fundo padrão (ver default_colors.dart).
-  Color(0xFFB0DCFC),
-  Color(0xFFE57373),
-  Color(0xFF58C78C),
-  // Amarelo vivo (antes, um amarelo-oliva apagado).
-  Color(0xFFFFD54F),
-  Color(0xFF64B5F6),
-  Color(0xFFE6A15D),
-];
+/// app inteiro ficar consistente. Depois do branco e do preto vêm as cores
+/// padrão da paleta atual da interface ([EditorDefaults]: fundo, moldura e
+/// texto), e então cores fixas de uso geral.
+List<Color> get collageColorSwatches {
+  final swatches = <Color>{
+    const Color(0xFFFFFFFF),
+    const Color(0xFF000000),
+    EditorDefaults.background,
+    EditorDefaults.frame,
+    EditorDefaults.text,
+    const Color(0xFFE57373),
+    const Color(0xFF58C78C),
+    // Amarelo vivo (antes, um amarelo-oliva apagado).
+    const Color(0xFFFFD54F),
+    const Color(0xFF64B5F6),
+    const Color(0xFFE6A15D),
+  };
+  return swatches.toList();
+}
 
 /// Abre o bottom sheet de escolha de cor usado em todo o app: swatches
 /// rápidos, roda HSV completa ([ColorPicker], pacote `flutter_colorpicker`) e
