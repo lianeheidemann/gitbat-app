@@ -540,13 +540,13 @@ class FfmpegService {
 
   /// Converte [video] para [format], sem nenhuma configuração exposta —
   /// usado pela tela "Converter formato" (`quick_convert_*`), que é um
-  /// recurso à parte de "Editar GIF": só troca de formato, arquivo inteiro,
+  /// recurso à parte de "Editar vídeo": só troca de formato, arquivo inteiro,
   /// sem corte/moldura/qualidade.
   ///
   /// GIF/WebP: monta um [ConversionSettings] fixo (arquivo inteiro, largura
   /// escolhida do mesmo jeito que [ConversionSettings.recommendedFor], sem
   /// ampliar) e reaproveita [convert] — mesmo pipeline de paleta/WebP já
-  /// usado por "Editar GIF" (com a mesma correção de velocidade do WebP).
+  /// usado por "Editar vídeo" (com a mesma correção de velocidade do WebP).
   ///
   /// MP4: linha de comando própria e simples — só limita a largura (mesmo
   /// teto de [ConversionSettings.recommendedFor], nunca amplia) e codifica
@@ -690,6 +690,29 @@ class FfmpegService {
 
     _activeSessionId = session.getSessionId();
     return completer.future;
+  }
+
+  /// Junta uma sequência de PNGs numerados ([framePattern], ex.:
+  /// `.../quadro_%05d.png`) num `.mov` com codec PNG — sem perda e com
+  /// transparência — a [fps] quadros por segundo. É o intermediário do
+  /// WebP animado em "Converter formato": o FFmpeg desta build não sabe
+  /// decodificar WebP animado, então o Flutter decodifica os quadros e o
+  /// resto do app trabalha em cima deste arquivo (ver
+  /// `animated_webp_source.dart`).
+  Future<void> pngSequenceToMov({
+    required String framePattern,
+    required double fps,
+    required String outputPath,
+  }) async {
+    _cancelled = false;
+    await _run(
+      pngSequenceToMovArgs(
+        framePattern: framePattern,
+        fps: fps,
+        outputPath: outputPath,
+      ),
+      step: 'leitura do WebP animado',
+    );
   }
 
   /// Codifica uma sequência de PNGs numerados (`.../quadro_%05d.png`, gerada
@@ -1047,3 +1070,22 @@ class FfmpegService {
     }
   }
 }
+
+/// Argumentos de [FfmpegService.pngSequenceToMov], separados para os testes
+/// conferirem a linha de comando sem rodar o FFmpeg.
+List<String> pngSequenceToMovArgs({
+  required String framePattern,
+  required double fps,
+  required String outputPath,
+}) => [
+  '-y',
+  '-framerate',
+  filterNumber(fps),
+  '-i',
+  framePattern,
+  '-c:v',
+  'png',
+  '-pix_fmt',
+  'rgba',
+  outputPath,
+];

@@ -123,7 +123,7 @@ void main() {
     if (await tempDir.exists()) await tempDir.delete(recursive: true);
   });
 
-  testWidgets('Editar GIF: recolhido, alça e barra viram um bloco só', (
+  testWidgets('Editar vídeo: recolhido, alça e barra viram um bloco só', (
     tester,
   ) async {
     await tester.pumpWidget(

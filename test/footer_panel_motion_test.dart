@@ -77,7 +77,7 @@ void main() {
     if (await tempDir.exists()) await tempDir.delete(recursive: true);
   });
 
-  testWidgets('Editar GIF: fechar e abrir a aba passam por alturas no meio', (
+  testWidgets('Editar vídeo: fechar e abrir a aba passam por alturas no meio', (
     tester,
   ) async {
     await tester.pumpWidget(

@@ -103,7 +103,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   }
 
-  testWidgets('Editar GIF ganhou a aba, e ela gira a prévia', (tester) async {
+  testWidgets('Editar vídeo ganhou a aba, e ela gira a prévia', (tester) async {
     await pumpVideo(tester);
     expect(find.text('Girar'), findsOneWidget);
 

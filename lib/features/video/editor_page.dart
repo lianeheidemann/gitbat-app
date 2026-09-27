@@ -375,7 +375,7 @@ class _EditorPageState extends State<EditorPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitle('Editar GIF'),
+        title: const AppBarTitle('Editar vídeo'),
         actions: [
           IconButton(
             tooltip: 'Desfazer',

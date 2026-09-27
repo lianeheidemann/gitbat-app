@@ -393,7 +393,7 @@ class ConversionSettings {
 
   /// Largura e altura, em pixels, para [percent]% da resolução de [video].
   ///
-  /// Usado pelo slider de "Resolução" tanto em "Editar GIF" quanto em
+  /// Usado pelo slider de "Resolução" tanto em "Editar vídeo" quanto em
   /// "Converter formato", para as duas telas nunca divergirem na conta.
   /// Arredonda para um número par (exigência do FFmpeg, mesma regra de
   /// [contentDimensions]) e nunca deixa a largura cair a zero, mesmo no

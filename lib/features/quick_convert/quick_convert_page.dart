@@ -15,6 +15,7 @@ import '../../core/services/output_service.dart';
 import '../../core/ui/app_bar_title.dart';
 import 'widgets/source_file_card.dart';
 import '../../core/ui/saved_dialog.dart';
+import 'services/animated_webp_source.dart';
 
 /// Tela única de "Converter formato": escolher o arquivo e escolher para qual
 /// formato converter acontecem no mesmo lugar.
@@ -136,7 +137,11 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
         return;
       }
 
-      final video = await _ffmpeg.probe(path);
+      // WebP animado: o FFmpeg do app não decodifica, então os quadros
+      // passam pelo Flutter antes (ver `animated_webp_source.dart`).
+      final video = await isAnimatedWebp(path)
+          ? await probeAnimatedWebp(path, _ffmpeg)
+          : await _ffmpeg.probe(path);
       if (!mounted) return;
 
       setState(() {

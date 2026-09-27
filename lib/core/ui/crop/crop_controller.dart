@@ -4,7 +4,7 @@ import '../../models/crop_rect.dart';
 import 'crop_overlay.dart';
 
 /// Regras de recorte comuns às três telas que recortam uma fonte de tamanho
-/// fixo: Editar GIF (vídeo), Moldura (foto) e Editar SVG.
+/// fixo: Editar vídeo (vídeo), Moldura (foto) e Editar SVG.
 ///
 /// Guarda só o que as três compartilham — os limites da fonte, o mínimo de
 /// cada lado e a sobra fracionária do arrasto. Quem grava o recorte continua

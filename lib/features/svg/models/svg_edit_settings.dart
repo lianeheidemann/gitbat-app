@@ -71,7 +71,7 @@ class SvgEditSettings {
   final double opacity;
 
   /// Caixas de texto da aba "Texto" — o mesmo modelo e a mesma interação de
-  /// "Editar imagem"/"Editar GIF" (`TextOverlayStack`/`TextOverlayPanel`),
+  /// "Editar imagem"/"Editar vídeo" (`TextOverlayStack`/`TextOverlayPanel`),
   /// com o centro normalizado ao resultado final (já recortado e girado).
   /// Saem no SVG como `<text>` de verdade, por cima de tudo e fora do filtro
   /// e da opacidade (ver `svg_xml_editor.dart`'s `applyTextsSvg`).

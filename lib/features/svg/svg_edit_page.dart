@@ -93,7 +93,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
   final _heightFocus = FocusNode();
 
   /// Seleção, edição e fontes da aba "Texto" — o mesmo controlador de
-  /// "Editar imagem"/"Editar GIF".
+  /// "Editar imagem"/"Editar vídeo".
   final _textOverlay = TextOverlayController();
 
   @override
