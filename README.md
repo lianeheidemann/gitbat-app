@@ -11,7 +11,7 @@
 **Turn videos and photos into animated GIF or WebP<br>
 directly on Android — privately and offline.**
 
-<img src="assets/linha-lilas-v3.svg"/>
+<img src="assets/linha-morceguinho.svg"/>
 
 <img src="assets/gif/video-to-gif-interface-v3.webp"/><br>
 

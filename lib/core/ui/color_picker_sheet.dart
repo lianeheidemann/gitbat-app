@@ -11,7 +11,8 @@ import 'dialog_title.dart';
 const collageColorSwatches = <Color>[
   Color(0xFFFFFFFF),
   Color(0xFF000000),
-  Color(0xFFC9A8FF),
+  // Azul-gelo do morceguinho, o fundo padrão (ver default_colors.dart).
+  Color(0xFFB0DCFC),
   Color(0xFFE57373),
   Color(0xFF58C78C),
   // Amarelo vivo (antes, um amarelo-oliva apagado).
