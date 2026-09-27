@@ -82,6 +82,40 @@ void main() {
     expect(_rgbaAt(d, 5, 5), 0x0000FFFF, reason: 'foto em volta');
   });
 
+  test('Editar imagem sem borda: "Fundo transparente" desligado pinta a '
+      'cor atrás da foto', () async {
+    final photoPath = '${dir.path}/transparente.png';
+    await File(
+      photoPath,
+    ).writeAsBytes(await _png(20, 10, const Color(0x00000000)));
+    final png = await composeFramedPhoto(
+      photo: PhotoInfo(path: photoPath, width: 20, height: 10),
+      frame: const FrameSettings(
+        transparentBackground: false,
+        backgroundColor: Color(0xFFFF0000),
+      ),
+    );
+    final d = await _decode(png);
+    expect(_rgbaAt(d, 10, 5), 0xFF0000FF);
+  });
+
+  test('Editar imagem sem borda: "Fundo transparente" desligado pinta a '
+      'cor atrás da foto', () async {
+    final photoPath = '${dir.path}/transparente.png';
+    await File(
+      photoPath,
+    ).writeAsBytes(await _png(20, 10, const Color(0x00000000)));
+    final png = await composeFramedPhoto(
+      photo: PhotoInfo(path: photoPath, width: 20, height: 10),
+      frame: const FrameSettings(
+        transparentBackground: false,
+        backgroundColor: Color(0xFFFF0000),
+      ),
+    );
+    final d = await _decode(png);
+    expect(_rgbaAt(d, 10, 5), 0xFF0000FF);
+  });
+
   test('Editar vídeo: o sticker entra na camada sobreposta', () async {
     final stickerPath = '${dir.path}/sticker.png';
     await File(

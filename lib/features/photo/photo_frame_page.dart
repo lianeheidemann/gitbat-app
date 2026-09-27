@@ -693,7 +693,14 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
+      // "Fundo transparente" desligado: a cor aparece atrás da foto, como
+      // na exportação (sem ela, o xadrez continuava à mostra).
+      child: ColoredBox(
+        color: _frame.transparentBackground
+            ? Colors.transparent
+            : _frame.backgroundColor,
+        child: _placedPhoto(_croppedPhotoPreview(), gestures: gestures),
+      ),
     );
   }
 

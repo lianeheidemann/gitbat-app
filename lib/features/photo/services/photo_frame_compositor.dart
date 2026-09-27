@@ -70,6 +70,15 @@ Future<Uint8List> _composeProcedural(
       // geometria correspondente cobre o canvas inteiro sem cantos
       // arredondados — então não precisa de um caso especial para "sem
       // moldura": o recorte abaixo já sai igual à foto (já cortada).
+      // Sem borda, "Fundo transparente" desligado pinta a cor atrás da
+      // foto inteira (aparece onde ela é transparente, ou em volta dela se
+      // foi diminuída); com borda, `paintFrame` já cuida do fundo.
+      if (frame.style == FrameStyle.none && !frame.transparentBackground) {
+        canvas.drawRect(
+          Offset.zero & size,
+          Paint()..color = frame.backgroundColor,
+        );
+      }
       paintFrame(canvas, size, frame);
       final geometry = FrameGeometry.of(size, frame);
       canvas.save();
