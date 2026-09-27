@@ -331,8 +331,8 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Image.asset(
                   'assets/icon/icon-v4.png',
-                  width: 72,
-                  height: 72,
+                  width: 96,
+                  height: 96,
                   fit: BoxFit.contain,
                   semanticLabel: 'Ícone do conversor de vídeo para GIF',
                 ),
@@ -369,9 +369,17 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // O principal do app: mais alto e com texto maior que os
+                // outros botões.
                 FilledButton.icon(
+                  key: const ValueKey('pickVideoButton'),
                   style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
+                    minimumSize: const Size.fromHeight(54),
+                    textStyle: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    iconSize: 22,
                   ),
                   onPressed: _loading ? null : _pickVideo,
                   icon: _loading
