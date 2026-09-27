@@ -14,7 +14,7 @@ directly on Android — privately and offline.**
 
 <img src="assets/linha-lilas-v3.svg"/>
 
-<img src="assets/gif/video-to-gif-interface-v3.webp"/>
+<img src="assets/gif/video-to-gif-interface-v3.webp"/><br>
 
 **[⬇ Download the latest APK](https://github.com/lianeheidemann/video-to-gif/releases/latest)**
 
