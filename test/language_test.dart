@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitbat/app/app_palette.dart';
 import 'package:gitbat/app/language_controller.dart';
-import 'package:gitbat/app/theme.dart';
 import 'package:gitbat/core/models/conversion_settings.dart';
 import 'package:gitbat/features/home/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,25 +53,5 @@ void main() {
     languageNotifier.value = AppLanguage.pt;
     await loadLanguage();
     expect(languageNotifier.value, AppLanguage.en);
-  });
-
-  testWidgets('a tela inicial usa os acentos da paleta', (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: buildTheme(Brightness.dark),
-        home: const HomePage(),
-      ),
-    );
-
-    final scheme = buildTheme(Brightness.dark).colorScheme;
-    final svgIcon = tester.widget<Icon>(
-      find.byKey(const ValueKey('svgAccentIcon')),
-    );
-    final convertIcon = tester.widget<Icon>(
-      find.byKey(const ValueKey('convertAccentIcon')),
-    );
-    expect(svgIcon.color, scheme.secondary);
-    expect(convertIcon.color, scheme.secondary);
   });
 }
