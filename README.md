@@ -14,7 +14,7 @@ directly on Android — animated, transparent, high-resolution and offline.**
 <img src="assets/linha-morceguinho.svg"/>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/interface-v2/gitbat-interface-escuro-v2.webp">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/interface-v2/gitbat-interface-escuro-v2-2.webp">
   <source media="(prefers-color-scheme: light)" srcset="assets/interface-v2/gitbat-interface-claro-v2.webp">
   <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro-v2.webp">
 </picture><br><br>
