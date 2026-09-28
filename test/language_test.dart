@@ -38,14 +38,16 @@ void main() {
       ),
     );
     expect(find.text('Escolher vídeo'), findsOneWidget);
-    expect(find.text('PT'), findsOneWidget);
+    expect(find.byIcon(Icons.language_rounded), findsOneWidget);
+    expect(find.text('PT'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('languageToggle')));
     await tester.pumpAndSettle();
     expect(languageNotifier.value, AppLanguage.en);
     expect(find.text('Choose video'), findsOneWidget);
     expect(find.text('Collage'), findsOneWidget);
-    expect(find.text('EN'), findsOneWidget);
+    expect(find.byIcon(Icons.language_rounded), findsOneWidget);
+    expect(find.text('EN'), findsNothing);
 
     // Ao abrir de novo, o app volta no idioma salvo.
     languageNotifier.value = AppLanguage.pt;
