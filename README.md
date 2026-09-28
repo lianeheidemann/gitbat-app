@@ -20,7 +20,7 @@ directly on Android — animated, transparent, high-resolution and offline.**
 </picture><br><br>
 
 <p align="center" width="50%">
-  <a href="[https://github.com/lianeheidemann/gitbat-app/releases/latest">
+  <a href="https://github.com/lianeheidemann/gitbat-app/releases/latest">
     <img src="assets/GitBat_download-v1.png" width="210" alt="Download do GitBat">
   </a>
 </p>
