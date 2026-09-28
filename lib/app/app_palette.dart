@@ -348,6 +348,60 @@ ColorScheme _roseDark(ColorScheme base) => _refinePaletteDark(
   outline: const Color(0xFFA38B95),
 );
 
+ColorScheme _triadLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFFAD4718),
+  primaryContainer: const Color(0xFFFFDBCA),
+  onPrimaryContainer: const Color(0xFF3A1000),
+  secondary: const Color(0xFF08785A),
+  secondaryContainer: const Color(0xFFADF2D6),
+  tertiary: const Color(0xFF355F9E),
+  tertiaryContainer: const Color(0xFFD8E2FF),
+  surface: const Color(0xFFFFF8F5),
+  surfaceLow: const Color(0xFFFFF0E9),
+  surfaceHigh: const Color(0xFFF8E4DA),
+  outline: const Color(0xFF8B7064),
+);
+
+ColorScheme _triadDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFFFB68F),
+  onPrimary: const Color(0xFF5C1E00),
+  primaryContainer: const Color(0xFF7D2D05),
+  secondary: const Color(0xFF60DDB2),
+  secondaryContainer: const Color(0xFF00513D),
+  tertiary: const Color(0xFFAFC7FF),
+  tertiaryContainer: const Color(0xFF294778),
+  outline: const Color(0xFFA58A7E),
+);
+
+ColorScheme _squareLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF7B3FA0),
+  primaryContainer: const Color(0xFFF2DAFF),
+  onPrimaryContainer: const Color(0xFF310049),
+  secondary: const Color(0xFFA8412B),
+  secondaryContainer: const Color(0xFFFFDAD1),
+  tertiary: const Color(0xFF3F6F32),
+  tertiaryContainer: const Color(0xFFC0EFB0),
+  surface: const Color(0xFFFCF8FF),
+  surfaceLow: const Color(0xFFF7F0FA),
+  surfaceHigh: const Color(0xFFEEE4F1),
+  outline: const Color(0xFF7F7482),
+);
+
+ColorScheme _squareDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFE4B6FF),
+  onPrimary: const Color(0xFF4B1468),
+  primaryContainer: const Color(0xFF633081),
+  secondary: const Color(0xFFFFB4A2),
+  secondaryContainer: const Color(0xFF7F2A1A),
+  tertiary: const Color(0xFFA5D991),
+  tertiaryContainer: const Color(0xFF2D5724),
+  outline: const Color(0xFF9B8D9F),
+);
+
 const mintPalette = AppPalette(
   id: 'menta',
   label: 'Menta',
@@ -405,6 +459,48 @@ const rosePalette = AppPalette(
   refineDark: _roseDark,
 );
 
+/// Harmonia tríade: laranja e verde ficam a aproximadamente 120° do azul da
+/// marca. É viva, mas as superfícies quentes e escuras mantêm a legibilidade.
+const triadPalette = AppPalette(
+  id: 'triade',
+  label: 'Tríade',
+  seed: Color(0xFFF59A62),
+  darkBackground: Color(0xFF17110F),
+  darkCard: Color(0xFF231A17),
+  darkContainerHigh: Color(0xFF2E211C),
+  darkContainerHighest: Color(0xFF382822),
+  darkChipSelected: Color(0xFF6F402B),
+  darkTertiary: Color(0xFFAFC7FF),
+  accentGradient: [Color(0xFFFFB68F), Color(0xFF60DDB2)],
+  onAccent: Color(0xFF351200),
+  contentBackground: Color(0xFFFFD3BE),
+  contentFrame: Color(0xFF17866A),
+  contentText: Color(0xFF244F88),
+  refineLight: _triadLight,
+  refineDark: _triadDark,
+);
+
+/// Harmonia quadrada: violeta, coral, verde e azul ocupam quatro regiões
+/// distintas do círculo cromático e criam a opção mais expressiva do app.
+const squarePalette = AppPalette(
+  id: 'quadrada',
+  label: 'Quadrada',
+  seed: Color(0xFFC779E8),
+  darkBackground: Color(0xFF151018),
+  darkCard: Color(0xFF211924),
+  darkContainerHigh: Color(0xFF2B2030),
+  darkContainerHighest: Color(0xFF35273A),
+  darkChipSelected: Color(0xFF5D3A6B),
+  darkTertiary: Color(0xFFFFB4A2),
+  accentGradient: [Color(0xFFA5D991), Color(0xFF76A9FF)],
+  onAccent: Color(0xFF161B2A),
+  contentBackground: Color(0xFFE9D2F3),
+  contentFrame: Color(0xFF5C9C4B),
+  contentText: Color(0xFF7F2A1A),
+  refineLight: _squareLight,
+  refineDark: _squareDark,
+);
+
 /// Todas as paletas, na ordem em que aparecem nas configurações. A primeira
 /// (a oficial, do morceguinho) é a padrão.
 const appPalettes = [
@@ -413,6 +509,8 @@ const appPalettes = [
   mintPalette,
   peachPalette,
   rosePalette,
+  triadPalette,
+  squarePalette,
 ];
 
 /// A paleta com [id], ou a padrão se não houver (ex.: preferência antiga).
