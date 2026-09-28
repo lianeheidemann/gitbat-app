@@ -1,9 +1,9 @@
 import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
-import '../../app/app_palette.dart';
 import '../../app/preview_background_controller.dart';
 import '../../app/theme_controller.dart';
+import 'palette_picker.dart';
 
 /// Conteúdo da aba "Configurações" (ícone de engrenagem, sempre a última da
 /// barra) nas quatro telas de edição: o tema do app (claro ou escuro), o
@@ -69,118 +69,8 @@ class PreviewSettingsPanel extends StatelessWidget {
           height: 13,
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
         ),
-        ValueListenableBuilder<AppPalette>(
-          valueListenable: paletteNotifier,
-          builder: (context, current, _) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.palette_outlined, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      tr('Paleta de cores', 'Color palette'),
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  Text(
-                    current.label,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  for (final palette in appPalettes)
-                    _PaletteSwatch(
-                      palette: palette,
-                      selected: palette.id == current.id,
-                      onTap: () => setPalette(palette),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        ),
+        const PalettePicker(),
       ],
-    );
-  }
-}
-
-/// Amostra compacta de uma paleta: mostra as três cores de identidade e o
-/// fundo escuro, com um anel e um "check" quando é a escolhida.
-class _PaletteSwatch extends StatelessWidget {
-  const _PaletteSwatch({
-    required this.palette,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final AppPalette palette;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: tr('Paleta ${palette.label}', 'Palette ${palette.label}'),
-      child: Tooltip(
-        message: palette.label,
-        child: InkResponse(
-          key: ValueKey('paletteSwatch-${palette.id}'),
-          onTap: onTap,
-          radius: 24,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected ? scheme.onSurface : scheme.outlineVariant,
-                width: selected ? 2 : 1,
-              ),
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  stops: const [0.34, 0.34, 0.52, 0.52, 0.68, 0.68],
-                  colors: [
-                    palette.seed,
-                    palette.accentGradient.last,
-                    palette.accentGradient.last,
-                    palette.darkTertiary ?? palette.contentFrame,
-                    palette.darkTertiary ?? palette.contentFrame,
-                    palette.darkBackground,
-                  ],
-                ),
-              ),
-              child: selected
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 18,
-                      color: Colors.white,
-                      shadows: [Shadow(color: Colors.black54, blurRadius: 3)],
-                    )
-                  : null,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
