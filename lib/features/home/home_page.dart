@@ -386,7 +386,7 @@ class _HomePageState extends State<HomePage> {
                     icon: Icon(
                       Icons.language_rounded,
                       color: languageNotifier.value == AppLanguage.en
-                          ? const Color(0xFF7FD6B0)
+                          ? theme.colorScheme.secondary
                           : null,
                     ),
                     onPressed: toggleLanguage,
