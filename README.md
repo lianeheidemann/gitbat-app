@@ -8,6 +8,12 @@
 
 <p align="center"><a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/ci.yml"><img height="22" alt="CI" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/ci.yml?branch=main&style=flat-square&label=CI&logo=github&logoColor=white&labelColor=111A2D&color=5B9CFF"></a>&nbsp;<a href="https://github.com/lianeheidemann/gitbat-app/actions/workflows/release.yml"><img height="22" alt="Release" src="https://img.shields.io/github/actions/workflow/status/lianeheidemann/gitbat-app/release.yml?branch=main&style=flat-square&label=Release&logo=github&logoColor=white&labelColor=111A2D&color=20D5E8"></a></p>
 
+<p align="center">
+  <a href="https://github.com/lianeheidemann/gitbat-app/releases/latest">
+    <img width="100" src="assets/GitBat_download-v1.png" width="210" alt="Download do GitBat">
+  </a>
+</p>
+
 **Create GIF, WebP and SVG content for your GitHub README<br>
 directly on Android — animated, transparent, high-resolution and offline.**
 
@@ -19,11 +25,7 @@ directly on Android — animated, transparent, high-resolution and offline.**
   <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro-v3.webp">
 </picture><br><br>
 
-<p align="center">
-  <a href="https://github.com/lianeheidemann/gitbat-app/releases/latest">
-    <img width="100" src="assets/GitBat_download-v1.png" width="210" alt="Download do GitBat">
-  </a>
-</p>
+
 
 </div>
 
