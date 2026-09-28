@@ -241,6 +241,6 @@ FFmpeg: LGPL-2.1-or-later — attribution in [`NOTICE`](NOTICE), details in
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/readme/gitbat-interface-claro.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/readme/gitbat-interface-escuro.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/readme/gitbat-interface-escuro-v2.png">
   <img alt="Telas do GitBat" src="assets/readme/gitbat-interface-escuro.png">
 </picture>
