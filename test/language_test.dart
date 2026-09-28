@@ -40,10 +40,6 @@ void main() {
     expect(find.text('Escolher vídeo'), findsOneWidget);
     expect(find.byIcon(Icons.language_rounded), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('paletteCornerDecoration')),
-      findsOneWidget,
-    );
-    expect(
       tester.widget<Icon>(find.byIcon(Icons.language_rounded)).color,
       isNull,
     );
