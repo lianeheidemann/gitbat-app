@@ -64,6 +64,103 @@ class AppPalette {
   final ColorScheme Function(ColorScheme)? refineDark;
 }
 
+ColorScheme _refinePaletteLight(
+  ColorScheme base, {
+  required Color primary,
+  required Color primaryContainer,
+  required Color onPrimaryContainer,
+  required Color secondary,
+  required Color secondaryContainer,
+  required Color tertiary,
+  required Color tertiaryContainer,
+  required Color surface,
+  required Color surfaceLow,
+  required Color surfaceHigh,
+  required Color outline,
+}) => base.copyWith(
+  primary: primary,
+  onPrimary: Colors.white,
+  primaryContainer: primaryContainer,
+  onPrimaryContainer: onPrimaryContainer,
+  secondary: secondary,
+  onSecondary: Colors.white,
+  secondaryContainer: secondaryContainer,
+  tertiary: tertiary,
+  onTertiary: Colors.white,
+  tertiaryContainer: tertiaryContainer,
+  surface: surface,
+  onSurface: const Color(0xFF1C1B20),
+  onSurfaceVariant: const Color(0xFF514D57),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: surfaceLow,
+  surfaceContainer: surfaceLow,
+  surfaceContainerHigh: surfaceHigh,
+  surfaceContainerHighest: surfaceHigh,
+  outline: outline,
+  outlineVariant: Color.lerp(outline, Colors.white, 0.62),
+  inversePrimary: primaryContainer,
+  surfaceTint: primary,
+);
+
+ColorScheme _refinePaletteDark(
+  ColorScheme base, {
+  required Color primary,
+  required Color onPrimary,
+  required Color primaryContainer,
+  required Color secondary,
+  required Color secondaryContainer,
+  required Color tertiary,
+  required Color tertiaryContainer,
+  required Color outline,
+}) => base.copyWith(
+  primary: primary,
+  onPrimary: onPrimary,
+  primaryContainer: primaryContainer,
+  onPrimaryContainer: Color.lerp(primary, Colors.white, 0.72),
+  secondary: secondary,
+  onSecondary: onPrimary,
+  secondaryContainer: secondaryContainer,
+  onSecondaryContainer: Color.lerp(secondary, Colors.white, 0.72),
+  tertiary: tertiary,
+  onTertiary: onPrimary,
+  tertiaryContainer: tertiaryContainer,
+  onTertiaryContainer: Color.lerp(tertiary, Colors.white, 0.72),
+  onSurface: const Color(0xFFF0EDF3),
+  onSurfaceVariant: const Color(0xFFC9C2CF),
+  surfaceContainerLowest: Color.lerp(base.surface, Colors.black, 0.18),
+  outline: outline,
+  outlineVariant: Color.lerp(outline, Colors.black, 0.52),
+  inversePrimary: primaryContainer,
+  surfaceTint: primary,
+);
+
+ColorScheme _lavenderLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF7151A5),
+  primaryContainer: const Color(0xFFEBDDFF),
+  onPrimaryContainer: const Color(0xFF291248),
+  secondary: const Color(0xFF76546F),
+  secondaryContainer: const Color(0xFFFFD7F5),
+  tertiary: const Color(0xFF4D6098),
+  tertiaryContainer: const Color(0xFFDCE2FF),
+  surface: const Color(0xFFFCF8FF),
+  surfaceLow: const Color(0xFFF6F0FC),
+  surfaceHigh: const Color(0xFFEDE5F5),
+  outline: const Color(0xFF7D7484),
+);
+
+ColorScheme _lavenderDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFD6B9FF),
+  onPrimary: const Color(0xFF35165E),
+  primaryContainer: const Color(0xFF50357B),
+  secondary: const Color(0xFFE9B8DD),
+  secondaryContainer: const Color(0xFF5D3D57),
+  tertiary: const Color(0xFFB8C4FF),
+  tertiaryContainer: const Color(0xFF354476),
+  outline: const Color(0xFF968CA0),
+);
+
 const lavenderPalette = AppPalette(
   id: 'lavanda',
   label: 'Lavanda',
@@ -78,6 +175,9 @@ const lavenderPalette = AppPalette(
   contentBackground: Color(0xFFC9A8FF),
   contentFrame: Color(0xFF8370B0),
   contentText: Color(0xFF544181),
+  darkTertiary: Color(0xFFB8C4FF),
+  refineLight: _lavenderLight,
+  refineDark: _lavenderDark,
 );
 
 // Cores tiradas das artes do morceguinho em `assets/icon/icon-v2`.
@@ -161,6 +261,87 @@ const batPalette = AppPalette(
   refineDark: _batDark,
 );
 
+ColorScheme _mintLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF1F7556),
+  primaryContainer: const Color(0xFFBDF0D7),
+  onPrimaryContainer: const Color(0xFF072E20),
+  secondary: const Color(0xFF3E6558),
+  secondaryContainer: const Color(0xFFC8EADB),
+  tertiary: const Color(0xFF4A628F),
+  tertiaryContainer: const Color(0xFFD9E2FF),
+  surface: const Color(0xFFF6FCF8),
+  surfaceLow: const Color(0xFFECF6F0),
+  surfaceHigh: const Color(0xFFE1EEE7),
+  outline: const Color(0xFF6E7E75),
+);
+
+ColorScheme _mintDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFF8DDBB7),
+  onPrimary: const Color(0xFF073826),
+  primaryContainer: const Color(0xFF24523E),
+  secondary: const Color(0xFFA8D4BF),
+  secondaryContainer: const Color(0xFF315144),
+  tertiary: const Color(0xFFB7C9FF),
+  tertiaryContainer: const Color(0xFF354A73),
+  outline: const Color(0xFF87998F),
+);
+
+ColorScheme _peachLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFFA84B20),
+  primaryContainer: const Color(0xFFFFDBCB),
+  onPrimaryContainer: const Color(0xFF3B1000),
+  secondary: const Color(0xFF7C5748),
+  secondaryContainer: const Color(0xFFFFDBCC),
+  tertiary: const Color(0xFF67558D),
+  tertiaryContainer: const Color(0xFFEBDDFF),
+  surface: const Color(0xFFFFF8F5),
+  surfaceLow: const Color(0xFFFFF0E9),
+  surfaceHigh: const Color(0xFFF8E5DC),
+  outline: const Color(0xFF8A7166),
+);
+
+ColorScheme _peachDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFFFB693),
+  onPrimary: const Color(0xFF5B1D00),
+  primaryContainer: const Color(0xFF7F3515),
+  secondary: const Color(0xFFE9BFAE),
+  secondaryContainer: const Color(0xFF604538),
+  tertiary: const Color(0xFFD8BCFF),
+  tertiaryContainer: const Color(0xFF4E3E70),
+  outline: const Color(0xFFA58A7E),
+);
+
+ColorScheme _roseLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF9B356A),
+  primaryContainer: const Color(0xFFFFD8E9),
+  onPrimaryContainer: const Color(0xFF3D0024),
+  secondary: const Color(0xFF765661),
+  secondaryContainer: const Color(0xFFFFD9E2),
+  tertiary: const Color(0xFF595D91),
+  tertiaryContainer: const Color(0xFFE1E2FF),
+  surface: const Color(0xFFFFF8FA),
+  surfaceLow: const Color(0xFFFFF0F5),
+  surfaceHigh: const Color(0xFFF8E4EC),
+  outline: const Color(0xFF86717A),
+);
+
+ColorScheme _roseDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFFFAFD2),
+  onPrimary: const Color(0xFF5D123B),
+  primaryContainer: const Color(0xFF7C2854),
+  secondary: const Color(0xFFE6BDC9),
+  secondaryContainer: const Color(0xFF5B3F49),
+  tertiary: const Color(0xFFBFC4FF),
+  tertiaryContainer: const Color(0xFF414575),
+  outline: const Color(0xFFA38B95),
+);
+
 const mintPalette = AppPalette(
   id: 'menta',
   label: 'Menta',
@@ -175,6 +356,9 @@ const mintPalette = AppPalette(
   contentBackground: Color(0xFFB8EBD3),
   contentFrame: Color(0xFF2F8A66),
   contentText: Color(0xFF13402F),
+  darkTertiary: Color(0xFFB7C9FF),
+  refineLight: _mintLight,
+  refineDark: _mintDark,
 );
 
 const peachPalette = AppPalette(
@@ -191,6 +375,9 @@ const peachPalette = AppPalette(
   contentBackground: Color(0xFFFFD3BA),
   contentFrame: Color(0xFFC0673D),
   contentText: Color(0xFF5A2A14),
+  darkTertiary: Color(0xFFD8BCFF),
+  refineLight: _peachLight,
+  refineDark: _peachDark,
 );
 
 const rosePalette = AppPalette(
@@ -207,6 +394,9 @@ const rosePalette = AppPalette(
   contentBackground: Color(0xFFF9C6E0),
   contentFrame: Color(0xFFB24E86),
   contentText: Color(0xFF5B1D42),
+  darkTertiary: Color(0xFFBFC4FF),
+  refineLight: _roseLight,
+  refineDark: _roseDark,
 );
 
 /// Todas as paletas, na ordem em que aparecem nas configurações. A primeira
