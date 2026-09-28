@@ -274,9 +274,6 @@ class _SvgEditPageState extends State<SvgEditPage> {
     EditorSection(
       icon: Icons.text_fields_rounded,
       title: tr('Texto', 'Text'),
-      value: _settings.texts.isEmpty
-          ? tr('Nenhum', 'None')
-          : '${_settings.texts.length}',
       builder: (_) => _textSection(),
     ),
     // Última aba da barra nas três telas de edição (vídeo, foto e montagem)
