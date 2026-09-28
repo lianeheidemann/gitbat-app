@@ -39,6 +39,10 @@ void main() {
     );
     expect(find.text('Escolher vídeo'), findsOneWidget);
     expect(find.byIcon(Icons.language_rounded), findsOneWidget);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.language_rounded)).color,
+      isNull,
+    );
     expect(find.text('PT'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('languageToggle')));
@@ -47,6 +51,10 @@ void main() {
     expect(find.text('Choose video'), findsOneWidget);
     expect(find.text('Collage'), findsOneWidget);
     expect(find.byIcon(Icons.language_rounded), findsOneWidget);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.language_rounded)).color,
+      const Color(0xFF7FD6B0),
+    );
     expect(find.text('EN'), findsNothing);
 
     // Ao abrir de novo, o app volta no idioma salvo.
