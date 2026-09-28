@@ -66,15 +66,13 @@ void main() {
     );
 
     final scheme = buildTheme(Brightness.dark).colorScheme;
-    expect(
-      tester.widget<Icon>(find.byKey(const ValueKey('svgAccentIcon'))).color,
-      scheme.secondary,
+    final svgIcon = tester.widget<Icon>(
+      find.byKey(const ValueKey('svgAccentIcon')),
     );
-    expect(
-      tester
-          .widget<Icon>(find.byKey(const ValueKey('convertAccentIcon')))
-          .color,
-      scheme.secondary,
+    final convertIcon = tester.widget<Icon>(
+      find.byKey(const ValueKey('convertAccentIcon')),
     );
+    expect(svgIcon.color, scheme.secondary);
+    expect(convertIcon.color, scheme.secondary);
   });
 }
