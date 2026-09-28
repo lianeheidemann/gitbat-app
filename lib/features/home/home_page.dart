@@ -17,6 +17,7 @@ import '../collage/collage_page.dart';
 import '../video/editor_page.dart';
 import '../photo/photo_frame_page.dart';
 import '../quick_convert/quick_convert_page.dart';
+import '../settings/settings_page.dart';
 import '../svg/svg_edit_page.dart';
 import '../../app/editor_defaults.dart';
 
@@ -421,6 +422,16 @@ class _HomePageState extends State<HomePage> {
                       applicationLegalese: tr(
                         'Conversão feita no próprio aparelho com FFmpeg (LGPL). Nenhum vídeo é enviado para a internet.',
                         'Conversion runs on the device with FFmpeg (LGPL). No video is sent to the internet.',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('settingsButton'),
+                    tooltip: tr('Configurações', 'Settings'),
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SettingsPage(),
                       ),
                     ),
                   ),
