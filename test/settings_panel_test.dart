@@ -96,4 +96,12 @@ void main() {
       expect(palette.darkTertiary, isNotNull, reason: palette.label);
     }
   });
+
+  test('tríade e quadrada preservam o azul da marca', () {
+    expect(appPalettes, containsAll([triadPalette, squarePalette]));
+    expect(triadPalette.accentGradient, contains(const Color(0xFF60DDB2)));
+    expect(squarePalette.accentGradient, contains(const Color(0xFF76A9FF)));
+    expect(squarePalette.contentFrame, const Color(0xFF5C9C4B));
+    expect(squarePalette.contentText, const Color(0xFF7F2A1A));
+  });
 }
