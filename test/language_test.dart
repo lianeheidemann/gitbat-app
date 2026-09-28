@@ -53,7 +53,9 @@ void main() {
     expect(find.byIcon(Icons.language_rounded), findsOneWidget);
     expect(
       tester.widget<Icon>(find.byIcon(Icons.language_rounded)).color,
-      const Color(0xFF7FD6B0),
+      Theme.of(
+        tester.element(find.byKey(const ValueKey('languageToggle'))),
+      ).colorScheme.secondary,
     );
     expect(find.text('EN'), findsNothing);
 
