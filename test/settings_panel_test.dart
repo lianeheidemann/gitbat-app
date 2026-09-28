@@ -79,8 +79,12 @@ void main() {
   test('a paleta oficial é a do morceguinho, com cores próprias', () {
     expect(appPalettes.first, batPalette);
     final dark = buildTheme(Brightness.dark).colorScheme;
-    expect(dark.surface, const Color(0xFF111929));
+    expect(dark.surface, const Color(0xFF0D1526));
     expect(dark.secondary, const Color(0xFF22D8EE));
+    expect(dark.onSurface, const Color(0xFFF1F5FF));
+    expect(dark.onSurfaceVariant, const Color(0xFFA8B6D3));
+    expect(dark.surfaceContainerLow, const Color(0xFF16233B));
+    expect(dark.surfaceContainerHigh, const Color(0xFF203251));
     final light = buildTheme(Brightness.light).colorScheme;
     expect(light.primary, const Color(0xFF0C48A8));
   });
