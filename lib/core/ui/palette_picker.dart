@@ -1,0 +1,170 @@
+import 'package:flutter/material.dart';
+
+import '../../app/app_palette.dart';
+import '../../app/language_controller.dart';
+import '../../app/theme_controller.dart';
+
+/// Seletor único de paletas usado tanto nas telas de edição quanto na página
+/// geral de configurações. A escolha é aplicada e salva imediatamente.
+class PalettePicker extends StatelessWidget {
+  const PalettePicker({super.key, this.showLabels = false});
+
+  final bool showLabels;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ValueListenableBuilder<AppPalette>(
+      valueListenable: paletteNotifier,
+      builder: (context, current, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.palette_outlined, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  tr('Paleta de cores', 'Color palette'),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Text(
+                current.label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: showLabels ? 4 : 10,
+            runSpacing: 10,
+            children: [
+              for (final palette in appPalettes)
+                _PaletteOption(
+                  palette: palette,
+                  selected: palette.id == current.id,
+                  showLabel: showLabels,
+                  onTap: () => setPalette(palette),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaletteOption extends StatelessWidget {
+  const _PaletteOption({
+    required this.palette,
+    required this.selected,
+    required this.showLabel,
+    required this.onTap,
+  });
+
+  final AppPalette palette;
+  final bool selected;
+  final bool showLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final swatch = _PaletteSwatch(
+      palette: palette,
+      selected: selected,
+      onTap: onTap,
+    );
+    if (!showLabel) return swatch;
+
+    return SizedBox(
+      width: 50,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          swatch,
+          const SizedBox(height: 6),
+          Text(
+            palette.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Amostra compacta da paleta: as três cores de identidade e o fundo escuro.
+class _PaletteSwatch extends StatelessWidget {
+  const _PaletteSwatch({
+    required this.palette,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppPalette palette;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: tr('Paleta ${palette.label}', 'Palette ${palette.label}'),
+      child: Tooltip(
+        message: palette.label,
+        child: InkResponse(
+          key: ValueKey('paletteSwatch-${palette.id}'),
+          onTap: onTap,
+          radius: 24,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selected ? scheme.onSurface : scheme.outlineVariant,
+                width: selected ? 2 : 1,
+              ),
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: const [0.34, 0.34, 0.52, 0.52, 0.68, 0.68],
+                  colors: [
+                    palette.seed,
+                    palette.accentGradient.last,
+                    palette.accentGradient.last,
+                    palette.darkTertiary ?? palette.contentFrame,
+                    palette.darkTertiary ?? palette.contentFrame,
+                    palette.darkBackground,
+                  ],
+                ),
+              ),
+              child: selected
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color: Colors.white,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 3)],
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
