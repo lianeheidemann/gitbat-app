@@ -111,6 +111,27 @@ void main() {
     expect(squarePalette.contentText, const Color(0xFF7F2A1A));
   });
 
+  test('Pitaya e Limão usa a versão clara aprovada sem mudar a escura', () {
+    final light = buildTheme(
+      Brightness.light,
+      pitayaLimePalette,
+    ).colorScheme;
+    expect(light.primary, const Color(0xFFB84F70));
+    expect(light.tertiary, const Color(0xFF9FCB7A));
+    expect(light.surface, const Color(0xFFFFF9FA));
+    expect(light.surfaceContainer, const Color(0xFFF8E8ED));
+    expect(light.onSurface, const Color(0xFF4C2338));
+    expect(light.outline, const Color(0xFF7B4B61));
+
+    final dark = buildTheme(
+      Brightness.dark,
+      pitayaLimePalette,
+    ).colorScheme;
+    expect(dark.primary, const Color(0xFFD92B73));
+    expect(dark.tertiary, const Color(0xFFB9F68D));
+    expect(dark.surface, const Color(0xFF201022));
+  });
+
   test('dália usa as cores extraídas das referências', () {
     expect(appPalettes, contains(dahliaPalette));
     expect(dahliaPalette.darkBackground, const Color(0xFF121115));
