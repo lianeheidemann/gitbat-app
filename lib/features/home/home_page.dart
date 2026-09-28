@@ -512,6 +512,7 @@ class _HomePageState extends State<HomePage> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading ? null : _pickPhoto,
                   icon: const Icon(Icons.photo_filter_outlined),
@@ -521,15 +522,21 @@ class _HomePageState extends State<HomePage> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading ? null : _pickSvg,
-                  icon: const Icon(Icons.polyline_outlined),
+                  icon: Icon(
+                    Icons.polyline_outlined,
+                    key: const ValueKey('svgAccentIcon'),
+                    color: theme.colorScheme.secondary,
+                  ),
                   label: Text(tr('Editar SVG', 'Edit SVG')),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading ? null : _pickPhotosForCollage,
                   icon: const Icon(Icons.dashboard_customize_outlined),
@@ -539,6 +546,7 @@ class _HomePageState extends State<HomePage> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading
                       ? null
@@ -547,7 +555,11 @@ class _HomePageState extends State<HomePage> {
                             builder: (_) => const QuickConvertPage(),
                           ),
                         ),
-                  icon: const Icon(Icons.cached_outlined),
+                  icon: Icon(
+                    Icons.cached_outlined,
+                    key: const ValueKey('convertAccentIcon'),
+                    color: theme.colorScheme.secondary,
+                  ),
                   label: Text(tr('Converter formato', 'Convert format')),
                 ),
                 const SizedBox(height: 16),
@@ -614,7 +626,7 @@ class _StepIcon extends StatelessWidget {
             shape: BoxShape.circle,
             color: theme.colorScheme.primary.withValues(alpha: 0.12),
           ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+          child: Icon(icon, color: theme.colorScheme.tertiary, size: 20),
         ),
         const SizedBox(height: 8),
         Text(
@@ -644,12 +656,12 @@ class _StepConnector extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primary,
+              color: theme.colorScheme.secondary,
             ),
             child: Icon(
               Icons.arrow_forward_rounded,
               size: 13,
-              color: theme.colorScheme.onPrimary,
+              color: theme.colorScheme.onSecondary,
             ),
           ),
           const Expanded(child: _DashedLine()),
@@ -665,7 +677,7 @@ class _DashedLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary.withValues(alpha: 0.4);
+    final scheme = Theme.of(context).colorScheme;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -679,11 +691,12 @@ class _DashedLine extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(
             count,
-            (_) => Container(
+            (index) => Container(
               width: dashWidth,
               height: 2,
               decoration: BoxDecoration(
-                color: color,
+                color: (index.isEven ? scheme.secondary : scheme.tertiary)
+                    .withValues(alpha: 0.78),
                 borderRadius: BorderRadius.circular(1),
               ),
             ),
