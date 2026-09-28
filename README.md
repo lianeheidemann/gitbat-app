@@ -19,9 +19,9 @@ directly on Android — animated, transparent, high-resolution and offline.**
   <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro-v3.webp">
 </picture><br><br>
 
-<p align="center" width="50%">
+<p align="center">
   <a href="https://github.com/lianeheidemann/gitbat-app/releases/latest">
-    <img src="assets/GitBat_download-v1.png" width="210" alt="Download do GitBat">
+    <img width="100" src="assets/GitBat_download-v1.png" width="210" alt="Download do GitBat">
   </a>
 </p>
 
