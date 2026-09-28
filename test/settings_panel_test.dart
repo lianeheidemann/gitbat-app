@@ -126,6 +126,21 @@ void main() {
     expect(dark.surface, const Color(0xFF201022));
   });
 
+  test('Pôr do Sol Rosa usa mais azul no claro sem mudar a escura', () {
+    final light = buildTheme(Brightness.light, sunsetRosePalette).colorScheme;
+    expect(light.primary, const Color(0xFFC86578));
+    expect(light.secondary, const Color(0xFF6678A6));
+    expect(light.tertiary, const Color(0xFFD9A441));
+    expect(light.surface, const Color(0xFFFFF9F6));
+    expect(light.surfaceContainerHigh, const Color(0xFFE7EAF4));
+    expect(light.outline, const Color(0xFF6678A6));
+
+    final dark = buildTheme(Brightness.dark, sunsetRosePalette).colorScheme;
+    expect(dark.primary, const Color(0xFFFF7496));
+    expect(dark.tertiary, const Color(0xFFFFC65A));
+    expect(dark.surface, const Color(0xFF11172A));
+  });
+
   test('dália usa as cores extraídas das referências', () {
     expect(appPalettes, contains(dahliaPalette));
     expect(dahliaPalette.darkBackground, const Color(0xFF121115));
