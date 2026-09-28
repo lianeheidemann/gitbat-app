@@ -112,10 +112,7 @@ void main() {
   });
 
   test('Pitaya e Limão usa a versão clara aprovada sem mudar a escura', () {
-    final light = buildTheme(
-      Brightness.light,
-      pitayaLimePalette,
-    ).colorScheme;
+    final light = buildTheme(Brightness.light, pitayaLimePalette).colorScheme;
     expect(light.primary, const Color(0xFFB84F70));
     expect(light.tertiary, const Color(0xFF9FCB7A));
     expect(light.surface, const Color(0xFFFFF9FA));
@@ -123,10 +120,7 @@ void main() {
     expect(light.onSurface, const Color(0xFF4C2338));
     expect(light.outline, const Color(0xFF7B4B61));
 
-    final dark = buildTheme(
-      Brightness.dark,
-      pitayaLimePalette,
-    ).colorScheme;
+    final dark = buildTheme(Brightness.dark, pitayaLimePalette).colorScheme;
     expect(dark.primary, const Color(0xFFD92B73));
     expect(dark.tertiary, const Color(0xFFB9F68D));
     expect(dark.surface, const Color(0xFF201022));
