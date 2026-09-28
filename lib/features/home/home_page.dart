@@ -383,7 +383,12 @@ class _HomePageState extends State<HomePage> {
                     tooltip: languageNotifier.value == AppLanguage.pt
                         ? 'Mudar idioma — Português'
                         : 'Change language — English',
-                    icon: const Icon(Icons.language_rounded),
+                    icon: Icon(
+                      Icons.language_rounded,
+                      color: languageNotifier.value == AppLanguage.en
+                          ? const Color(0xFF7FD6B0)
+                          : null,
+                    ),
                     onPressed: toggleLanguage,
                   ),
                   IconButton(
