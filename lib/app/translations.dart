@@ -98,6 +98,7 @@ const Map<String, String> modelTranslations = {
   'Tríade': 'Triad',
   'Quadrada': 'Square',
   'Aurora Coral': 'Coral Aurora',
+  'Turquesa Clássica': 'Classic Turquoise',
   'Turquesa Vintage': 'Vintage Turquoise',
   'Pôr do Sol Rosa': 'Pink Sunset',
   'Brisa Oceânica': 'Ocean Breeze',

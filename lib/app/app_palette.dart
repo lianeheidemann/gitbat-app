@@ -590,9 +590,10 @@ const auroraCoralPalette = AppPalette(
   contentText: Color(0xFF7D2A1F),
 );
 
-const vintageTurquoisePalette = AppPalette(
-  id: 'turquesa-vintage',
-  label: 'Turquesa Vintage',
+/// Primeira versão da Turquesa Vintage, preservada como opção independente.
+const classicTurquoisePalette = AppPalette(
+  id: 'turquesa-classica',
+  label: 'Turquesa Clássica',
   seed: Color(0xFF71BDC4),
   darkBackground: Color(0xFF171516),
   darkCard: Color(0xFF252122),
@@ -605,6 +606,60 @@ const vintageTurquoisePalette = AppPalette(
   contentBackground: Color(0xFFF1EAE4),
   contentFrame: Color(0xFFC93A26),
   contentText: Color(0xFF493E3C),
+);
+
+/// Versão aprovada da Turquesa Vintage: o turquesa continua dominante e o
+/// vermelho queimado passa a participar dos controles e estados ativos.
+ColorScheme _vintageTurquoiseLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF087C83),
+  primaryContainer: const Color(0xFFD1EFEE),
+  onPrimaryContainer: const Color(0xFF103B3D),
+  secondary: const Color(0xFFB84536),
+  secondaryContainer: const Color(0xFFF6DDD7),
+  tertiary: const Color(0xFF9A741C),
+  tertiaryContainer: const Color(0xFFF3E6D1),
+  surface: const Color(0xFFF5FAF9),
+  surfaceLow: const Color(0xFFEAF4F2),
+  surfaceHigh: const Color(0xFFDDEBE8),
+  outline: const Color(0xFF607775),
+).copyWith(
+  onSurface: const Color(0xFF263638),
+  onSurfaceVariant: const Color(0xFF4E6262),
+);
+
+ColorScheme _vintageTurquoiseDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFF3FAEB4),
+  onPrimary: const Color(0xFF102628),
+  primaryContainer: const Color(0xFF24575A),
+  secondary: const Color(0xFFC65A4D),
+  secondaryContainer: const Color(0xFF5A302C),
+  tertiary: const Color(0xFFD2B46C),
+  tertiaryContainer: const Color(0xFF514524),
+  outline: const Color(0xFFA79B98),
+).copyWith(
+  onSurface: const Color(0xFFF3EEE9),
+  onSurfaceVariant: const Color(0xFFCFC5C1),
+);
+
+const vintageTurquoisePalette = AppPalette(
+  id: 'turquesa-vintage',
+  label: 'Turquesa Vintage',
+  seed: Color(0xFF3FAEB4),
+  darkBackground: Color(0xFF171516),
+  darkCard: Color(0xFF252122),
+  darkContainerHigh: Color(0xFF302A2B),
+  darkContainerHighest: Color(0xFF393233),
+  darkChipSelected: Color(0xFF5A302C),
+  darkTertiary: Color(0xFFD2B46C),
+  accentGradient: [Color(0xFF3FAEB4), Color(0xFFB94B42)],
+  onAccent: Color(0xFF102628),
+  contentBackground: Color(0xFFF3E6D1),
+  contentFrame: Color(0xFFB94B42),
+  contentText: Color(0xFF263638),
+  refineLight: _vintageTurquoiseLight,
+  refineDark: _vintageTurquoiseDark,
 );
 
 /// Versão clara aprovada da paleta Pôr do Sol Rosa. Coral, azul
@@ -1070,6 +1125,7 @@ const appPalettes = [
   triadPalette,
   squarePalette,
   auroraCoralPalette,
+  classicTurquoisePalette,
   vintageTurquoisePalette,
   sunsetRosePalette,
   oceanBreezePalette,

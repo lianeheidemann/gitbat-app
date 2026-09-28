@@ -61,10 +61,10 @@ void main() {
     expect(paletteById('nao-existe'), appPalettes.first);
   });
 
-  test('paletas v2 adicionam 25 opções com ids únicos', () {
-    expect(appPalettes, hasLength(33));
-    expect(appPalettes.map((palette) => palette.id).toSet(), hasLength(33));
-    expect(appPalettes.skip(8), hasLength(25));
+  test('paletas v2 e a versão clássica têm ids únicos', () {
+    expect(appPalettes, hasLength(34));
+    expect(appPalettes.map((palette) => palette.id).toSet(), hasLength(34));
+    expect(appPalettes.skip(8), hasLength(26));
   });
 
   for (final palette in appPalettes) {
@@ -139,6 +139,29 @@ void main() {
     expect(dark.primary, const Color(0xFFFF7496));
     expect(dark.tertiary, const Color(0xFFFFC65A));
     expect(dark.surface, const Color(0xFF11172A));
+  });
+
+  test('Turquesa Vintage aprovada usa turquesa e vermelho nos dois temas', () {
+    expect(appPalettes, contains(classicTurquoisePalette));
+    expect(classicTurquoisePalette.id, 'turquesa-classica');
+
+    final light = buildTheme(
+      Brightness.light,
+      vintageTurquoisePalette,
+    ).colorScheme;
+    expect(light.primary, const Color(0xFF087C83));
+    expect(light.secondary, const Color(0xFFB84536));
+    expect(light.tertiary, const Color(0xFF9A741C));
+    expect(light.surface, const Color(0xFFF5FAF9));
+
+    final dark = buildTheme(
+      Brightness.dark,
+      vintageTurquoisePalette,
+    ).colorScheme;
+    expect(dark.primary, const Color(0xFF3FAEB4));
+    expect(dark.secondary, const Color(0xFFC65A4D));
+    expect(dark.tertiary, const Color(0xFFD2B46C));
+    expect(dark.surface, const Color(0xFF171516));
   });
 
   test('dália usa as cores extraídas das referências', () {
