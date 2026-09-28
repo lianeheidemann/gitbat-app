@@ -19,12 +19,12 @@ directly on Android — animated, transparent, high-resolution and offline.**
   <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro-v3.webp">
 </picture><br><br>
 
-**[Download the latest APK](https://github.com/lianeheidemann/gitbat-app/releases/latest)**
-<p align="center">
+<p align="center" width="50%">
   <a href="[https://github.com/lianeheidemann/gitbat-app/releases/latest">
     <img src="assets/GitBat_download-v1.png" width="210" alt="Download do GitBat">
   </a>
 </p>
+
 </div>
 
 ## Overview
