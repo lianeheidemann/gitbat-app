@@ -15,8 +15,8 @@ directly on Android — animated, transparent, high-resolution and offline.**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/interface-v2/gitbat-interface-escuro-v2.webp">
-  <source media="(prefers-color-scheme: light)" srcset="assets/interface-v2/gitbat-interface-claro.webp">
-  <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro.webp">
+  <source media="(prefers-color-scheme: light)" srcset="assets/interface-v2/gitbat-interface-claro-v2.webp">
+  <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro-v2.webp">
 </picture><br><br>
 
 **[Download the latest APK](https://github.com/lianeheidemann/gitbat-app/releases/latest)**
@@ -240,7 +240,7 @@ FFmpeg: LGPL-2.1-or-later — attribution in [`NOTICE`](NOTICE), details in
 <p align="center">Developed by <strong>Liane Heidemann</strong></p>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/gitbat-interface-claro.png">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/gitbat-interface-claro-v2.png">
   <source media="(prefers-color-scheme: light)" srcset="assets/readme/gitbat-interface-escuro-v2.png">
-  <img alt="Telas do GitBat" src="assets/readme/gitbat-interface-escuro.png">
+  <img alt="Telas do GitBat" src="assets/readme/gitbat-interface-escuro-v2.png">
 </picture>
