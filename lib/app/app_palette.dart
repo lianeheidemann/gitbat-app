@@ -161,6 +161,35 @@ ColorScheme _lavenderDark(ColorScheme base) => _refinePaletteDark(
   outline: const Color(0xFF968CA0),
 );
 
+/// Cores inspiradas na flor de referência: lavanda nas ações principais,
+/// rosa-dália nos destaques e superfícies grafite levemente arroxeadas.
+ColorScheme _dahliaLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF75458D),
+  primaryContainer: const Color(0xFFF2DAFF),
+  onPrimaryContainer: const Color(0xFF2E0B3D),
+  secondary: const Color(0xFF9B365F),
+  secondaryContainer: const Color(0xFFFFD9E5),
+  tertiary: const Color(0xFF76556B),
+  tertiaryContainer: const Color(0xFFFFD8EA),
+  surface: const Color(0xFFFFF8FC),
+  surfaceLow: const Color(0xFFF9F0F7),
+  surfaceHigh: const Color(0xFFF1E5EF),
+  outline: const Color(0xFF81747F),
+);
+
+ColorScheme _dahliaDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFCDAAFD),
+  onPrimary: const Color(0xFF321344),
+  primaryContainer: const Color(0xFF54406F),
+  secondary: const Color(0xFFF0A5C7),
+  secondaryContainer: const Color(0xFF6D304C),
+  tertiary: const Color(0xFFD69DA6),
+  tertiaryContainer: const Color(0xFF633E49),
+  outline: const Color(0xFF948F98),
+);
+
 const lavenderPalette = AppPalette(
   id: 'lavanda',
   label: 'Lavanda',
@@ -178,6 +207,25 @@ const lavenderPalette = AppPalette(
   darkTertiary: Color(0xFFB8C4FF),
   refineLight: _lavenderLight,
   refineDark: _lavenderDark,
+);
+
+const dahliaPalette = AppPalette(
+  id: 'dalia',
+  label: 'Dália',
+  seed: Color(0xFFCDAAFD),
+  darkBackground: Color(0xFF121115),
+  darkCard: Color(0xFF19171D),
+  darkContainerHigh: Color(0xFF211D2D),
+  darkContainerHighest: Color(0xFF352F43),
+  darkChipSelected: Color(0xFF54406F),
+  darkTertiary: Color(0xFFF0A5C7),
+  accentGradient: [Color(0xFFCDAAFD), Color(0xFFF0A5C7)],
+  onAccent: Color(0xFF2A1730),
+  contentBackground: Color(0xFFF1D7E5),
+  contentFrame: Color(0xFF956EA3),
+  contentText: Color(0xFF6D304C),
+  refineLight: _dahliaLight,
+  refineDark: _dahliaDark,
 );
 
 // Cores tiradas das artes do morceguinho em `assets/icon/icon-v2`.
@@ -506,6 +554,7 @@ const squarePalette = AppPalette(
 const appPalettes = [
   batPalette,
   lavenderPalette,
+  dahliaPalette,
   mintPalette,
   peachPalette,
   rosePalette,
