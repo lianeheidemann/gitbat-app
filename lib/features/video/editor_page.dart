@@ -378,9 +378,6 @@ class _EditorPageState extends State<EditorPage> {
       EditorSection(
         icon: Icons.text_fields_rounded,
         title: tr('Texto', 'Text'),
-        value: _settings.frame.texts.isEmpty
-            ? tr('Nenhum', 'None')
-            : '${_settings.frame.texts.length}',
         builder: (_) => _textSection(),
       ),
       // Penúltima aba: fecha os ajustes de conteúdo com o resultado (tamanho
