@@ -94,7 +94,7 @@ class PreviewSettingsPanel extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Wrap(
-                spacing: 12,
+                spacing: 10,
                 runSpacing: 10,
                 children: [
                   for (final palette in appPalettes)
@@ -114,8 +114,8 @@ class PreviewSettingsPanel extends StatelessWidget {
   }
 }
 
-/// Bolinha de uma paleta: a cor principal, uma faixa com a cor de destaque
-/// e o fundo escuro dela, com um anel e um "check" quando é a escolhida.
+/// Amostra compacta de uma paleta: mostra as três cores de identidade e o
+/// fundo escuro, com um anel e um "check" quando é a escolhida.
 class _PaletteSwatch extends StatelessWidget {
   const _PaletteSwatch({
     required this.palette,
@@ -142,8 +142,8 @@ class _PaletteSwatch extends StatelessWidget {
           radius: 24,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -158,11 +158,13 @@ class _PaletteSwatch extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  stops: const [0.42, 0.42, 0.58, 0.58],
+                  stops: const [0.34, 0.34, 0.52, 0.52, 0.68, 0.68],
                   colors: [
                     palette.seed,
                     palette.accentGradient.last,
                     palette.accentGradient.last,
+                    palette.darkTertiary ?? palette.contentFrame,
+                    palette.darkTertiary ?? palette.contentFrame,
                     palette.darkBackground,
                   ],
                 ),
