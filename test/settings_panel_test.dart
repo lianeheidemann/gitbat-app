@@ -149,19 +149,23 @@ void main() {
       Brightness.light,
       vintageTurquoisePalette,
     ).colorScheme;
-    expect(light.primary, const Color(0xFF087C83));
-    expect(light.secondary, const Color(0xFFB84536));
+    expect(light.primary, const Color(0xFF087F84));
+    expect(light.secondary, const Color(0xFFC55646));
     expect(light.tertiary, const Color(0xFF9A741C));
-    expect(light.surface, const Color(0xFFF5FAF9));
+    expect(light.surface, const Color(0xFFF7FCFB));
+    expect(light.surfaceContainer, const Color(0xFFEAF4F2));
+    expect(light.surfaceContainerHighest, const Color(0xFFD8E9E6));
 
     final dark = buildTheme(
       Brightness.dark,
       vintageTurquoisePalette,
     ).colorScheme;
-    expect(dark.primary, const Color(0xFF3FAEB4));
-    expect(dark.secondary, const Color(0xFFC65A4D));
+    expect(dark.primary, const Color(0xFF49BBC1));
+    expect(dark.secondary, const Color(0xFFC75A4C));
     expect(dark.tertiary, const Color(0xFFD2B46C));
-    expect(dark.surface, const Color(0xFF171516));
+    expect(dark.surface, const Color(0xFF121313));
+    expect(dark.surfaceContainer, const Color(0xFF222323));
+    expect(dark.surfaceContainerHighest, const Color(0xFF323436));
   });
 
   test('dália usa as cores extraídas das referências', () {
