@@ -85,9 +85,11 @@ class _PaletteCornerPainter extends CustomPainter {
     );
     _paintLayer(
       canvas,
-      color: Color.lerp(primary, secondary, 0.5)!.withValues(
-        alpha: dark ? 0.20 : 0.10,
-      ),
+      color: Color.lerp(
+        primary,
+        secondary,
+        0.5,
+      )!.withValues(alpha: dark ? 0.20 : 0.10),
       edgeWidth: 66,
       edgeHeight: 62,
       firstControl: const Offset(58, 14),
