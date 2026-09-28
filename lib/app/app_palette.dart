@@ -658,6 +658,35 @@ const lilacCreamPalette = AppPalette(
   contentText: Color(0xFF46377F),
 );
 
+/// Versão clara aprovada da paleta Pitaya e Limão. O tema escuro continua
+/// usando o acabamento compartilhado, sem nenhuma alteração.
+ColorScheme _pitayaLimeLight(ColorScheme base) => base.copyWith(
+  primary: const Color(0xFFB84F70),
+  onPrimary: Colors.white,
+  primaryContainer: const Color(0xFFF2DCE4),
+  onPrimaryContainer: const Color(0xFF5F2944),
+  secondary: const Color(0xFF738E52),
+  onSecondary: Colors.white,
+  secondaryContainer: const Color(0xFFE6F0D8),
+  onSecondaryContainer: const Color(0xFF2D4120),
+  tertiary: const Color(0xFF9FCB7A),
+  onTertiary: const Color(0xFF26331C),
+  tertiaryContainer: const Color(0xFFEAF4DF),
+  onTertiaryContainer: const Color(0xFF2D4120),
+  surface: const Color(0xFFFFF9FA),
+  onSurface: const Color(0xFF4C2338),
+  onSurfaceVariant: const Color(0xFF6D4B5B),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: const Color(0xFFF9EDF1),
+  surfaceContainer: const Color(0xFFF8E8ED),
+  surfaceContainerHigh: const Color(0xFFF2DCE4),
+  surfaceContainerHighest: const Color(0xFFEBCFD9),
+  outline: const Color(0xFF7B4B61),
+  outlineVariant: const Color(0xFFD9B9C6),
+  inversePrimary: const Color(0xFFD5A0B3),
+  surfaceTint: const Color(0xFFB84F70),
+);
+
 const pitayaLimePalette = AppPalette(
   id: 'pitaya-limao',
   label: 'Pitaya e Limão',
@@ -673,6 +702,7 @@ const pitayaLimePalette = AppPalette(
   contentBackground: Color(0xFFFFF9E7),
   contentFrame: Color(0xFF92228C),
   contentText: Color(0xFF60143F),
+  refineLight: _pitayaLimeLight,
 );
 
 const blushSagePalette = AppPalette(
