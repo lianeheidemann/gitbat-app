@@ -61,6 +61,12 @@ void main() {
     expect(paletteById('nao-existe'), appPalettes.first);
   });
 
+  test('paletas v2 adicionam 25 opções com ids únicos', () {
+    expect(appPalettes, hasLength(33));
+    expect(appPalettes.map((palette) => palette.id).toSet(), hasLength(33));
+    expect(appPalettes.skip(8), hasLength(25));
+  });
+
   for (final palette in appPalettes) {
     for (final brightness in Brightness.values) {
       test('paleta ${palette.label} no tema ${brightness.name}', () {

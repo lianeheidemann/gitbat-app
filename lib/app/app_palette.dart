@@ -24,8 +24,8 @@ class AppPalette {
     required this.contentFrame,
     required this.contentText,
     this.darkTertiary,
-    this.refineLight,
-    this.refineDark,
+    this.refineLight = _generatedPaletteLight,
+    this.refineDark = _generatedPaletteDark,
   });
 
   /// Identificador salvo nas preferências — não mudar depois de publicado.
@@ -63,6 +63,26 @@ class AppPalette {
   final ColorScheme Function(ColorScheme)? refineLight;
   final ColorScheme Function(ColorScheme)? refineDark;
 }
+
+/// Acabamento compartilhado pelas paletas v2. Mantém as cores derivadas da
+/// semente, mas controla superfícies e contornos para evitar o aspecto
+/// excessivamente colorido do esquema Material gerado sem ajustes.
+ColorScheme _generatedPaletteLight(ColorScheme base) => base.copyWith(
+  surface: Color.lerp(base.surface, Colors.white, 0.38),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: Color.lerp(base.surfaceContainerLow, Colors.white, 0.22),
+  surfaceContainer: Color.lerp(base.surfaceContainer, Colors.white, 0.16),
+  outlineVariant: Color.lerp(base.outline, Colors.white, 0.64),
+  surfaceTint: base.primary,
+);
+
+ColorScheme _generatedPaletteDark(ColorScheme base) => base.copyWith(
+  onSurface: const Color(0xFFF2EFF5),
+  onSurfaceVariant: const Color(0xFFCDC6D2),
+  outline: Color.lerp(base.outline, Colors.white, 0.12),
+  outlineVariant: Color.lerp(base.outline, Colors.black, 0.55),
+  surfaceTint: base.primary,
+);
 
 ColorScheme _refinePaletteLight(
   ColorScheme base, {
@@ -549,6 +569,435 @@ const squarePalette = AppPalette(
   refineDark: _squareDark,
 );
 
+// Paletas v2 inspiradas nas referências enviadas. Cada opção mantém cores
+// próprias para superfícies escuras e deixa o Material 3 derivar o esquema
+// claro a partir da semente. Assim, a mesma escolha acompanha a troca entre
+// modo claro e escuro sem perder identidade ou contraste.
+const auroraCoralPalette = AppPalette(
+  id: 'aurora-coral',
+  label: 'Aurora Coral',
+  seed: Color(0xFFFF6648),
+  darkBackground: Color(0xFF111521),
+  darkCard: Color(0xFF1B2230),
+  darkContainerHigh: Color(0xFF263044),
+  darkContainerHighest: Color(0xFF303C52),
+  darkChipSelected: Color(0xFF6B3D38),
+  darkTertiary: Color(0xFFFFCB45),
+  accentGradient: [Color(0xFF17D4E8), Color(0xFFFF6648)],
+  onAccent: Color(0xFF10131C),
+  contentBackground: Color(0xFFFFE5E4),
+  contentFrame: Color(0xFF596274),
+  contentText: Color(0xFF7D2A1F),
+);
+
+const vintageTurquoisePalette = AppPalette(
+  id: 'turquesa-vintage',
+  label: 'Turquesa Vintage',
+  seed: Color(0xFF71BDC4),
+  darkBackground: Color(0xFF171516),
+  darkCard: Color(0xFF252122),
+  darkContainerHigh: Color(0xFF302A2B),
+  darkContainerHighest: Color(0xFF393233),
+  darkChipSelected: Color(0xFF3E6265),
+  darkTertiary: Color(0xFFFFE39B),
+  accentGradient: [Color(0xFF71BDC4), Color(0xFFC93A26)],
+  onAccent: Color(0xFF151718),
+  contentBackground: Color(0xFFF1EAE4),
+  contentFrame: Color(0xFFC93A26),
+  contentText: Color(0xFF493E3C),
+);
+
+const sunsetRosePalette = AppPalette(
+  id: 'por-do-sol-rosa',
+  label: 'Pôr do Sol Rosa',
+  seed: Color(0xFFFF7496),
+  darkBackground: Color(0xFF11172A),
+  darkCard: Color(0xFF1C2438),
+  darkContainerHigh: Color(0xFF27324A),
+  darkContainerHighest: Color(0xFF323D56),
+  darkChipSelected: Color(0xFF70435B),
+  darkTertiary: Color(0xFFFFC65A),
+  accentGradient: [Color(0xFFFFC65A), Color(0xFFFF7496)],
+  onAccent: Color(0xFF26131A),
+  contentBackground: Color(0xFFF1F2F7),
+  contentFrame: Color(0xFF6077A5),
+  contentText: Color(0xFF40243A),
+);
+
+const oceanBreezePalette = AppPalette(
+  id: 'brisa-oceanica',
+  label: 'Brisa Oceânica',
+  seed: Color(0xFF5E9CD1),
+  darkBackground: Color(0xFF0B1831),
+  darkCard: Color(0xFF142441),
+  darkContainerHigh: Color(0xFF1D3151),
+  darkContainerHighest: Color(0xFF263D60),
+  darkChipSelected: Color(0xFF315F78),
+  darkTertiary: Color(0xFF83D5BF),
+  accentGradient: [Color(0xFF83D5BF), Color(0xFFFFC247)],
+  onAccent: Color(0xFF092638),
+  contentBackground: Color(0xFFF1F5F4),
+  contentFrame: Color(0xFF3B58B9),
+  contentText: Color(0xFF15335D),
+);
+
+const lilacCreamPalette = AppPalette(
+  id: 'lilas-creme',
+  label: 'Lilás e Creme',
+  seed: Color(0xFF8D76F4),
+  darkBackground: Color(0xFF151329),
+  darkCard: Color(0xFF211E3B),
+  darkContainerHigh: Color(0xFF2C2850),
+  darkContainerHighest: Color(0xFF373162),
+  darkChipSelected: Color(0xFF574E8A),
+  darkTertiary: Color(0xFFFFD8C2),
+  accentGradient: [Color(0xFF8D76F4), Color(0xFFFFD8C2)],
+  onAccent: Color(0xFF251D48),
+  contentBackground: Color(0xFFF6F4FF),
+  contentFrame: Color(0xFFACA9F3),
+  contentText: Color(0xFF46377F),
+);
+
+const pitayaLimePalette = AppPalette(
+  id: 'pitaya-limao',
+  label: 'Pitaya e Limão',
+  seed: Color(0xFFD92B73),
+  darkBackground: Color(0xFF201022),
+  darkCard: Color(0xFF30162F),
+  darkContainerHigh: Color(0xFF411D3E),
+  darkContainerHighest: Color(0xFF51234B),
+  darkChipSelected: Color(0xFF782753),
+  darkTertiary: Color(0xFFB9F68D),
+  accentGradient: [Color(0xFFFF6680), Color(0xFFB9F68D)],
+  onAccent: Color(0xFF35101E),
+  contentBackground: Color(0xFFFFF9E7),
+  contentFrame: Color(0xFF92228C),
+  contentText: Color(0xFF60143F),
+);
+
+const blushSagePalette = AppPalette(
+  id: 'blush-salvia',
+  label: 'Blush e Sálvia',
+  seed: Color(0xFFD97F93),
+  darkBackground: Color(0xFF181516),
+  darkCard: Color(0xFF251F21),
+  darkContainerHigh: Color(0xFF30292B),
+  darkContainerHighest: Color(0xFF3B3234),
+  darkChipSelected: Color(0xFF66464F),
+  darkTertiary: Color(0xFF9CC6BD),
+  accentGradient: [Color(0xFFD97F93), Color(0xFF9CC6BD)],
+  onAccent: Color(0xFF321C23),
+  contentBackground: Color(0xFFF8E6D2),
+  contentFrame: Color(0xFF8B79B7),
+  contentText: Color(0xFF573A45),
+);
+
+const citrusGraphitePalette = AppPalette(
+  id: 'citrico-grafite',
+  label: 'Cítrico Grafite',
+  seed: Color(0xFFFF872B),
+  darkBackground: Color(0xFF151619),
+  darkCard: Color(0xFF222429),
+  darkContainerHigh: Color(0xFF2D3036),
+  darkContainerHighest: Color(0xFF383C43),
+  darkChipSelected: Color(0xFF67462D),
+  darkTertiary: Color(0xFFE3EDB8),
+  accentGradient: [Color(0xFFFF872B), Color(0xFFE9343E)],
+  onAccent: Color(0xFF2E1708),
+  contentBackground: Color(0xFFF0E7D7),
+  contentFrame: Color(0xFFB5B59D),
+  contentText: Color(0xFF3B3C40),
+);
+
+const mistyMeadowPalette = AppPalette(
+  id: 'prado-nebuloso',
+  label: 'Prado Nebuloso',
+  seed: Color(0xFF9A82B4),
+  darkBackground: Color(0xFF171522),
+  darkCard: Color(0xFF242133),
+  darkContainerHigh: Color(0xFF302B41),
+  darkContainerHighest: Color(0xFF3B354E),
+  darkChipSelected: Color(0xFF5D5270),
+  darkTertiary: Color(0xFFBDF1ED),
+  accentGradient: [Color(0xFF9A82B4), Color(0xFFBDF1ED)],
+  onAccent: Color(0xFF261F35),
+  contentBackground: Color(0xFFF4EFCB),
+  contentFrame: Color(0xFFAFC7DB),
+  contentText: Color(0xFF4F4560),
+);
+
+const neonOrchidPalette = AppPalette(
+  id: 'orquidea-neon',
+  label: 'Orquídea Neon',
+  seed: Color(0xFFD93CB9),
+  darkBackground: Color(0xFF170D2C),
+  darkCard: Color(0xFF25143D),
+  darkContainerHigh: Color(0xFF341C50),
+  darkContainerHighest: Color(0xFF432461),
+  darkChipSelected: Color(0xFF68266B),
+  darkTertiary: Color(0xFFFFB8DA),
+  accentGradient: [Color(0xFF7B2ED0), Color(0xFFD93CB9)],
+  onAccent: Color(0xFF240B30),
+  contentBackground: Color(0xFFFFD0E3),
+  contentFrame: Color(0xFF4F20A8),
+  contentText: Color(0xFF651552),
+);
+
+const coastalGoldPalette = AppPalette(
+  id: 'ouro-costeiro',
+  label: 'Ouro Costeiro',
+  seed: Color(0xFF3C58B8),
+  darkBackground: Color(0xFF0D1730),
+  darkCard: Color(0xFF172443),
+  darkContainerHigh: Color(0xFF213155),
+  darkContainerHighest: Color(0xFF2B3D67),
+  darkChipSelected: Color(0xFF315B76),
+  darkTertiary: Color(0xFFFFC23D),
+  accentGradient: [Color(0xFF84D4BE), Color(0xFFFFC23D)],
+  onAccent: Color(0xFF13273B),
+  contentBackground: Color(0xFFF0F3F2),
+  contentFrame: Color(0xFF6599CA),
+  contentText: Color(0xFF233D83),
+);
+
+const midnightCandyPalette = AppPalette(
+  id: 'doce-meia-noite',
+  label: 'Doce Meia-Noite',
+  seed: Color(0xFF7585F8),
+  darkBackground: Color(0xFF0C1B4A),
+  darkCard: Color(0xFF14275A),
+  darkContainerHigh: Color(0xFF1D346D),
+  darkContainerHighest: Color(0xFF274181),
+  darkChipSelected: Color(0xFF465694),
+  darkTertiary: Color(0xFFFF70A2),
+  accentGradient: [Color(0xFF7585F8), Color(0xFFFFC64C)],
+  onAccent: Color(0xFF17204C),
+  contentBackground: Color(0xFFFFEDF3),
+  contentFrame: Color(0xFF243A83),
+  contentText: Color(0xFF313C7A),
+);
+
+const emberSandPalette = AppPalette(
+  id: 'brasa-e-areia',
+  label: 'Brasa e Areia',
+  seed: Color(0xFFFF5B00),
+  darkBackground: Color(0xFF1D0F0B),
+  darkCard: Color(0xFF2C1710),
+  darkContainerHigh: Color(0xFF3A2017),
+  darkContainerHighest: Color(0xFF48291E),
+  darkChipSelected: Color(0xFF713619),
+  darkTertiary: Color(0xFFFFD0A0),
+  accentGradient: [Color(0xFFFF5B00), Color(0xFFFFB15E)],
+  onAccent: Color(0xFF371100),
+  contentBackground: Color(0xFFFFD0A0),
+  contentFrame: Color(0xFFB60015),
+  contentText: Color(0xFF5E240C),
+);
+
+const berryCreamPalette = AppPalette(
+  id: 'frutas-vermelhas',
+  label: 'Frutas Vermelhas',
+  seed: Color(0xFFFF5A78),
+  darkBackground: Color(0xFF25101A),
+  darkCard: Color(0xFF361824),
+  darkContainerHigh: Color(0xFF472030),
+  darkContainerHighest: Color(0xFF57283B),
+  darkChipSelected: Color(0xFF7A354C),
+  darkTertiary: Color(0xFFFFD8C7),
+  accentGradient: [Color(0xFFFF5A78), Color(0xFFFFA59A)],
+  onAccent: Color(0xFF3C1320),
+  contentBackground: Color(0xFFFFF9EE),
+  contentFrame: Color(0xFF6B253F),
+  contentText: Color(0xFF662038),
+);
+
+const terracottaLagoonPalette = AppPalette(
+  id: 'terracota-lagoa',
+  label: 'Terracota e Lagoa',
+  seed: Color(0xFF087C83),
+  darkBackground: Color(0xFF0A2023),
+  darkCard: Color(0xFF123034),
+  darkContainerHigh: Color(0xFF1B4044),
+  darkContainerHighest: Color(0xFF245054),
+  darkChipSelected: Color(0xFF35666A),
+  darkTertiary: Color(0xFFF08E70),
+  accentGradient: [Color(0xFF75C6C0), Color(0xFFF08E70)],
+  onAccent: Color(0xFF122A2B),
+  contentBackground: Color(0xFFFFDDD2),
+  contentFrame: Color(0xFF087C83),
+  contentText: Color(0xFF35575A),
+);
+
+const fuchsiaMintPalette = AppPalette(
+  id: 'fucsia-menta',
+  label: 'Fúcsia e Menta',
+  seed: Color(0xFFC84899),
+  darkBackground: Color(0xFF241025),
+  darkCard: Color(0xFF351735),
+  darkContainerHigh: Color(0xFF461F45),
+  darkContainerHighest: Color(0xFF572756),
+  darkChipSelected: Color(0xFF743161),
+  darkTertiary: Color(0xFF80F3DF),
+  accentGradient: [Color(0xFFC84899), Color(0xFF80F3DF)],
+  onAccent: Color(0xFF311329),
+  contentBackground: Color(0xFFFFE4B5),
+  contentFrame: Color(0xFF80D9CC),
+  contentText: Color(0xFF662352),
+);
+
+const tropicalPopPalette = AppPalette(
+  id: 'pop-tropical',
+  label: 'Pop Tropical',
+  seed: Color(0xFF10D5E8),
+  darkBackground: Color(0xFF121927),
+  darkCard: Color(0xFF1D2637),
+  darkContainerHigh: Color(0xFF283448),
+  darkContainerHighest: Color(0xFF334159),
+  darkChipSelected: Color(0xFF316873),
+  darkTertiary: Color(0xFFFFC945),
+  accentGradient: [Color(0xFF10D5E8), Color(0xFFFF6545)],
+  onAccent: Color(0xFF10252A),
+  contentBackground: Color(0xFFFFE6E7),
+  contentFrame: Color(0xFF596170),
+  contentText: Color(0xFF174A55),
+);
+
+const skyLemonPalette = AppPalette(
+  id: 'ceu-e-limao',
+  label: 'Céu e Limão',
+  seed: Color(0xFF57A0D9),
+  darkBackground: Color(0xFF0C2038),
+  darkCard: Color(0xFF142E49),
+  darkContainerHigh: Color(0xFF1D3C5B),
+  darkContainerHighest: Color(0xFF274A6C),
+  darkChipSelected: Color(0xFF35637F),
+  darkTertiary: Color(0xFFF4DF63),
+  accentGradient: [Color(0xFF78C8F2), Color(0xFFF4DF63)],
+  onAccent: Color(0xFF133247),
+  contentBackground: Color(0xFFF0F6F4),
+  contentFrame: Color(0xFFE95A8B),
+  contentText: Color(0xFF285A80),
+);
+
+const nocturneSagePalette = AppPalette(
+  id: 'noturno-salvia',
+  label: 'Noturno e Sálvia',
+  seed: Color(0xFF29486C),
+  darkBackground: Color(0xFF081421),
+  darkCard: Color(0xFF102238),
+  darkContainerHigh: Color(0xFF18304A),
+  darkContainerHighest: Color(0xFF223E5C),
+  darkChipSelected: Color(0xFF36536B),
+  darkTertiary: Color(0xFFC6D696),
+  accentGradient: [Color(0xFF29486C), Color(0xFFE39ACB)],
+  onAccent: Color(0xFFF6F8F5),
+  contentBackground: Color(0xFFEEF3EE),
+  contentFrame: Color(0xFFC6D696),
+  contentText: Color(0xFF18314D),
+);
+
+const cyberPastelPalette = AppPalette(
+  id: 'cyber-pastel',
+  label: 'Cyber Pastel',
+  seed: Color(0xFFCB5AF4),
+  darkBackground: Color(0xFF18102B),
+  darkCard: Color(0xFF25183D),
+  darkContainerHigh: Color(0xFF33204F),
+  darkContainerHighest: Color(0xFF412860),
+  darkChipSelected: Color(0xFF633477),
+  darkTertiary: Color(0xFF76EED0),
+  accentGradient: [Color(0xFFCB5AF4), Color(0xFF76EED0)],
+  onAccent: Color(0xFF29133A),
+  contentBackground: Color(0xFFFFFEE9),
+  contentFrame: Color(0xFF7C3FFF),
+  contentText: Color(0xFF52256D),
+);
+
+const electricCitrusPalette = AppPalette(
+  id: 'citrico-eletrico',
+  label: 'Cítrico Elétrico',
+  seed: Color(0xFFFF6261),
+  darkBackground: Color(0xFF111727),
+  darkCard: Color(0xFF1B2337),
+  darkContainerHigh: Color(0xFF263048),
+  darkContainerHighest: Color(0xFF303C58),
+  darkChipSelected: Color(0xFF6C3B48),
+  darkTertiary: Color(0xFFE6EC2D),
+  accentGradient: [Color(0xFFFF6261), Color(0xFFE6EC2D)],
+  onAccent: Color(0xFF2D1820),
+  contentBackground: Color(0xFFEAF2EF),
+  contentFrame: Color(0xFF45C1E2),
+  contentText: Color(0xFF29334B),
+);
+
+const rivieraPinkPalette = AppPalette(
+  id: 'riviera-rosa',
+  label: 'Riviera Rosa',
+  seed: Color(0xFF7582F1),
+  darkBackground: Color(0xFF0D1D50),
+  darkCard: Color(0xFF162A63),
+  darkContainerHigh: Color(0xFF203777),
+  darkContainerHighest: Color(0xFF2A448A),
+  darkChipSelected: Color(0xFF465A94),
+  darkTertiary: Color(0xFFFF75A4),
+  accentGradient: [Color(0xFF7582F1), Color(0xFFFFC24A)],
+  onAccent: Color(0xFF18224E),
+  contentBackground: Color(0xFFFFEFF3),
+  contentFrame: Color(0xFFFF75A4),
+  contentText: Color(0xFF33438A),
+);
+
+const desertLagoonPalette = AppPalette(
+  id: 'lagoa-deserto',
+  label: 'Lagoa do Deserto',
+  seed: Color(0xFF087A80),
+  darkBackground: Color(0xFF092024),
+  darkCard: Color(0xFF123035),
+  darkContainerHigh: Color(0xFF1A3F45),
+  darkContainerHighest: Color(0xFF234F55),
+  darkChipSelected: Color(0xFF346268),
+  darkTertiary: Color(0xFFEC9270),
+  accentGradient: [Color(0xFF74C4BE), Color(0xFFEC9270)],
+  onAccent: Color(0xFF132C2D),
+  contentBackground: Color(0xFFFFDED3),
+  contentFrame: Color(0xFF087A80),
+  contentText: Color(0xFF35565A),
+);
+
+const blueRaspberryPalette = AppPalette(
+  id: 'framboesa-azul',
+  label: 'Framboesa Azul',
+  seed: Color(0xFF56A0DA),
+  darkBackground: Color(0xFF0C2039),
+  darkCard: Color(0xFF142E4A),
+  darkContainerHigh: Color(0xFF1D3C5C),
+  darkContainerHighest: Color(0xFF274A6D),
+  darkChipSelected: Color(0xFF356380),
+  darkTertiary: Color(0xFFEB5C91),
+  accentGradient: [Color(0xFF78C8F2), Color(0xFFEB5C91)],
+  onAccent: Color(0xFF143147),
+  contentBackground: Color(0xFFF1F7F5),
+  contentFrame: Color(0xFFF0DD64),
+  contentText: Color(0xFF275A81),
+);
+
+const solarNavyPalette = AppPalette(
+  id: 'solar-marinho',
+  label: 'Solar Marinho',
+  seed: Color(0xFF263A82),
+  darkBackground: Color(0xFF0A1538),
+  darkCard: Color(0xFF122249),
+  darkContainerHigh: Color(0xFF1B2E5B),
+  darkContainerHighest: Color(0xFF243B6D),
+  darkChipSelected: Color(0xFF3A4D7E),
+  darkTertiary: Color(0xFFFFC64D),
+  accentGradient: [Color(0xFF7585F8), Color(0xFFFFC64D)],
+  onAccent: Color(0xFF17204A),
+  contentBackground: Color(0xFFFFEEF2),
+  contentFrame: Color(0xFFFF78A4),
+  contentText: Color(0xFF2C3D7C),
+);
+
 /// Todas as paletas, na ordem em que aparecem nas configurações. A primeira
 /// (a oficial, do morceguinho) é a padrão.
 const appPalettes = [
@@ -560,6 +1009,31 @@ const appPalettes = [
   rosePalette,
   triadPalette,
   squarePalette,
+  auroraCoralPalette,
+  vintageTurquoisePalette,
+  sunsetRosePalette,
+  oceanBreezePalette,
+  lilacCreamPalette,
+  pitayaLimePalette,
+  blushSagePalette,
+  citrusGraphitePalette,
+  mistyMeadowPalette,
+  neonOrchidPalette,
+  coastalGoldPalette,
+  midnightCandyPalette,
+  emberSandPalette,
+  berryCreamPalette,
+  terracottaLagoonPalette,
+  fuchsiaMintPalette,
+  tropicalPopPalette,
+  skyLemonPalette,
+  nocturneSagePalette,
+  cyberPastelPalette,
+  electricCitrusPalette,
+  rivieraPinkPalette,
+  desertLagoonPalette,
+  blueRaspberryPalette,
+  solarNavyPalette,
 ];
 
 /// A paleta com [id], ou a padrão se não houver (ex.: preferência antiga).

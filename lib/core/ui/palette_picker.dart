@@ -38,18 +38,23 @@ class PalettePicker extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: showLabels ? 4 : 10,
-            runSpacing: 10,
-            children: [
-              for (final palette in appPalettes)
-                _PaletteOption(
-                  palette: palette,
-                  selected: palette.id == current.id,
-                  showLabel: showLabels,
-                  onTap: () => setPalette(palette),
-                ),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var index = 0; index < appPalettes.length; index++) ...[
+                  _PaletteOption(
+                    palette: appPalettes[index],
+                    selected: appPalettes[index].id == current.id,
+                    showLabel: showLabels,
+                    onTap: () => setPalette(appPalettes[index]),
+                  ),
+                  if (index < appPalettes.length - 1)
+                    SizedBox(width: showLabels ? 6 : 10),
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: 4),
         ],
@@ -81,7 +86,7 @@ class _PaletteOption extends StatelessWidget {
     if (!showLabel) return swatch;
 
     return SizedBox(
-      width: 50,
+      width: 72,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
