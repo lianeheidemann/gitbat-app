@@ -120,12 +120,7 @@ class _PaletteCornerPainter extends CustomPainter {
         curveEnd.dx,
         curveEnd.dy,
       )
-      ..quadraticBezierTo(
-        returnControl.dx,
-        returnControl.dy,
-        0,
-        edgeHeight,
-      )
+      ..quadraticBezierTo(returnControl.dx, returnControl.dy, 0, edgeHeight)
       ..close();
     canvas.drawPath(path, Paint()..color = color);
   }
