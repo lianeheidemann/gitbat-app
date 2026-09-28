@@ -104,4 +104,14 @@ void main() {
     expect(squarePalette.contentFrame, const Color(0xFF5C9C4B));
     expect(squarePalette.contentText, const Color(0xFF7F2A1A));
   });
+
+  test('dália usa as cores extraídas das referências', () {
+    expect(appPalettes, contains(dahliaPalette));
+    expect(dahliaPalette.darkBackground, const Color(0xFF121115));
+    expect(dahliaPalette.accentGradient, const [
+      Color(0xFFCDAAFD),
+      Color(0xFFF0A5C7),
+    ]);
+    expect(dahliaPalette.darkTertiary, const Color(0xFFF0A5C7));
+  });
 }

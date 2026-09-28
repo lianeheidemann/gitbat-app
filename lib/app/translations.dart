@@ -91,6 +91,7 @@ const Map<String, String> modelTranslations = {
   // Paletas da interface
   'Morceguinho': 'Little Bat',
   'Lavanda': 'Lavender',
+  'Dália': 'Dahlia',
   'Menta': 'Mint',
   'Pêssego': 'Peach',
   'Rosa': 'Pink',
