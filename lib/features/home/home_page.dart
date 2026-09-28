@@ -358,49 +358,73 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         actions: [
-          // Troca português ⇄ inglês; mostra o idioma atual.
-          TextButton.icon(
-            key: const ValueKey('languageToggle'),
-            onPressed: toggleLanguage,
-            icon: const Icon(Icons.translate, size: 20),
-            label: Text(languageNotifier.value.code),
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurface,
-            ),
-          ),
-          IconButton(
-            tooltip: tr(
-              'Como deixar o GIF mais leve',
-              'How to make the GIF lighter',
-            ),
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => showGifWeightHelpSheet(context),
-          ),
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: themeModeNotifier,
-            builder: (context, mode, _) {
-              final isDark = mode == ThemeMode.dark;
-              return IconButton(
-                tooltip: isDark
-                    ? tr('Ativar modo claro', 'Switch to light mode')
-                    : tr('Ativar modo escuro', 'Switch to dark mode'),
-                icon: Icon(
-                  isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+          Padding(
+            padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow.withValues(
+                  alpha: 0.86,
                 ),
-                onPressed: toggleThemeMode,
-              );
-            },
-          ),
-          IconButton(
-            tooltip: tr('Sobre e licenças', 'About and licenses'),
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => showAboutDialog(
-              context: context,
-              applicationName: 'GitBat',
-              applicationVersion: '1.0.0',
-              applicationLegalese: tr(
-                'Conversão feita no próprio aparelho com FFmpeg (LGPL). Nenhum vídeo é enviado para a internet.',
-                'Conversion runs on the device with FFmpeg (LGPL). No video is sent to the internet.',
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.55,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Um único símbolo universal; o idioma atual continua
+                  // informado pelo tooltip/leitor de tela, sem poluir a barra.
+                  IconButton(
+                    key: const ValueKey('languageToggle'),
+                    tooltip: languageNotifier.value == AppLanguage.pt
+                        ? 'Mudar idioma — Português'
+                        : 'Change language — English',
+                    icon: const Icon(Icons.language_rounded),
+                    onPressed: toggleLanguage,
+                  ),
+                  IconButton(
+                    tooltip: tr(
+                      'Como deixar o GIF mais leve',
+                      'How to make the GIF lighter',
+                    ),
+                    icon: const Icon(Icons.help_outline),
+                    onPressed: () => showGifWeightHelpSheet(context),
+                  ),
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: themeModeNotifier,
+                    builder: (context, mode, _) {
+                      final isDark = mode == ThemeMode.dark;
+                      return IconButton(
+                        tooltip: isDark
+                            ? tr('Ativar modo claro', 'Switch to light mode')
+                            : tr('Ativar modo escuro', 'Switch to dark mode'),
+                        color: theme.colorScheme.secondary,
+                        icon: Icon(
+                          isDark
+                              ? Icons.light_mode_outlined
+                              : Icons.dark_mode_outlined,
+                        ),
+                        onPressed: toggleThemeMode,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    tooltip: tr('Sobre e licenças', 'About and licenses'),
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => showAboutDialog(
+                      context: context,
+                      applicationName: 'GitBat',
+                      applicationVersion: '1.0.0',
+                      applicationLegalese: tr(
+                        'Conversão feita no próprio aparelho com FFmpeg (LGPL). Nenhum vídeo é enviado para a internet.',
+                        'Conversion runs on the device with FFmpeg (LGPL). No video is sent to the internet.',
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
