@@ -181,13 +181,19 @@ const lavenderPalette = AppPalette(
 );
 
 // Cores tiradas das artes do morceguinho em `assets/icon/icon-v2`.
-const _batNight = Color(0xFF111929); // fundo do ícone
+// Sistema visual principal do GitBat. As quatro cores de marca continuam
+// iguais às da logo; as demais pertencem somente à interface.
+const _batNight = Color(0xFF0D1526); // fundo principal
+const _batSurface = Color(0xFF16233B); // cartões e painéis
+const _batSurfaceHigh = Color(0xFF203251); // controles elevados
 const _batBody = Color(0xFF5A9EF6); // corpo
 const _batCyan = Color(0xFF22D8EE); // fone de ouvido
 const _batNavy = Color(0xFF0C48A8); // contorno do mascote
 const _batDeepNavy = Color(0xFF061C4B); // contorno mais escuro
 const _batIce = Color(0xFFB0DCFC); // corpo do mascote
 const _batLavender = Color(0xFFA9BEF7); // dentro da orelha
+const _batText = Color(0xFFF1F5FF); // texto principal
+const _batTextMuted = Color(0xFFA8B6D3); // texto secundário e contornos
 
 ColorScheme _batLight(ColorScheme base) => base.copyWith(
   primary: _batNavy,
@@ -229,11 +235,11 @@ ColorScheme _batDark(ColorScheme base) => base.copyWith(
   onTertiary: const Color(0xFF1B2A5E),
   tertiaryContainer: const Color(0xFF34407A),
   onTertiaryContainer: const Color(0xFFE0E5FF),
-  onSurface: const Color(0xFFE3EAF7),
-  onSurfaceVariant: const Color(0xFFAEBBD3),
-  surfaceContainerLowest: const Color(0xFF0B1220),
-  outline: const Color(0xFF5E7196),
-  outlineVariant: const Color(0xFF2E3D5C),
+  onSurface: _batText,
+  onSurfaceVariant: _batTextMuted,
+  surfaceContainerLowest: _batNight,
+  outline: _batTextMuted,
+  outlineVariant: _batSurfaceHigh,
   inversePrimary: _batNavy,
   surfaceTint: _batBody,
 );
@@ -247,10 +253,10 @@ const batPalette = AppPalette(
   label: 'Morceguinho',
   seed: _batBody,
   darkBackground: _batNight,
-  darkCard: Color(0xFF172238),
-  darkContainerHigh: Color(0xFF1D2A43),
-  darkContainerHighest: Color(0xFF24324E),
-  darkChipSelected: _batNavy,
+  darkCard: _batSurface,
+  darkContainerHigh: _batSurfaceHigh,
+  darkContainerHighest: _batSurfaceHigh,
+  darkChipSelected: _batSurfaceHigh,
   darkTertiary: _batLavender,
   accentGradient: [_batBody, _batCyan],
   onAccent: _batDeepNavy,
