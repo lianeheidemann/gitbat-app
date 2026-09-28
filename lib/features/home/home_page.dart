@@ -13,7 +13,6 @@ import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../app/language_controller.dart';
 import '../../app/theme_controller.dart';
 import 'widgets/gif_weight_help_sheet.dart';
-import 'widgets/palette_corner_decoration.dart';
 import '../collage/collage_page.dart';
 import '../video/editor_page.dart';
 import '../photo/photo_frame_page.dart';
@@ -448,148 +447,144 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: PaletteCornerDecoration()),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
-                    Image.asset(
-                      'recursos/marca/gitbat-logo.png',
-                      key: const ValueKey('homeLogo'),
-                      height: 96,
-                      fit: BoxFit.contain,
-                      semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'GitBat',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
+                Image.asset(
+                  'recursos/marca/gitbat-logo.png',
+                  key: const ValueKey('homeLogo'),
+                  height: 96,
+                  fit: BoxFit.contain,
+                  semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'GitBat',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  tr(
+                    'Corte, ajuste o tamanho e a velocidade — e veja quanto o GIF vai pesar antes de converter.',
+                    'Trim, resize and change the speed — and see how big the GIF will be before converting.',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (_error != null) ...[
+                  Card(
+                    color: theme.colorScheme.errorContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      tr(
-                        'Corte, ajuste o tamanho e a velocidade — e veja quanto o GIF vai pesar antes de converter.',
-                        'Trim, resize and change the speed — and see how big the GIF will be before converting.',
-                      ),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // O principal do app: mais alto e com texto maior que os
+                // outros botões.
+                FilledButton.icon(
+                  key: const ValueKey('pickVideoButton'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(54),
+                    textStyle: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(height: 20),
-                    if (_error != null) ...[
-                      Card(
-                        color: theme.colorScheme.errorContainer,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            _error!,
-                            style: TextStyle(
-                              color: theme.colorScheme.onErrorContainer,
-                            ),
+                    iconSize: 22,
+                  ),
+                  onPressed: _loading ? null : _pickVideo,
+                  icon: _loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.video_library_outlined),
+                  label: Text(
+                    _loading
+                        ? tr('Abrindo…', 'Opening…')
+                        : tr('Escolher vídeo', 'Choose video'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
+                  ),
+                  onPressed: _loading ? null : _pickPhoto,
+                  icon: const Icon(Icons.photo_filter_outlined),
+                  label: Text(tr('Editar imagem', 'Edit image')),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
+                  ),
+                  onPressed: _loading ? null : _pickSvg,
+                  icon: Icon(
+                    Icons.polyline_outlined,
+                    key: const ValueKey('svgAccentIcon'),
+                    color: theme.colorScheme.secondary,
+                  ),
+                  label: Text(tr('Editar SVG', 'Edit SVG')),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
+                  ),
+                  onPressed: _loading ? null : _pickPhotosForCollage,
+                  icon: const Icon(Icons.dashboard_customize_outlined),
+                  label: Text(tr('Montagem', 'Collage')),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
+                  ),
+                  onPressed: _loading
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const QuickConvertPage(),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    // O principal do app: mais alto e com texto maior que os
-                    // outros botões.
-                    FilledButton.icon(
-                      key: const ValueKey('pickVideoButton'),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(54),
-                        textStyle: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        iconSize: 22,
-                      ),
-                      onPressed: _loading ? null : _pickVideo,
-                      icon: _loading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.video_library_outlined),
-                      label: Text(
-                        _loading
-                            ? tr('Abrindo…', 'Opening…')
-                            : tr('Escolher vídeo', 'Choose video'),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: theme.colorScheme.tertiary,
-                      ),
-                      onPressed: _loading ? null : _pickPhoto,
-                      icon: const Icon(Icons.photo_filter_outlined),
-                      label: Text(tr('Editar imagem', 'Edit image')),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: theme.colorScheme.tertiary,
-                      ),
-                      onPressed: _loading ? null : _pickSvg,
-                      icon: Icon(
-                        Icons.polyline_outlined,
-                        key: const ValueKey('svgAccentIcon'),
-                        color: theme.colorScheme.secondary,
-                      ),
-                      label: Text(tr('Editar SVG', 'Edit SVG')),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: theme.colorScheme.tertiary,
-                      ),
-                      onPressed: _loading ? null : _pickPhotosForCollage,
-                      icon: const Icon(Icons.dashboard_customize_outlined),
-                      label: Text(tr('Montagem', 'Collage')),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: theme.colorScheme.tertiary,
-                      ),
-                      onPressed: _loading
-                          ? null
-                          : () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const QuickConvertPage(),
-                              ),
-                            ),
-                      icon: Icon(
-                        Icons.cached_outlined,
-                        key: const ValueKey('convertAccentIcon'),
-                        color: theme.colorScheme.secondary,
-                      ),
-                      label: Text(tr('Converter formato', 'Convert format')),
-                    ),
-                    const SizedBox(height: 16),
-                    const _StepsCard(),
-                  ],
+                  icon: Icon(
+                    Icons.cached_outlined,
+                    key: const ValueKey('convertAccentIcon'),
+                    color: theme.colorScheme.secondary,
+                  ),
+                  label: Text(tr('Converter formato', 'Convert format')),
                 ),
-              ),
+                const SizedBox(height: 16),
+                const _StepsCard(),
+              ],
             ),
           ),
-        ],
+        ),
+      ),
       ),
     );
   }
