@@ -607,6 +607,35 @@ const vintageTurquoisePalette = AppPalette(
   contentText: Color(0xFF493E3C),
 );
 
+/// Versão clara aprovada da paleta Pôr do Sol Rosa. Coral, azul
+/// crepuscular e dourado aparecem sobre superfícies pêssego suaves.
+ColorScheme _sunsetRoseLight(ColorScheme base) => base.copyWith(
+  primary: const Color(0xFFC86578),
+  onPrimary: Colors.white,
+  primaryContainer: const Color(0xFFF3DDE2),
+  onPrimaryContainer: const Color(0xFF563744),
+  secondary: const Color(0xFF6678A6),
+  onSecondary: Colors.white,
+  secondaryContainer: const Color(0xFFE7EAF4),
+  onSecondaryContainer: const Color(0xFF29375D),
+  tertiary: const Color(0xFFD9A441),
+  onTertiary: const Color(0xFF3C2B08),
+  tertiaryContainer: const Color(0xFFF7EACB),
+  onTertiaryContainer: const Color(0xFF4B350A),
+  surface: const Color(0xFFFFF9F6),
+  onSurface: const Color(0xFF563744),
+  onSurfaceVariant: const Color(0xFF715964),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: const Color(0xFFFBEDE4),
+  surfaceContainer: const Color(0xFFF7E7E8),
+  surfaceContainerHigh: const Color(0xFFE7EAF4),
+  surfaceContainerHighest: const Color(0xFFDDE2F0),
+  outline: const Color(0xFF6678A6),
+  outlineVariant: const Color(0xFFC5CCE0),
+  inversePrimary: const Color(0xFFD998A5),
+  surfaceTint: const Color(0xFFC86578),
+);
+
 const sunsetRosePalette = AppPalette(
   id: 'por-do-sol-rosa',
   label: 'Pôr do Sol Rosa',
@@ -622,6 +651,7 @@ const sunsetRosePalette = AppPalette(
   contentBackground: Color(0xFFF1F2F7),
   contentFrame: Color(0xFF6077A5),
   contentText: Color(0xFF40243A),
+  refineLight: _sunsetRoseLight,
 );
 
 const oceanBreezePalette = AppPalette(
