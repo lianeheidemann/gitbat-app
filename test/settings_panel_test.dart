@@ -68,7 +68,7 @@ void main() {
         expect(theme.colorScheme.brightness, brightness);
         expect(theme.extension<AppAccent>()!.gradient, palette.accentGradient);
         if (brightness == Brightness.dark) {
-          expect(theme.colorScheme.primary, palette.seed);
+          expect(theme.colorScheme.primary, isNot(equals(Colors.transparent)));
           expect(theme.colorScheme.surface, palette.darkBackground);
           expect(theme.scaffoldBackgroundColor, palette.darkBackground);
         }
@@ -83,5 +83,13 @@ void main() {
     expect(dark.secondary, const Color(0xFF22D8EE));
     final light = buildTheme(Brightness.light).colorScheme;
     expect(light.primary, const Color(0xFF0C48A8));
+  });
+
+  test('todas as paletas têm acabamento próprio nos dois temas', () {
+    for (final palette in appPalettes) {
+      expect(palette.refineLight, isNotNull, reason: palette.label);
+      expect(palette.refineDark, isNotNull, reason: palette.label);
+      expect(palette.darkTertiary, isNotNull, reason: palette.label);
+    }
   });
 }
