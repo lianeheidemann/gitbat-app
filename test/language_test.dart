@@ -56,9 +56,7 @@ void main() {
     expect(languageNotifier.value, AppLanguage.en);
   });
 
-  testWidgets('a tela inicial usa ciano e lavanda nos detalhes', (
-    tester,
-  ) async {
+  testWidgets('a tela inicial usa os acentos da paleta', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       MaterialApp(
