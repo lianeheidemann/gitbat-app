@@ -631,11 +631,7 @@ class _CollagePageState extends State<CollagePage> {
       onChangeStart: _pushUndoCheckpoint,
       onWidthChanged: (f) => _resizeSelectedArea(width: f),
       onHeightChanged: (f) => _resizeSelectedArea(height: f),
-      onResetArea: () {
-        final cell = _validSelectedAreaCell;
-        if (cell == null) return;
-        _update(_settings.copyWith(layout: _settings.layout.resetArea(cell)));
-      },
+      onToggleImageFit: _toggleAllImageFitModes,
       onReset: () => _update(
         _settings.copyWith(layout: _settings.layout.withEqualSizes()),
       ),
@@ -1042,6 +1038,31 @@ class _CollagePageState extends State<CollagePage> {
       if (dw > 1e-4 || dh > 1e-4) return true;
     }
     return false;
+  }
+
+  /// Alterna todas as fotos juntas entre preencher e encaixar. Se os modos
+  /// estiverem misturados, primeiro unifica tudo em encaixar; o próximo toque
+  /// volta tudo para preencher. O enquadramento é reiniciado como no duplo
+  /// toque individual, evitando herdar zoom, rotação ou deslocamento de um
+  /// modo cuja geometria é diferente.
+  void _toggleAllImageFitModes() {
+    final hasCover = _settings.cells.any(
+      (cell) => cell.hasPhoto && cell.fitMode == CollageCellFitMode.cover,
+    );
+    final target = hasCover
+        ? CollageCellFitMode.contain
+        : CollageCellFitMode.cover;
+    _update(
+      _settings.copyWith(
+        cells: [
+          for (final cell in _settings.cells)
+            if (cell.hasPhoto)
+              cell.resetFraming().copyWith(fitMode: target)
+            else
+              cell,
+        ],
+      ),
+    );
   }
 
   /// Foto selecionada na aba "Áreas", se ela ainda existe no layout atual
