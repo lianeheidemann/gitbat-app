@@ -549,25 +549,24 @@ class TextOverlayPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              editing
-                  ? tr('Editar texto', 'Edit text')
-                  : tr('Novo texto', 'New text'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+        if (editing) ...[
+          Row(
+            children: [
+              Text(
+                tr('Editar texto', 'Edit text'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const Spacer(),
-            if (editing)
+              const Spacer(),
               TextButton(
                 onPressed: controller.cancelEdit,
                 child: Text(tr('Cancelar', 'Cancel')),
               ),
-          ],
-        ),
-        const SizedBox(height: 6),
+            ],
+          ),
+          const SizedBox(height: 6),
+        ],
         ValueListenableBuilder<TextEditingValue>(
           valueListenable: controller.textController,
           builder: (context, value, _) {

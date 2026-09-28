@@ -68,7 +68,7 @@ void main() {
         expect(theme.colorScheme.brightness, brightness);
         expect(theme.extension<AppAccent>()!.gradient, palette.accentGradient);
         if (brightness == Brightness.dark) {
-          expect(theme.colorScheme.primary, palette.seed);
+          expect(theme.colorScheme.primary, isNot(equals(Colors.transparent)));
           expect(theme.colorScheme.surface, palette.darkBackground);
           expect(theme.scaffoldBackgroundColor, palette.darkBackground);
         }
@@ -79,9 +79,29 @@ void main() {
   test('a paleta oficial é a do morceguinho, com cores próprias', () {
     expect(appPalettes.first, batPalette);
     final dark = buildTheme(Brightness.dark).colorScheme;
-    expect(dark.surface, const Color(0xFF111929));
+    expect(dark.surface, const Color(0xFF0D1526));
     expect(dark.secondary, const Color(0xFF22D8EE));
+    expect(dark.onSurface, const Color(0xFFF1F5FF));
+    expect(dark.onSurfaceVariant, const Color(0xFFA8B6D3));
+    expect(dark.surfaceContainerLow, const Color(0xFF16233B));
+    expect(dark.surfaceContainerHigh, const Color(0xFF203251));
     final light = buildTheme(Brightness.light).colorScheme;
     expect(light.primary, const Color(0xFF0C48A8));
+  });
+
+  test('todas as paletas têm acabamento próprio nos dois temas', () {
+    for (final palette in appPalettes) {
+      expect(palette.refineLight, isNotNull, reason: palette.label);
+      expect(palette.refineDark, isNotNull, reason: palette.label);
+      expect(palette.darkTertiary, isNotNull, reason: palette.label);
+    }
+  });
+
+  test('tríade e quadrada preservam o azul da marca', () {
+    expect(appPalettes, containsAll([triadPalette, squarePalette]));
+    expect(triadPalette.accentGradient, contains(const Color(0xFF60DDB2)));
+    expect(squarePalette.accentGradient, contains(const Color(0xFF76A9FF)));
+    expect(squarePalette.contentFrame, const Color(0xFF5C9C4B));
+    expect(squarePalette.contentText, const Color(0xFF7F2A1A));
   });
 }

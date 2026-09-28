@@ -94,6 +94,8 @@ const Map<String, String> modelTranslations = {
   'Menta': 'Mint',
   'Pêssego': 'Peach',
   'Rosa': 'Pink',
+  'Tríade': 'Triad',
+  'Quadrada': 'Square',
   // Molduras e fundos embutidos
   'Transparente': 'Transparent',
   'Grafite': 'Graphite',

@@ -17,6 +17,7 @@ import '../collage/collage_page.dart';
 import '../video/editor_page.dart';
 import '../photo/photo_frame_page.dart';
 import '../quick_convert/quick_convert_page.dart';
+import '../settings/settings_page.dart';
 import '../svg/svg_edit_page.dart';
 import '../../app/editor_defaults.dart';
 
@@ -358,49 +359,88 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         actions: [
-          // Troca português ⇄ inglês; mostra o idioma atual.
-          TextButton.icon(
-            key: const ValueKey('languageToggle'),
-            onPressed: toggleLanguage,
-            icon: const Icon(Icons.translate, size: 20),
-            label: Text(languageNotifier.value.code),
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurface,
-            ),
-          ),
-          IconButton(
-            tooltip: tr(
-              'Como deixar o GIF mais leve',
-              'How to make the GIF lighter',
-            ),
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => showGifWeightHelpSheet(context),
-          ),
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: themeModeNotifier,
-            builder: (context, mode, _) {
-              final isDark = mode == ThemeMode.dark;
-              return IconButton(
-                tooltip: isDark
-                    ? tr('Ativar modo claro', 'Switch to light mode')
-                    : tr('Ativar modo escuro', 'Switch to dark mode'),
-                icon: Icon(
-                  isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+          Padding(
+            padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow.withValues(
+                  alpha: 0.86,
                 ),
-                onPressed: toggleThemeMode,
-              );
-            },
-          ),
-          IconButton(
-            tooltip: tr('Sobre e licenças', 'About and licenses'),
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => showAboutDialog(
-              context: context,
-              applicationName: 'GitBat',
-              applicationVersion: '1.0.0',
-              applicationLegalese: tr(
-                'Conversão feita no próprio aparelho com FFmpeg (LGPL). Nenhum vídeo é enviado para a internet.',
-                'Conversion runs on the device with FFmpeg (LGPL). No video is sent to the internet.',
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.55,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Um único símbolo universal; o idioma atual continua
+                  // informado pelo tooltip/leitor de tela, sem poluir a barra.
+                  IconButton(
+                    key: const ValueKey('languageToggle'),
+                    tooltip: languageNotifier.value == AppLanguage.pt
+                        ? 'Mudar idioma — Português'
+                        : 'Change language — English',
+                    icon: Icon(
+                      Icons.language_rounded,
+                      color: languageNotifier.value == AppLanguage.en
+                          ? const Color(0xFF7FD6B0)
+                          : null,
+                    ),
+                    onPressed: toggleLanguage,
+                  ),
+                  IconButton(
+                    tooltip: tr(
+                      'Como deixar o GIF mais leve',
+                      'How to make the GIF lighter',
+                    ),
+                    icon: const Icon(Icons.help_outline),
+                    onPressed: () => showGifWeightHelpSheet(context),
+                  ),
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: themeModeNotifier,
+                    builder: (context, mode, _) {
+                      final isDark = mode == ThemeMode.dark;
+                      return IconButton(
+                        tooltip: isDark
+                            ? tr('Ativar modo claro', 'Switch to light mode')
+                            : tr('Ativar modo escuro', 'Switch to dark mode'),
+                        color: theme.colorScheme.secondary,
+                        icon: Icon(
+                          isDark
+                              ? Icons.light_mode_outlined
+                              : Icons.dark_mode_outlined,
+                        ),
+                        onPressed: toggleThemeMode,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    tooltip: tr('Sobre e licenças', 'About and licenses'),
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => showAboutDialog(
+                      context: context,
+                      applicationName: 'GitBat',
+                      applicationVersion: '1.0.0',
+                      applicationLegalese: tr(
+                        'Conversão feita no próprio aparelho com FFmpeg (LGPL). Nenhum vídeo é enviado para a internet.',
+                        'Conversion runs on the device with FFmpeg (LGPL). No video is sent to the internet.',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('settingsButton'),
+                    tooltip: tr('Configurações', 'Settings'),
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SettingsPage(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -488,6 +528,7 @@ class _HomePageState extends State<HomePage> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading ? null : _pickPhoto,
                   icon: const Icon(Icons.photo_filter_outlined),
@@ -497,15 +538,21 @@ class _HomePageState extends State<HomePage> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading ? null : _pickSvg,
-                  icon: const Icon(Icons.polyline_outlined),
+                  icon: Icon(
+                    Icons.polyline_outlined,
+                    key: const ValueKey('svgAccentIcon'),
+                    color: theme.colorScheme.secondary,
+                  ),
                   label: Text(tr('Editar SVG', 'Edit SVG')),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading ? null : _pickPhotosForCollage,
                   icon: const Icon(Icons.dashboard_customize_outlined),
@@ -515,6 +562,7 @@ class _HomePageState extends State<HomePage> {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.tertiary,
                   ),
                   onPressed: _loading
                       ? null
@@ -523,7 +571,11 @@ class _HomePageState extends State<HomePage> {
                             builder: (_) => const QuickConvertPage(),
                           ),
                         ),
-                  icon: const Icon(Icons.cached_outlined),
+                  icon: Icon(
+                    Icons.cached_outlined,
+                    key: const ValueKey('convertAccentIcon'),
+                    color: theme.colorScheme.secondary,
+                  ),
                   label: Text(tr('Converter formato', 'Convert format')),
                 ),
                 const SizedBox(height: 16),
@@ -590,7 +642,7 @@ class _StepIcon extends StatelessWidget {
             shape: BoxShape.circle,
             color: theme.colorScheme.primary.withValues(alpha: 0.12),
           ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+          child: Icon(icon, color: theme.colorScheme.tertiary, size: 20),
         ),
         const SizedBox(height: 8),
         Text(
@@ -620,12 +672,12 @@ class _StepConnector extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primary,
+              color: theme.colorScheme.secondary,
             ),
             child: Icon(
               Icons.arrow_forward_rounded,
               size: 13,
-              color: theme.colorScheme.onPrimary,
+              color: theme.colorScheme.onSecondary,
             ),
           ),
           const Expanded(child: _DashedLine()),
@@ -641,7 +693,7 @@ class _DashedLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary.withValues(alpha: 0.4);
+    final scheme = Theme.of(context).colorScheme;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -655,11 +707,12 @@ class _DashedLine extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(
             count,
-            (_) => Container(
+            (index) => Container(
               width: dashWidth,
               height: 2,
               decoration: BoxDecoration(
-                color: color,
+                color: (index.isEven ? scheme.secondary : scheme.tertiary)
+                    .withValues(alpha: 0.78),
                 borderRadius: BorderRadius.circular(1),
               ),
             ),

@@ -64,6 +64,103 @@ class AppPalette {
   final ColorScheme Function(ColorScheme)? refineDark;
 }
 
+ColorScheme _refinePaletteLight(
+  ColorScheme base, {
+  required Color primary,
+  required Color primaryContainer,
+  required Color onPrimaryContainer,
+  required Color secondary,
+  required Color secondaryContainer,
+  required Color tertiary,
+  required Color tertiaryContainer,
+  required Color surface,
+  required Color surfaceLow,
+  required Color surfaceHigh,
+  required Color outline,
+}) => base.copyWith(
+  primary: primary,
+  onPrimary: Colors.white,
+  primaryContainer: primaryContainer,
+  onPrimaryContainer: onPrimaryContainer,
+  secondary: secondary,
+  onSecondary: Colors.white,
+  secondaryContainer: secondaryContainer,
+  tertiary: tertiary,
+  onTertiary: Colors.white,
+  tertiaryContainer: tertiaryContainer,
+  surface: surface,
+  onSurface: const Color(0xFF1C1B20),
+  onSurfaceVariant: const Color(0xFF514D57),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: surfaceLow,
+  surfaceContainer: surfaceLow,
+  surfaceContainerHigh: surfaceHigh,
+  surfaceContainerHighest: surfaceHigh,
+  outline: outline,
+  outlineVariant: Color.lerp(outline, Colors.white, 0.62),
+  inversePrimary: primaryContainer,
+  surfaceTint: primary,
+);
+
+ColorScheme _refinePaletteDark(
+  ColorScheme base, {
+  required Color primary,
+  required Color onPrimary,
+  required Color primaryContainer,
+  required Color secondary,
+  required Color secondaryContainer,
+  required Color tertiary,
+  required Color tertiaryContainer,
+  required Color outline,
+}) => base.copyWith(
+  primary: primary,
+  onPrimary: onPrimary,
+  primaryContainer: primaryContainer,
+  onPrimaryContainer: Color.lerp(primary, Colors.white, 0.72),
+  secondary: secondary,
+  onSecondary: onPrimary,
+  secondaryContainer: secondaryContainer,
+  onSecondaryContainer: Color.lerp(secondary, Colors.white, 0.72),
+  tertiary: tertiary,
+  onTertiary: onPrimary,
+  tertiaryContainer: tertiaryContainer,
+  onTertiaryContainer: Color.lerp(tertiary, Colors.white, 0.72),
+  onSurface: const Color(0xFFF0EDF3),
+  onSurfaceVariant: const Color(0xFFC9C2CF),
+  surfaceContainerLowest: Color.lerp(base.surface, Colors.black, 0.18),
+  outline: outline,
+  outlineVariant: Color.lerp(outline, Colors.black, 0.52),
+  inversePrimary: primaryContainer,
+  surfaceTint: primary,
+);
+
+ColorScheme _lavenderLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF7151A5),
+  primaryContainer: const Color(0xFFEBDDFF),
+  onPrimaryContainer: const Color(0xFF291248),
+  secondary: const Color(0xFF76546F),
+  secondaryContainer: const Color(0xFFFFD7F5),
+  tertiary: const Color(0xFF4D6098),
+  tertiaryContainer: const Color(0xFFDCE2FF),
+  surface: const Color(0xFFFCF8FF),
+  surfaceLow: const Color(0xFFF6F0FC),
+  surfaceHigh: const Color(0xFFEDE5F5),
+  outline: const Color(0xFF7D7484),
+);
+
+ColorScheme _lavenderDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFD6B9FF),
+  onPrimary: const Color(0xFF35165E),
+  primaryContainer: const Color(0xFF50357B),
+  secondary: const Color(0xFFE9B8DD),
+  secondaryContainer: const Color(0xFF5D3D57),
+  tertiary: const Color(0xFFB8C4FF),
+  tertiaryContainer: const Color(0xFF354476),
+  outline: const Color(0xFF968CA0),
+);
+
 const lavenderPalette = AppPalette(
   id: 'lavanda',
   label: 'Lavanda',
@@ -78,16 +175,25 @@ const lavenderPalette = AppPalette(
   contentBackground: Color(0xFFC9A8FF),
   contentFrame: Color(0xFF8370B0),
   contentText: Color(0xFF544181),
+  darkTertiary: Color(0xFFB8C4FF),
+  refineLight: _lavenderLight,
+  refineDark: _lavenderDark,
 );
 
 // Cores tiradas das artes do morceguinho em `assets/icon/icon-v2`.
-const _batNight = Color(0xFF111929); // fundo do ícone
+// Sistema visual principal do GitBat. As quatro cores de marca continuam
+// iguais às da logo; as demais pertencem somente à interface.
+const _batNight = Color(0xFF0D1526); // fundo principal
+const _batSurface = Color(0xFF16233B); // cartões e painéis
+const _batSurfaceHigh = Color(0xFF203251); // controles elevados
 const _batBody = Color(0xFF5A9EF6); // corpo
 const _batCyan = Color(0xFF22D8EE); // fone de ouvido
 const _batNavy = Color(0xFF0C48A8); // contorno do mascote
 const _batDeepNavy = Color(0xFF061C4B); // contorno mais escuro
 const _batIce = Color(0xFFB0DCFC); // corpo do mascote
 const _batLavender = Color(0xFFA9BEF7); // dentro da orelha
+const _batText = Color(0xFFF1F5FF); // texto principal
+const _batTextMuted = Color(0xFFA8B6D3); // texto secundário e contornos
 
 ColorScheme _batLight(ColorScheme base) => base.copyWith(
   primary: _batNavy,
@@ -129,11 +235,11 @@ ColorScheme _batDark(ColorScheme base) => base.copyWith(
   onTertiary: const Color(0xFF1B2A5E),
   tertiaryContainer: const Color(0xFF34407A),
   onTertiaryContainer: const Color(0xFFE0E5FF),
-  onSurface: const Color(0xFFE3EAF7),
-  onSurfaceVariant: const Color(0xFFAEBBD3),
-  surfaceContainerLowest: const Color(0xFF0B1220),
-  outline: const Color(0xFF5E7196),
-  outlineVariant: const Color(0xFF2E3D5C),
+  onSurface: _batText,
+  onSurfaceVariant: _batTextMuted,
+  surfaceContainerLowest: _batNight,
+  outline: _batTextMuted,
+  outlineVariant: _batSurfaceHigh,
   inversePrimary: _batNavy,
   surfaceTint: _batBody,
 );
@@ -147,10 +253,10 @@ const batPalette = AppPalette(
   label: 'Morceguinho',
   seed: _batBody,
   darkBackground: _batNight,
-  darkCard: Color(0xFF172238),
-  darkContainerHigh: Color(0xFF1D2A43),
-  darkContainerHighest: Color(0xFF24324E),
-  darkChipSelected: _batNavy,
+  darkCard: _batSurface,
+  darkContainerHigh: _batSurfaceHigh,
+  darkContainerHighest: _batSurfaceHigh,
+  darkChipSelected: _batSurfaceHigh,
   darkTertiary: _batLavender,
   accentGradient: [_batBody, _batCyan],
   onAccent: _batDeepNavy,
@@ -159,6 +265,141 @@ const batPalette = AppPalette(
   contentText: defaultTextColor,
   refineLight: _batLight,
   refineDark: _batDark,
+);
+
+ColorScheme _mintLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF1F7556),
+  primaryContainer: const Color(0xFFBDF0D7),
+  onPrimaryContainer: const Color(0xFF072E20),
+  secondary: const Color(0xFF3E6558),
+  secondaryContainer: const Color(0xFFC8EADB),
+  tertiary: const Color(0xFF4A628F),
+  tertiaryContainer: const Color(0xFFD9E2FF),
+  surface: const Color(0xFFF6FCF8),
+  surfaceLow: const Color(0xFFECF6F0),
+  surfaceHigh: const Color(0xFFE1EEE7),
+  outline: const Color(0xFF6E7E75),
+);
+
+ColorScheme _mintDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFF8DDBB7),
+  onPrimary: const Color(0xFF073826),
+  primaryContainer: const Color(0xFF24523E),
+  secondary: const Color(0xFFA8D4BF),
+  secondaryContainer: const Color(0xFF315144),
+  tertiary: const Color(0xFFB7C9FF),
+  tertiaryContainer: const Color(0xFF354A73),
+  outline: const Color(0xFF87998F),
+);
+
+ColorScheme _peachLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFFA84B20),
+  primaryContainer: const Color(0xFFFFDBCB),
+  onPrimaryContainer: const Color(0xFF3B1000),
+  secondary: const Color(0xFF7C5748),
+  secondaryContainer: const Color(0xFFFFDBCC),
+  tertiary: const Color(0xFF67558D),
+  tertiaryContainer: const Color(0xFFEBDDFF),
+  surface: const Color(0xFFFFF8F5),
+  surfaceLow: const Color(0xFFFFF0E9),
+  surfaceHigh: const Color(0xFFF8E5DC),
+  outline: const Color(0xFF8A7166),
+);
+
+ColorScheme _peachDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFFFB693),
+  onPrimary: const Color(0xFF5B1D00),
+  primaryContainer: const Color(0xFF7F3515),
+  secondary: const Color(0xFFE9BFAE),
+  secondaryContainer: const Color(0xFF604538),
+  tertiary: const Color(0xFFD8BCFF),
+  tertiaryContainer: const Color(0xFF4E3E70),
+  outline: const Color(0xFFA58A7E),
+);
+
+ColorScheme _roseLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF9B356A),
+  primaryContainer: const Color(0xFFFFD8E9),
+  onPrimaryContainer: const Color(0xFF3D0024),
+  secondary: const Color(0xFF765661),
+  secondaryContainer: const Color(0xFFFFD9E2),
+  tertiary: const Color(0xFF595D91),
+  tertiaryContainer: const Color(0xFFE1E2FF),
+  surface: const Color(0xFFFFF8FA),
+  surfaceLow: const Color(0xFFFFF0F5),
+  surfaceHigh: const Color(0xFFF8E4EC),
+  outline: const Color(0xFF86717A),
+);
+
+ColorScheme _roseDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFFFAFD2),
+  onPrimary: const Color(0xFF5D123B),
+  primaryContainer: const Color(0xFF7C2854),
+  secondary: const Color(0xFFE6BDC9),
+  secondaryContainer: const Color(0xFF5B3F49),
+  tertiary: const Color(0xFFBFC4FF),
+  tertiaryContainer: const Color(0xFF414575),
+  outline: const Color(0xFFA38B95),
+);
+
+ColorScheme _triadLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFFAD4718),
+  primaryContainer: const Color(0xFFFFDBCA),
+  onPrimaryContainer: const Color(0xFF3A1000),
+  secondary: const Color(0xFF08785A),
+  secondaryContainer: const Color(0xFFADF2D6),
+  tertiary: const Color(0xFF355F9E),
+  tertiaryContainer: const Color(0xFFD8E2FF),
+  surface: const Color(0xFFFFF8F5),
+  surfaceLow: const Color(0xFFFFF0E9),
+  surfaceHigh: const Color(0xFFF8E4DA),
+  outline: const Color(0xFF8B7064),
+);
+
+ColorScheme _triadDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFFFB68F),
+  onPrimary: const Color(0xFF5C1E00),
+  primaryContainer: const Color(0xFF7D2D05),
+  secondary: const Color(0xFF60DDB2),
+  secondaryContainer: const Color(0xFF00513D),
+  tertiary: const Color(0xFFAFC7FF),
+  tertiaryContainer: const Color(0xFF294778),
+  outline: const Color(0xFFA58A7E),
+);
+
+ColorScheme _squareLight(ColorScheme base) => _refinePaletteLight(
+  base,
+  primary: const Color(0xFF7B3FA0),
+  primaryContainer: const Color(0xFFF2DAFF),
+  onPrimaryContainer: const Color(0xFF310049),
+  secondary: const Color(0xFFA8412B),
+  secondaryContainer: const Color(0xFFFFDAD1),
+  tertiary: const Color(0xFF3F6F32),
+  tertiaryContainer: const Color(0xFFC0EFB0),
+  surface: const Color(0xFFFCF8FF),
+  surfaceLow: const Color(0xFFF7F0FA),
+  surfaceHigh: const Color(0xFFEEE4F1),
+  outline: const Color(0xFF7F7482),
+);
+
+ColorScheme _squareDark(ColorScheme base) => _refinePaletteDark(
+  base,
+  primary: const Color(0xFFE4B6FF),
+  onPrimary: const Color(0xFF4B1468),
+  primaryContainer: const Color(0xFF633081),
+  secondary: const Color(0xFFFFB4A2),
+  secondaryContainer: const Color(0xFF7F2A1A),
+  tertiary: const Color(0xFFA5D991),
+  tertiaryContainer: const Color(0xFF2D5724),
+  outline: const Color(0xFF9B8D9F),
 );
 
 const mintPalette = AppPalette(
@@ -175,6 +416,9 @@ const mintPalette = AppPalette(
   contentBackground: Color(0xFFB8EBD3),
   contentFrame: Color(0xFF2F8A66),
   contentText: Color(0xFF13402F),
+  darkTertiary: Color(0xFFB7C9FF),
+  refineLight: _mintLight,
+  refineDark: _mintDark,
 );
 
 const peachPalette = AppPalette(
@@ -191,6 +435,9 @@ const peachPalette = AppPalette(
   contentBackground: Color(0xFFFFD3BA),
   contentFrame: Color(0xFFC0673D),
   contentText: Color(0xFF5A2A14),
+  darkTertiary: Color(0xFFD8BCFF),
+  refineLight: _peachLight,
+  refineDark: _peachDark,
 );
 
 const rosePalette = AppPalette(
@@ -207,6 +454,51 @@ const rosePalette = AppPalette(
   contentBackground: Color(0xFFF9C6E0),
   contentFrame: Color(0xFFB24E86),
   contentText: Color(0xFF5B1D42),
+  darkTertiary: Color(0xFFBFC4FF),
+  refineLight: _roseLight,
+  refineDark: _roseDark,
+);
+
+/// Harmonia tríade: laranja e verde ficam a aproximadamente 120° do azul da
+/// marca. É viva, mas as superfícies quentes e escuras mantêm a legibilidade.
+const triadPalette = AppPalette(
+  id: 'triade',
+  label: 'Tríade',
+  seed: Color(0xFFF59A62),
+  darkBackground: Color(0xFF17110F),
+  darkCard: Color(0xFF231A17),
+  darkContainerHigh: Color(0xFF2E211C),
+  darkContainerHighest: Color(0xFF382822),
+  darkChipSelected: Color(0xFF6F402B),
+  darkTertiary: Color(0xFFAFC7FF),
+  accentGradient: [Color(0xFFFFB68F), Color(0xFF60DDB2)],
+  onAccent: Color(0xFF351200),
+  contentBackground: Color(0xFFFFD3BE),
+  contentFrame: Color(0xFF17866A),
+  contentText: Color(0xFF244F88),
+  refineLight: _triadLight,
+  refineDark: _triadDark,
+);
+
+/// Harmonia quadrada: violeta, coral, verde e azul ocupam quatro regiões
+/// distintas do círculo cromático e criam a opção mais expressiva do app.
+const squarePalette = AppPalette(
+  id: 'quadrada',
+  label: 'Quadrada',
+  seed: Color(0xFFC779E8),
+  darkBackground: Color(0xFF151018),
+  darkCard: Color(0xFF211924),
+  darkContainerHigh: Color(0xFF2B2030),
+  darkContainerHighest: Color(0xFF35273A),
+  darkChipSelected: Color(0xFF5D3A6B),
+  darkTertiary: Color(0xFFFFB4A2),
+  accentGradient: [Color(0xFFA5D991), Color(0xFF76A9FF)],
+  onAccent: Color(0xFF161B2A),
+  contentBackground: Color(0xFFE9D2F3),
+  contentFrame: Color(0xFF5C9C4B),
+  contentText: Color(0xFF7F2A1A),
+  refineLight: _squareLight,
+  refineDark: _squareDark,
 );
 
 /// Todas as paletas, na ordem em que aparecem nas configurações. A primeira
@@ -217,6 +509,8 @@ const appPalettes = [
   mintPalette,
   peachPalette,
   rosePalette,
+  triadPalette,
+  squarePalette,
 ];
 
 /// A paleta com [id], ou a padrão se não houver (ex.: preferência antiga).
