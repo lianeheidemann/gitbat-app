@@ -13,8 +13,8 @@ void main() {
 
   testWidgets('alterna entre os temas claro e escuro', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(appBar: AppBar(actions: [ThemeModeButton()])),
+      MaterialApp(
+        home: Scaffold(appBar: AppBar(actions: const [ThemeModeButton()])),
       ),
     );
 
