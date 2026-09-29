@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/aspect_preset.dart';
-import '../../core/models/color_adjustments.dart';
 import '../../core/models/crop_rect.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/models/image_frame.dart';
@@ -29,7 +28,6 @@ import '../../core/ui/frame/content_fit_picker.dart';
 import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/frame/border_ring.dart';
 import '../../core/ui/frame/frame_color_row.dart';
-import '../../core/ui/panel_rows.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
 import '../../core/ui/frame/image_frame_panel.dart';
 import '../../core/ui/frame/image_framed_preview.dart';
@@ -37,6 +35,7 @@ import '../../core/ui/frame/imported_frame_library.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
+import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/export_progress_dialog.dart';
 import 'widgets/eraser_mask_overlay.dart';
@@ -46,6 +45,7 @@ import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/transparent_background_panel.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/ui/edit_history.dart';
 import '../../app/editor_defaults.dart';
@@ -608,34 +608,20 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
     return AspectRatio(
       aspectRatio: aspect,
-      child: LayoutBuilder(
-        builder: (context, constraints) => Stack(
-          fit: StackFit.expand,
-          children: [
-            content,
-            // Stickers por baixo dos textos.
-            StickerOverlayStack(
-              controller: _stickerOverlay,
-              stickers: _frame.stickers,
-              onChanged: (stickers) => _updateFrame(
-                _frame.copyWith(stickers: stickers),
-                pushUndo: false,
-              ),
-              canvasSize: constraints.biggest,
-              interactive: _stickersTabActive,
-              onGestureStart: _pushUndoCheckpoint,
-            ),
-            TextOverlayStack(
-              controller: _textOverlay,
-              texts: _frame.texts,
-              onChanged: (texts) =>
-                  _updateFrame(_frame.copyWith(texts: texts), pushUndo: false),
-              canvasSize: constraints.biggest,
-              interactive: textTabActive,
-              onGestureStart: _pushUndoCheckpoint,
-            ),
-          ],
-        ),
+      child: EditorOverlayLayers(
+        fit: StackFit.expand,
+        content: content,
+        stickerController: _stickerOverlay,
+        stickers: _frame.stickers,
+        onStickersChanged: (stickers) =>
+            _updateFrame(_frame.copyWith(stickers: stickers), pushUndo: false),
+        stickersInteractive: _stickersTabActive,
+        textController: _textOverlay,
+        texts: _frame.texts,
+        onTextsChanged: (texts) =>
+            _updateFrame(_frame.copyWith(texts: texts), pushUndo: false),
+        textsInteractive: textTabActive,
+        onGestureStart: _pushUndoCheckpoint,
       ),
     );
   }
@@ -1373,22 +1359,13 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   Widget _colorAdjustSection() {
-    final adjustments = _frame.adjustments;
-    return ColorAdjustPanel(
-      hasAdjustments: adjustments.hasAdjustments,
-      valueOf: (adjustment) => adjustment.valueIn(adjustments),
+    return ColorAdjustmentsPanel(
+      adjustments: _frame.adjustments,
       onChangeStart: _pushUndoCheckpoint,
-      onChanged: (adjustment, value) => _updateFrame(
-        _frame.copyWith(adjustments: adjustment.applyIn(adjustments, value)),
+      onChanged: (adjustments) => _updateFrame(
+        _frame.copyWith(adjustments: adjustments),
         pushUndo: false,
       ),
-      onReset: () {
-        _pushUndoCheckpoint();
-        _updateFrame(
-          _frame.copyWith(adjustments: ColorAdjustments.neutral),
-          pushUndo: false,
-        );
-      },
     );
   }
 
@@ -1415,39 +1392,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   Widget _backgroundSection() {
     final frame = _frame;
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          key: const ValueKey('transparentBackgroundSwitch'),
-          children: [
-            Expanded(
-              child: Text(
-                tr('Fundo transparente', 'Transparent background'),
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-            Switch(
-              value: frame.transparentBackground,
-              onChanged: (v) =>
-                  _updateFrame(frame.copyWith(transparentBackground: v)),
-            ),
-          ],
-        ),
-        if (!frame.transparentBackground) ...[
-          Divider(
-            height: 13,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-          ),
-          PanelColorRow(
-            key: const ValueKey('backgroundColorRow'),
-            label: tr('Cor do fundo', 'Background color'),
-            color: _frame.backgroundColor,
-            onTap: _pickBackgroundColor,
-          ),
-        ],
-      ],
+    return TransparentBackgroundPanel(
+      transparent: frame.transparentBackground,
+      color: frame.backgroundColor,
+      onTransparentChanged: (v) =>
+          _updateFrame(frame.copyWith(transparentBackground: v)),
+      onPickColor: _pickBackgroundColor,
     );
   }
 

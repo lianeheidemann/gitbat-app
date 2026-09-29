@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/models/color_adjustments.dart';
 import '../../core/models/conversion_settings.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/models/image_frame.dart';
@@ -32,6 +31,7 @@ import '../../core/ui/frame/imported_frame_library.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
+import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
@@ -520,45 +520,23 @@ class _EditorPageState extends State<EditorPage> {
   /// normalizadas de `CollageTextItem` baterem com o canvas de exportação —
   /// mesma técnica de `PhotoFramePage._framedPreview`.
   Widget _withTextOverlay(Widget content, bool textTabActive) {
-    return Stack(
-      children: [
-        content,
-        // Stickers por baixo dos textos.
-        Positioned.fill(
-          child: LayoutBuilder(
-            builder: (context, constraints) => StickerOverlayStack(
-              controller: _stickerOverlay,
-              stickers: _settings.frame.stickers,
-              onChanged: (stickers) => _update(
-                _settings.copyWith(
-                  frame: _settings.frame.copyWith(stickers: stickers),
-                ),
-                pushUndo: false,
-              ),
-              canvasSize: constraints.biggest,
-              interactive: _stickersTabActive,
-              onGestureStart: _pushUndoCheckpoint,
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: LayoutBuilder(
-            builder: (context, constraints) => TextOverlayStack(
-              controller: _textOverlay,
-              texts: _settings.frame.texts,
-              onChanged: (texts) => _update(
-                _settings.copyWith(
-                  frame: _settings.frame.copyWith(texts: texts),
-                ),
-                pushUndo: false,
-              ),
-              canvasSize: constraints.biggest,
-              interactive: textTabActive,
-              onGestureStart: _pushUndoCheckpoint,
-            ),
-          ),
-        ),
-      ],
+    return EditorOverlayLayers(
+      content: content,
+      stickerController: _stickerOverlay,
+      stickers: _settings.frame.stickers,
+      onStickersChanged: (stickers) => _update(
+        _settings.copyWith(frame: _settings.frame.copyWith(stickers: stickers)),
+        pushUndo: false,
+      ),
+      stickersInteractive: _stickersTabActive,
+      textController: _textOverlay,
+      texts: _settings.frame.texts,
+      onTextsChanged: (texts) => _update(
+        _settings.copyWith(frame: _settings.frame.copyWith(texts: texts)),
+        pushUndo: false,
+      ),
+      textsInteractive: textTabActive,
+      onGestureStart: _pushUndoCheckpoint,
     );
   }
 
@@ -749,22 +727,13 @@ class _EditorPageState extends State<EditorPage> {
   /// [ConversionSettings.adjustments]. Vale só para o conteúdo — a moldura e
   /// o fundo entram depois na cadeia de filtros e não passam pelo ajuste.
   Widget _colorAdjustSection() {
-    final adjustments = _settings.adjustments;
-    return ColorAdjustPanel(
-      hasAdjustments: adjustments.hasAdjustments,
-      valueOf: (adjustment) => adjustment.valueIn(adjustments),
+    return ColorAdjustmentsPanel(
+      adjustments: _settings.adjustments,
       onChangeStart: _pushUndoCheckpoint,
-      onChanged: (adjustment, value) => _update(
-        _settings.copyWith(adjustments: adjustment.applyIn(adjustments, value)),
+      onChanged: (adjustments) => _update(
+        _settings.copyWith(adjustments: adjustments),
         pushUndo: false,
       ),
-      onReset: () {
-        _pushUndoCheckpoint();
-        _update(
-          _settings.copyWith(adjustments: ColorAdjustments.neutral),
-          pushUndo: false,
-        );
-      },
     );
   }
 

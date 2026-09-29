@@ -2,6 +2,7 @@ import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../models/collage_color_adjustment.dart';
+import '../models/color_adjustments.dart';
 
 /// Bolinha de um ajuste na folha "Ajustar cor": ícone dentro de um círculo,
 /// nome embaixo e um ponto de destaque quando aquele ajuste está fora do
@@ -409,4 +410,40 @@ class _RulerPainter extends CustomPainter {
       oldDelegate.ticks != ticks ||
       oldDelegate.tickColor != tickColor ||
       oldDelegate.markerColor != markerColor;
+}
+
+/// [ColorAdjustPanel] ligado a um [ColorAdjustments] só — Editar vídeo,
+/// Editar imagem e Editar SVG (a Montagem guarda um por foto). "Redefinir"
+/// volta ao neutro como um passo de desfazer.
+class ColorAdjustmentsPanel extends StatelessWidget {
+  const ColorAdjustmentsPanel({
+    super.key,
+    required this.adjustments,
+    required this.onChangeStart,
+    required this.onChanged,
+  });
+
+  final ColorAdjustments adjustments;
+
+  /// Antes do primeiro valor de um arrasto, e antes de redefinir — o ponto
+  /// de desfazer.
+  final VoidCallback onChangeStart;
+
+  /// Os ajustes novos, sem empilhar desfazer: [onChangeStart] já marcou.
+  final ValueChanged<ColorAdjustments> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColorAdjustPanel(
+      hasAdjustments: adjustments.hasAdjustments,
+      valueOf: (adjustment) => adjustment.valueIn(adjustments),
+      onChangeStart: onChangeStart,
+      onChanged: (adjustment, value) =>
+          onChanged(adjustment.applyIn(adjustments, value)),
+      onReset: () {
+        onChangeStart();
+        onChanged(ColorAdjustments.neutral);
+      },
+    );
+  }
 }

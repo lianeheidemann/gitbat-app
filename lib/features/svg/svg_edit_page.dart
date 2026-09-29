@@ -11,7 +11,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/aspect_preset.dart';
-import '../../core/models/color_adjustments.dart';
 import '../../core/models/crop_rect.dart';
 import '../../core/models/output_transform.dart';
 import 'models/svg_edit_settings.dart';
@@ -31,15 +30,16 @@ import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/photo_placement_view.dart';
 import '../../core/ui/frame/frame_color_row.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
-import '../../core/ui/panel_rows.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
+import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/transparent_background_panel.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/ui/edit_history.dart';
 import '../../core/services/opaque_bounds.dart';
@@ -341,40 +341,21 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// então as coordenadas normalizadas batem com o `viewBox` final que
   /// `applyTextsSvg` usa na exportação. Mesma técnica de
   /// `EditorPage._withTextOverlay`.
-  Widget _withTextOverlay(Widget content, bool textTabActive) => Stack(
-    children: [
-      content,
-      // Stickers por baixo dos textos, como na exportação.
-      Positioned.fill(
-        child: LayoutBuilder(
-          builder: (context, constraints) => StickerOverlayStack(
-            controller: _stickerOverlay,
-            stickers: _settings.stickers,
-            onChanged: (stickers) => _update(
-              _settings.copyWith(stickers: stickers),
-              pushUndo: false,
-            ),
-            canvasSize: constraints.biggest,
-            interactive: _stickersTabActive,
-            onGestureStart: _pushUndoCheckpoint,
-          ),
-        ),
-      ),
-      Positioned.fill(
-        child: LayoutBuilder(
-          builder: (context, constraints) => TextOverlayStack(
-            controller: _textOverlay,
-            texts: _settings.texts,
-            onChanged: (texts) =>
-                _update(_settings.copyWith(texts: texts), pushUndo: false),
-            canvasSize: constraints.biggest,
-            interactive: textTabActive,
-            onGestureStart: _pushUndoCheckpoint,
-          ),
-        ),
-      ),
-    ],
-  );
+  Widget _withTextOverlay(Widget content, bool textTabActive) =>
+      EditorOverlayLayers(
+        content: content,
+        stickerController: _stickerOverlay,
+        stickers: _settings.stickers,
+        onStickersChanged: (stickers) =>
+            _update(_settings.copyWith(stickers: stickers), pushUndo: false),
+        stickersInteractive: _stickersTabActive,
+        textController: _textOverlay,
+        texts: _settings.texts,
+        onTextsChanged: (texts) =>
+            _update(_settings.copyWith(texts: texts), pushUndo: false),
+        textsInteractive: textTabActive,
+        onGestureStart: _pushUndoCheckpoint,
+      );
 
   Widget _stickerSection() {
     _stickerOverlay.dropSelectionIfGone(_settings.stickers);
@@ -881,37 +862,12 @@ class _SvgEditPageState extends State<SvgEditPage> {
   // ---------------------------------------------------------------------
 
   Widget _backgroundSection() {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                tr('Fundo transparente', 'Transparent background'),
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-            Switch(
-              value: _settings.transparentBackground,
-              onChanged: (v) =>
-                  _update(_settings.copyWith(transparentBackground: v)),
-            ),
-          ],
-        ),
-        if (!_settings.transparentBackground) ...[
-          Divider(
-            height: 13,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-          ),
-          PanelColorRow(
-            label: tr('Cor do fundo', 'Background color'),
-            color: _settings.backgroundColor,
-            onTap: _pickBackgroundColor,
-          ),
-        ],
-      ],
+    return TransparentBackgroundPanel(
+      transparent: _settings.transparentBackground,
+      color: _settings.backgroundColor,
+      onTransparentChanged: (v) =>
+          _update(_settings.copyWith(transparentBackground: v)),
+      onPickColor: _pickBackgroundColor,
     );
   }
 
@@ -972,22 +928,13 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// compostos por cima do preset de [SvgFilterType] (ver
   /// [SvgEditSettings.adjustments]), não em vez dele.
   Widget _colorAdjustSection() {
-    final adjustments = _settings.adjustments;
-    return ColorAdjustPanel(
-      hasAdjustments: adjustments.hasAdjustments,
-      valueOf: (adjustment) => adjustment.valueIn(adjustments),
+    return ColorAdjustmentsPanel(
+      adjustments: _settings.adjustments,
       onChangeStart: _pushUndoCheckpoint,
-      onChanged: (adjustment, value) => _update(
-        _settings.copyWith(adjustments: adjustment.applyIn(adjustments, value)),
+      onChanged: (adjustments) => _update(
+        _settings.copyWith(adjustments: adjustments),
         pushUndo: false,
       ),
-      onReset: () {
-        _pushUndoCheckpoint();
-        _update(
-          _settings.copyWith(adjustments: ColorAdjustments.neutral),
-          pushUndo: false,
-        );
-      },
     );
   }
 
