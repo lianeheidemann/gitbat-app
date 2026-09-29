@@ -1,5 +1,4 @@
 import '../../app/language_controller.dart';
-import '../../app/translations.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -41,7 +40,7 @@ import '../../core/ui/text_overlay_editor.dart';
 import 'painting/collage_painter.dart';
 import '../../core/ui/export_progress_dialog.dart';
 import 'widgets/cell_actions.dart';
-import 'widgets/font_thumb.dart';
+import '../../core/ui/font_picker_sheet.dart';
 import 'widgets/panels/collage_panel_actions.dart';
 import 'widgets/panels/aspect_panel.dart';
 import 'widgets/panels/background_panel.dart';
@@ -1969,68 +1968,14 @@ class _CollagePageState extends State<CollagePage> {
   void _pickTextFont(String id) {
     final item = _findText(id);
     if (item == null) return;
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tr('Fonte', 'Font'),
-                style: Theme.of(sheetContext).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final font in bundledCollageFonts)
-                    CollageFontThumb(
-                      family: font.$1,
-                      label: trKey(font.$2),
-                      selected: item.fontFamily == font.$1,
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        _applyTextFont(id, font.$1);
-                      },
-                    ),
-                  // As importadas ficam na mesma grade das embutidas —
-                  // segurar remove.
-                  for (final font in _importedFonts)
-                    CollageFontThumb(
-                      family: font.family,
-                      label: font.label,
-                      selected: item.fontFamily == font.family,
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        _applyTextFont(id, font.family);
-                      },
-                      onLongPress: () {
-                        Navigator.of(sheetContext).pop();
-                        _confirmRemoveFont(font);
-                      },
-                    ),
-                  CollageFontThumb(
-                    family: null,
-                    label: tr('Importar', 'Import'),
-                    selected: false,
-                    icon: Icons.font_download_outlined,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _importFont(id);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    showFontPickerSheet(
+      context,
+      selectedFamily: item.fontFamily,
+      importedFonts: _importedFonts,
+      onSelected: (family) => _applyTextFont(id, family),
+      onImport: () => _importFont(id),
+      // As importadas ficam na mesma grade das embutidas — segurar remove.
+      onRemoveImported: _confirmRemoveFont,
     );
   }
 

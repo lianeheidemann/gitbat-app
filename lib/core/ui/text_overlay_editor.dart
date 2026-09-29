@@ -1,5 +1,4 @@
 import '../../app/language_controller.dart';
-import '../../app/translations.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -9,9 +8,9 @@ import '../services/imported_font_store.dart';
 import 'app_message.dart';
 import 'collage_overlay_view.dart';
 import 'overlay_handles.dart';
-import 'panel_rows.dart';
 import '../painting/overlay_painting.dart' show paintCollageTextBackground;
-import 'color_picker_sheet.dart';
+import 'font_picker_sheet.dart';
+import 'text_style_controls.dart';
 import '../../app/editor_defaults.dart';
 
 /// Caixas de texto arrastáveis sobre uma prévia — mesma interação e mesmo
@@ -369,39 +368,30 @@ class TextOverlayPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (selected != null) _selectionToolbar(context, selected),
-            _composer(context),
-            if (selected != null) ...[
-              const SizedBox(height: 8),
-              PanelColorRow(
-                label: tr('Cor do texto', 'Text color'),
-                color: selected.color,
-                onTap: () => _pickColor(
-                  context,
-                  title: tr('Cor do texto', 'Text color'),
-                  current: selected.color,
-                  apply: (item, color) => item.copyWith(color: color),
-                ),
-              ),
-              TextFontSizeRow(
+            TextComposerField(
+              controller: controller.textController,
+              focusNode: controller.textFocus,
+              editing: controller.editingId != null,
+              onSubmit: _submit,
+              onCancelEdit: controller.cancelEdit,
+            ),
+            if (selected != null)
+              ...textStyleControls(
+                context,
                 item: selected,
+                latest: () {
+                  final id = controller.selectedId;
+                  return id == null ? null : texts.findText(id);
+                },
                 onChangeStart: () => onGestureStart?.call(),
-                onChanged: (points) => onChanged(
-                  texts.replacingText(
-                    selected.id,
-                    selected.withFontSizePoints(points),
-                  ),
-                ),
+                onChanged: (item) =>
+                    onChanged(texts.replacingText(item.id, item)),
+                onCommit: (item) {
+                  onGestureStart?.call();
+                  onChanged(texts.replacingText(item.id, item));
+                },
+                previewImageBuilder: previewImageBuilder,
               ),
-              PanelSwitchRow(
-                label: tr('Fundo do texto', 'Text background'),
-                value: selected.hasBackground,
-                onChanged: (on) => _toggleBackground(selected, on),
-              ),
-              if (selected.hasBackground) ...[
-                const SizedBox(height: 4),
-                _backgroundGroup(context, selected),
-              ],
-            ],
           ],
         );
       },
@@ -449,76 +439,6 @@ class TextOverlayPanel extends StatelessWidget {
     );
   }
 
-  Widget _composer(BuildContext context) {
-    final theme = Theme.of(context);
-    final editing = controller.editingId != null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (editing) ...[
-          Row(
-            children: [
-              Text(
-                tr('Editar texto', 'Edit text'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: controller.cancelEdit,
-                child: Text(tr('Cancelar', 'Cancel')),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-        ],
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller.textController,
-          builder: (context, value, _) {
-            final canSubmit = value.text.trim().isNotEmpty;
-            return TextField(
-              controller: controller.textController,
-              focusNode: controller.textFocus,
-              minLines: 1,
-              maxLines: 3,
-              keyboardType: TextInputType.multiline,
-              textCapitalization: TextCapitalization.sentences,
-              onSubmitted: (_) => _submit(),
-              decoration: InputDecoration(
-                hintText: tr('Digite seu texto...', 'Type your text...'),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                contentPadding: const EdgeInsets.fromLTRB(18, 12, 4, 12),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: IconButton(
-                    tooltip: editing
-                        ? tr('Salvar texto', 'Save text')
-                        : tr('Adicionar texto', 'Add text'),
-                    onPressed: canSubmit ? _submit : null,
-                    icon: Icon(
-                      editing ? Icons.check_rounded : Icons.add_rounded,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: canSubmit
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.surfaceContainerHighest,
-                      foregroundColor: canSubmit
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
   void _submit() {
     final text = controller.textController.text.trim();
     if (text.isEmpty) return;
@@ -546,217 +466,13 @@ class TextOverlayPanel extends StatelessWidget {
     controller.textFocus.requestFocus();
   }
 
-  Widget _backgroundGroup(BuildContext context, CollageTextItem selected) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(10),
-        border: Border(
-          left: BorderSide(color: theme.colorScheme.primary, width: 3),
-        ),
-      ),
-      child: Column(
-        children: [
-          PanelColorRow(
-            label: tr('Cor', 'Color'),
-            color: selected.backgroundColor!,
-            onTap: () => _pickColor(
-              context,
-              title: tr('Cor do fundo do texto', 'Text background color'),
-              current: selected.backgroundColor!,
-              apply: (item, color) => item.copyWith(backgroundColor: color),
-            ),
-          ),
-          const SizedBox(height: 4),
-          PanelSliderRow(
-            onChangeStart: () => onGestureStart?.call(),
-            label: tr('Opacidade', 'Opacity'),
-            value: selected.backgroundColor!.a,
-            min: 0,
-            max: 1,
-            valueLabel: '${(selected.backgroundColor!.a * 100).round()}%',
-            onChanged: (v) => onChanged(
-              texts.replacingText(
-                selected.id,
-                selected.copyWith(
-                  backgroundColor: selected.backgroundColor!.withValues(
-                    alpha: v,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          PanelSliderRow(
-            onChangeStart: () => onGestureStart?.call(),
-            label: tr('Arredondamento', 'Rounding'),
-            value: selected.backgroundCornerRatio,
-            min: 0,
-            max: CollageTextItem.maxBackgroundCornerRatio,
-            valueLabel:
-                '${(selected.backgroundCornerRatio / CollageTextItem.maxBackgroundCornerRatio * 100).round()}%',
-            onChanged: (v) => onChanged(
-              texts.replacingText(
-                selected.id,
-                selected.copyWith(backgroundCornerRatio: v),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _toggleBackground(CollageTextItem item, bool on) {
-    onGestureStart?.call();
-    onChanged(
-      texts.replacingText(
-        item.id,
-        on
-            ? item.copyWith(
-                backgroundColor:
-                    item.backgroundColor ?? EditorDefaults.background,
-              )
-            : item.copyWith(clearBackgroundColor: true),
-      ),
-    );
-  }
-
-  void _pickColor(
-    BuildContext context, {
-    required String title,
-    required Color current,
-    required CollageTextItem Function(CollageTextItem item, Color color) apply,
-  }) {
-    var checkpointPushed = false;
-    showCollageColorPickerSheet(
-      context: context,
-      title: title,
-      initialColor: current,
-      onColorSelected: (color) {
-        final id = controller.selectedId;
-        if (id == null) return;
-        final latest = texts.findText(id);
-        if (latest == null) return;
-        if (!checkpointPushed) {
-          checkpointPushed = true;
-          onGestureStart?.call();
-        }
-        onChanged(texts.replacingText(id, apply(latest, color)));
-      },
-      previewImageBuilder: previewImageBuilder,
-    );
-  }
-
   void _pickFont(BuildContext context, CollageTextItem item) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tr('Fonte', 'Font'),
-                style: Theme.of(sheetContext).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final font in bundledCollageFonts)
-                    _fontThumb(
-                      sheetContext,
-                      family: font.$1,
-                      label: trKey(font.$2),
-                      selected: item.fontFamily == font.$1,
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        _applyFont(item.id, font.$1);
-                      },
-                    ),
-                  for (final font in controller.importedFonts)
-                    _fontThumb(
-                      sheetContext,
-                      family: font.family,
-                      label: font.label,
-                      selected: item.fontFamily == font.family,
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        _applyFont(item.id, font.family);
-                      },
-                    ),
-                  _fontThumb(
-                    sheetContext,
-                    family: null,
-                    label: tr('Importar', 'Import'),
-                    selected: false,
-                    icon: Icons.font_download_outlined,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _importFont(context, item.id);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _fontThumb(
-    BuildContext context, {
-    required String? family,
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-    IconData? icon,
-  }) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 84,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
-            width: selected ? 2 : 1,
-          ),
-          color: selected
-              ? theme.colorScheme.primary.withValues(alpha: 0.08)
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null)
-              Icon(icon, size: 22, color: theme.colorScheme.primary)
-            else
-              Text('Aa', style: TextStyle(fontFamily: family, fontSize: 22)),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
+    showFontPickerSheet(
+      context,
+      selectedFamily: item.fontFamily,
+      importedFonts: controller.importedFonts,
+      onSelected: (family) => _applyFont(item.id, family),
+      onImport: () => _importFont(context, item.id),
     );
   }
 
