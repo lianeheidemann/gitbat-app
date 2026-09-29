@@ -64,9 +64,10 @@ void main() {
   });
 
   test('paletas v2 e a versão clássica têm ids únicos', () {
-    expect(appPalettes, hasLength(34));
-    expect(appPalettes.map((palette) => palette.id).toSet(), hasLength(34));
-    expect(appPalettes.skip(8), hasLength(26));
+    expect(appPalettes, hasLength(33));
+    expect(appPalettes.map((palette) => palette.id).toSet(), hasLength(33));
+    expect(appPalettes.skip(8), hasLength(25));
+    expect(paletteById('framboesa-azul'), batPalette);
   });
 
   test('paletas aparecem em ordem alfabética no idioma da interface', () {
@@ -86,7 +87,6 @@ void main() {
         'cyber-pastel',
         'dalia',
         'doce-meia-noite',
-        'framboesa-azul',
         'frutas-vermelhas',
         'fucsia-menta',
         'lagoa-deserto',
@@ -198,7 +198,7 @@ void main() {
     expect(dark.surface, const Color(0xFF11172A));
   });
 
-  test('Turquesa Vintage aprovada usa turquesa e vermelho nos dois temas', () {
+  test('Vintage aprovada usa turquesa e vermelho nos dois temas', () {
     expect(appPalettes, contains(classicTurquoisePalette));
     expect(classicTurquoisePalette.id, 'turquesa-classica');
 
