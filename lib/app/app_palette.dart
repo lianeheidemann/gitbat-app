@@ -590,10 +590,10 @@ const auroraCoralPalette = AppPalette(
   contentText: Color(0xFF7D2A1F),
 );
 
-/// Primeira versão da Turquesa Vintage, preservada como opção independente.
+/// Primeira versão da paleta turquesa, preservada como opção independente.
 const classicTurquoisePalette = AppPalette(
   id: 'turquesa-classica',
-  label: 'Turquesa Clássica',
+  label: 'Turquesa',
   seed: Color(0xFF71BDC4),
   darkBackground: Color(0xFF171516),
   darkCard: Color(0xFF252122),
@@ -608,7 +608,7 @@ const classicTurquoisePalette = AppPalette(
   contentText: Color(0xFF493E3C),
 );
 
-/// Versão aprovada da Turquesa Vintage: o turquesa continua dominante e o
+/// Versão aprovada da Vintage: o turquesa continua dominante e o
 /// vermelho queimado passa a participar dos controles e estados ativos.
 ColorScheme _vintageTurquoiseLight(ColorScheme base) => base.copyWith(
   primary: const Color(0xFF087F84),
@@ -666,7 +666,7 @@ ColorScheme _vintageTurquoiseDark(ColorScheme base) => base.copyWith(
 
 const vintageTurquoisePalette = AppPalette(
   id: 'turquesa-vintage',
-  label: 'Turquesa Vintage',
+  label: 'Vintage',
   seed: Color(0xFF49BBC1),
   darkBackground: Color(0xFF121313),
   darkCard: Color(0xFF1D1E1E),
@@ -1100,23 +1100,6 @@ const desertLagoonPalette = AppPalette(
   contentText: Color(0xFF35565A),
 );
 
-const blueRaspberryPalette = AppPalette(
-  id: 'framboesa-azul',
-  label: 'Framboesa Azul',
-  seed: Color(0xFF56A0DA),
-  darkBackground: Color(0xFF0C2039),
-  darkCard: Color(0xFF142E4A),
-  darkContainerHigh: Color(0xFF1D3C5C),
-  darkContainerHighest: Color(0xFF274A6D),
-  darkChipSelected: Color(0xFF356380),
-  darkTertiary: Color(0xFFEB5C91),
-  accentGradient: [Color(0xFF78C8F2), Color(0xFFEB5C91)],
-  onAccent: Color(0xFF143147),
-  contentBackground: Color(0xFFF1F7F5),
-  contentFrame: Color(0xFFF0DD64),
-  contentText: Color(0xFF275A81),
-);
-
 const solarNavyPalette = AppPalette(
   id: 'solar-marinho',
   label: 'Solar Marinho',
@@ -1169,7 +1152,6 @@ const appPalettes = [
   electricCitrusPalette,
   rivieraPinkPalette,
   desertLagoonPalette,
-  blueRaspberryPalette,
   solarNavyPalette,
 ];
 
