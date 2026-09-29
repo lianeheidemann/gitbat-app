@@ -117,11 +117,10 @@ void main() {
     final englishNames = palettesSortedByDisplayName()
         .map((palette) => palette.label)
         .toList();
-    final expectedEnglishNames = [...englishNames]
-      ..sort(
-        (first, second) =>
-            first.toLowerCase().compareTo(second.toLowerCase()),
-      );
+    final expectedEnglishNames = [...englishNames];
+    expectedEnglishNames.sort(
+      (first, second) => first.toLowerCase().compareTo(second.toLowerCase()),
+    );
     expect(englishNames, orderedEquals(expectedEnglishNames));
   });
 
