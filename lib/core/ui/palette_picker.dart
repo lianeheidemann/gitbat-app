@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_palette.dart';
 import '../../app/language_controller.dart';
+import '../../app/theme.dart';
 import '../../app/theme_controller.dart';
 
 const _accentFolding = <String, String>{
@@ -152,7 +153,7 @@ class _PaletteOption extends StatelessWidget {
   }
 }
 
-/// Amostra compacta da paleta: as três cores de identidade e o fundo escuro.
+/// Amostra compacta das cores realmente exibidas pela paleta no tema atual.
 class _PaletteSwatch extends StatelessWidget {
   const _PaletteSwatch({
     required this.palette,
@@ -166,7 +167,9 @@ class _PaletteSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final paletteScheme = buildTheme(theme.brightness, palette).colorScheme;
     return Semantics(
       button: true,
       selected: selected,
@@ -197,12 +200,12 @@ class _PaletteSwatch extends StatelessWidget {
                   end: Alignment.bottomRight,
                   stops: const [0.34, 0.34, 0.52, 0.52, 0.68, 0.68],
                   colors: [
-                    palette.seed,
-                    palette.accentGradient.last,
-                    palette.accentGradient.last,
-                    palette.darkTertiary ?? palette.contentFrame,
-                    palette.darkTertiary ?? palette.contentFrame,
-                    palette.darkBackground,
+                    paletteScheme.primary,
+                    paletteScheme.secondary,
+                    paletteScheme.secondary,
+                    paletteScheme.tertiary,
+                    paletteScheme.tertiary,
+                    paletteScheme.surfaceContainerHighest,
                   ],
                 ),
               ),
