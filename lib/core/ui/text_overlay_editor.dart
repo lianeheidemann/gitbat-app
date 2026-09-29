@@ -9,8 +9,7 @@ import '../models/collage_text.dart';
 import '../services/imported_font_store.dart';
 import 'collage_overlay_view.dart';
 import 'panel_rows.dart';
-import '../../features/collage/painting/collage_painter.dart'
-    show paintCollageTextBackground;
+import '../painting/overlay_painting.dart' show paintCollageTextBackground;
 import 'color_picker_sheet.dart';
 import '../../app/editor_defaults.dart';
 

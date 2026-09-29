@@ -4,13 +4,13 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/background_image.dart';
 import '../models/collage_background.dart';
 import '../models/collage_settings.dart';
 import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
+import '../../../core/painting/overlay_painting.dart';
 import '../painting/collage_painter.dart';
 
 /// Compõe uma [CollageSettings] completa (células, fundo, borda, stickers e
@@ -173,101 +173,6 @@ class _StickerOverlay extends _Overlay {
   @override
   Future<void> paint(Canvas canvas, Size canvasSize) =>
       paintCollageSticker(canvas, canvasSize, sticker);
-}
-
-/// Desenha um sticker no [canvas] de [canvasSize] — o mesmo desenho da
-/// prévia (`CollageOverlayView` com a arte em `refSize`). Compartilhado com
-/// as outras telas que têm a aba "Stickers" (foto, vídeo e SVG).
-Future<void> paintCollageSticker(
-  Canvas canvas,
-  Size canvasSize,
-  CollageSticker sticker,
-) => _StickerPainter(sticker).paint(canvas, canvasSize);
-
-class _StickerPainter {
-  _StickerPainter(this.sticker);
-
-  final CollageSticker sticker;
-
-  Future<void> paint(Canvas canvas, Size canvasSize) async {
-    final refSize =
-        canvasSize.shortestSide *
-        CollageSticker.referenceSizeRatio *
-        sticker.scale;
-    final center = Offset(
-      sticker.centerX * canvasSize.width,
-      sticker.centerY * canvasSize.height,
-    );
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(sticker.rotation);
-
-    switch (sticker.source) {
-      case CollageStickerSource.bundledSvg:
-        await _paintVector(canvas, refSize, SvgAssetLoader(sticker.assetPath!));
-      case CollageStickerSource.importedSvg:
-        await _paintVector(
-          canvas,
-          refSize,
-          SvgFileLoader(File(sticker.imageFilePath!)),
-        );
-      case CollageStickerSource.importedImage:
-        await _paintRasterSticker(canvas, refSize, sticker.imageFilePath!);
-    }
-    canvas.restore();
-  }
-
-  Future<void> _paintVector(
-    Canvas canvas,
-    double refSize,
-    BytesLoader loader,
-  ) async {
-    final PictureInfo pictureInfo;
-    try {
-      pictureInfo = await vg.loadPicture(loader, null);
-    } catch (_) {
-      // Arte apagada/ilegível: deixa esse sticker de fora em vez de derrubar a
-      // exportação inteira (ver `_tryDecodeImageFile`).
-      return;
-    }
-    try {
-      final nativeSize = pictureInfo.size;
-      if (nativeSize.width <= 0 || nativeSize.height <= 0) return;
-      final aspect = nativeSize.width / nativeSize.height;
-      final w = aspect >= 1 ? refSize : refSize * aspect;
-      final h = aspect >= 1 ? refSize / aspect : refSize;
-      canvas.save();
-      canvas.translate(-w / 2, -h / 2);
-      canvas.scale(w / nativeSize.width, h / nativeSize.height);
-      canvas.drawPicture(pictureInfo.picture);
-      canvas.restore();
-    } finally {
-      pictureInfo.picture.dispose();
-    }
-  }
-
-  Future<void> _paintRasterSticker(
-    Canvas canvas,
-    double refSize,
-    String path,
-  ) async {
-    final image = await _tryDecodeImageFile(path);
-    if (image == null) return;
-    try {
-      final aspect = image.width / image.height;
-      final w = aspect >= 1 ? refSize : refSize * aspect;
-      final h = aspect >= 1 ? refSize / aspect : refSize;
-      canvas.drawImageRect(
-        image,
-        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-        Rect.fromCenter(center: Offset.zero, width: w, height: h),
-        Paint()..filterQuality = FilterQuality.high,
-      );
-    } finally {
-      image.dispose();
-    }
-  }
 }
 
 class _TextOverlay extends _Overlay {
