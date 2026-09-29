@@ -1,6 +1,5 @@
 import '../../app/language_controller.dart';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -12,6 +11,7 @@ import '../services/imported_asset_store.dart';
 import '../services/sticker_folder_store.dart';
 import 'app_message.dart';
 import 'collage_overlay_view.dart';
+import 'overlay_handles.dart';
 import 'text_input_dialog.dart';
 import 'dialog_title.dart';
 
@@ -35,10 +35,7 @@ class StickerOverlayController extends ChangeNotifier {
   String? pendingFolderScrollId;
 
   /// Gesto em andamento das alças (ver `TextOverlayController`).
-  bool resizeCheckpointPushed = false;
-  bool rotateCheckpointPushed = false;
-  Offset? rotatePointerPos;
-  double? lastRotateAngle;
+  final handleDrag = OverlayHandleDrag();
 
   Future<void> load() async {
     try {
@@ -133,7 +130,7 @@ class StickerOverlayStack extends StatelessWidget {
         return Stack(
           children: [
             for (final item in sorted) _overlayWidget(item),
-            if (interactive) ..._selectedHandles(context),
+            if (interactive) ..._selectedHandles(),
           ],
         );
       },
@@ -168,54 +165,69 @@ class StickerOverlayStack extends StatelessWidget {
     );
   }
 
-  List<Widget> _selectedHandles(BuildContext context) {
+  List<Widget> _selectedHandles() {
     final id = controller.selectedId;
     if (id == null) return const [];
     final item = stickers.findSticker(id);
     if (item == null) return const [];
 
     final ref = canvasSize.shortestSide * CollageSticker.referenceSizeRatio;
-    final center = Offset(
-      item.centerX * canvasSize.width,
-      item.centerY * canvasSize.height,
+    final points = overlayHandlePoints(
+      centerX: item.centerX,
+      centerY: item.centerY,
+      naturalSize: Size(ref, ref),
+      scale: item.scale,
+      rotation: item.rotation,
+      canvasSize: canvasSize,
     );
-    final half = ref * item.scale / 2;
-    final cosR = math.cos(item.rotation);
-    final sinR = math.sin(item.rotation);
-    Offset rotate(Offset local) => Offset(
-      local.dx * cosR - local.dy * sinR,
-      local.dx * sinR + local.dy * cosR,
-    );
-    final resizeCenter = center + rotate(Offset(half, half));
-    final rotateCenter = center + rotate(Offset(half, -half));
-    final removeCenter = center + rotate(Offset(-half, -half));
+    final drag = controller.handleDrag;
 
     return [
-      _handle(
-        context,
+      OverlayHandle(
         key: const ValueKey('stickerResizeHandle'),
-        center: resizeCenter,
+        center: points.bottomRight,
         icon: Icons.open_in_full_rounded,
-        onPointerDown: (_) => controller.resizeCheckpointPushed = false,
-        onPointerMove: (event) => _onResizeMove(event, item),
-      ),
-      _handle(
-        context,
-        key: const ValueKey('stickerRotateHandle'),
-        center: rotateCenter,
-        icon: Icons.rotate_right_rounded,
-        onPointerDown: (_) {
-          controller.rotateCheckpointPushed = false;
-          controller.rotatePointerPos = rotateCenter;
-          controller.lastRotateAngle = null;
+        iconSize: 13,
+        onPointerDown: (_) => drag.startResize(),
+        onPointerMove: (event) {
+          final scale = drag.resize(
+            event,
+            scale: item.scale,
+            rotation: item.rotation,
+            minScale: CollageSticker.minScale,
+            maxScale: CollageSticker.maxScale,
+            canvasSize: canvasSize,
+            onFirstChange: onGestureStart,
+          );
+          if (scale != null) {
+            _apply(item, item.centerX, item.centerY, scale, item.rotation);
+          }
         },
-        onPointerMove: (event) => _onRotateMove(event, item, center),
       ),
-      _handle(
-        context,
+      OverlayHandle(
+        key: const ValueKey('stickerRotateHandle'),
+        center: points.topRight,
+        icon: Icons.rotate_right_rounded,
+        iconSize: 13,
+        onPointerDown: (_) => drag.startRotate(points.topRight),
+        onPointerMove: (event) {
+          final rotation = drag.rotate(
+            event,
+            center: points.center,
+            rotation: item.rotation,
+            onFirstChange: onGestureStart,
+          );
+          if (rotation != null) {
+            _apply(item, item.centerX, item.centerY, item.scale, rotation);
+          }
+        },
+      ),
+      OverlayHandle(
         key: const ValueKey('stickerRemoveHandle'),
-        center: removeCenter,
+        center: points.topLeft,
         icon: Icons.close_rounded,
+        iconSize: 13,
+        destructive: true,
         onTap: () {
           onGestureStart?.call();
           onChanged(stickers.removingSticker(item.id));
@@ -223,114 +235,6 @@ class StickerOverlayStack extends StatelessWidget {
         },
       ),
     ];
-  }
-
-  void _onResizeMove(PointerMoveEvent event, CollageSticker item) {
-    final reference = canvasSize.shortestSide;
-    if (reference <= 0) return;
-    final cosA = math.cos(item.rotation);
-    final sinA = math.sin(item.rotation);
-    final local = Offset(
-      event.delta.dx * cosA + event.delta.dy * sinA,
-      -event.delta.dx * sinA + event.delta.dy * cosA,
-    );
-    final scaleDelta = (local.dx + local.dy) / reference;
-    if (scaleDelta == 0) return;
-    final newScale = (item.scale + item.scale * scaleDelta).clamp(
-      CollageSticker.minScale,
-      CollageSticker.maxScale,
-    );
-    if (newScale == item.scale) return;
-    if (!controller.resizeCheckpointPushed) {
-      controller.resizeCheckpointPushed = true;
-      onGestureStart?.call();
-    }
-    _apply(item, item.centerX, item.centerY, newScale, item.rotation);
-  }
-
-  void _onRotateMove(
-    PointerMoveEvent event,
-    CollageSticker item,
-    Offset center,
-  ) {
-    final pos = (controller.rotatePointerPos ?? center) + event.delta;
-    controller.rotatePointerPos = pos;
-    final vector = pos - center;
-    if (vector.distance < 1) return;
-    final angle = math.atan2(vector.dy, vector.dx);
-    final last = controller.lastRotateAngle;
-    controller.lastRotateAngle = angle;
-    if (last == null) return;
-    var delta = angle - last;
-    while (delta > math.pi) {
-      delta -= 2 * math.pi;
-    }
-    while (delta < -math.pi) {
-      delta += 2 * math.pi;
-    }
-    if (delta == 0) return;
-    if (!controller.rotateCheckpointPushed) {
-      controller.rotateCheckpointPushed = true;
-      onGestureStart?.call();
-    }
-    _apply(item, item.centerX, item.centerY, item.scale, item.rotation + delta);
-  }
-
-  Widget _handle(
-    BuildContext context, {
-    required Key key,
-    required Offset center,
-    required IconData icon,
-    void Function(PointerDownEvent)? onPointerDown,
-    void Function(PointerMoveEvent)? onPointerMove,
-    VoidCallback? onTap,
-  }) {
-    final theme = Theme.of(context);
-    const diameter = 24.0;
-    const tapSize = 48.0;
-    final isRemove = icon == Icons.close_rounded;
-    Widget child = SizedBox(
-      width: tapSize,
-      height: tapSize,
-      child: Center(
-        child: Container(
-          width: diameter,
-          height: diameter,
-          decoration: BoxDecoration(
-            color: isRemove
-                ? theme.colorScheme.error
-                : theme.colorScheme.primary,
-            shape: BoxShape.circle,
-            border: Border.all(color: theme.colorScheme.surface, width: 2),
-          ),
-          child: Icon(
-            icon,
-            size: 13,
-            color: isRemove
-                ? theme.colorScheme.onError
-                : theme.colorScheme.onPrimary,
-          ),
-        ),
-      ),
-    );
-    child = onTap != null
-        ? GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onTap,
-            child: child,
-          )
-        : Listener(
-            behavior: HitTestBehavior.opaque,
-            onPointerDown: onPointerDown,
-            onPointerMove: onPointerMove,
-            child: child,
-          );
-    return Positioned(
-      key: key,
-      left: center.dx - tapSize / 2,
-      top: center.dy - tapSize / 2,
-      child: child,
-    );
   }
 }
 

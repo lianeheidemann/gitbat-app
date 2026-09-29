@@ -2,7 +2,6 @@ import '../../app/language_controller.dart';
 import '../../app/translations.dart';
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -37,6 +36,7 @@ import 'widgets/collage_cell_view.dart';
 import '../../core/ui/collage_overlay_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
+import '../../core/ui/overlay_handles.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import 'painting/collage_painter.dart';
 import '../../core/ui/export_progress_dialog.dart';
@@ -1363,93 +1363,8 @@ class _CollagePageState extends State<CollagePage> {
     return null;
   }
 
-  bool _resizeHandleCheckpointPushed = false;
-  bool _rotateHandleCheckpointPushed = false;
-
-  /// Posição (em pixels locais do canvas) que a camada acumula a partir de
-  /// [event.delta] durante um arrasto da alça de girar — não há RenderBox
-  /// para medir o dedo direto, então a posição vem de somar os deltas a
-  /// partir de onde a alça estava no toque inicial. Reiniciada em
-  /// [_onRotateHandlePointerDown].
-  Offset? _rotatePointerPos;
-  double? _lastRotateAngle;
-
-  /// Mesma conta de [CollageOverlayView] (removida de lá): desfaz a rotação
-  /// atual do vetor de arrasto e soma as duas componentes locais — arrastar
-  /// para longe do centro (direita/baixo, sem girar) cresce; para perto,
-  /// encolhe — como fração de [canvasSize].shortestSide.
-  void _onResizeHandlePointerMove(
-    PointerMoveEvent event,
-    _SelectedOverlayGeometry geometry,
-    Size canvasSize,
-  ) {
-    final reference = canvasSize.shortestSide;
-    if (reference <= 0) return;
-    final cosA = math.cos(geometry.rotation);
-    final sinA = math.sin(geometry.rotation);
-    final local = Offset(
-      event.delta.dx * cosA + event.delta.dy * sinA,
-      -event.delta.dx * sinA + event.delta.dy * cosA,
-    );
-    final scaleDelta = (local.dx + local.dy) / reference;
-    if (scaleDelta == 0) return;
-    final newScale = (geometry.scale + geometry.scale * scaleDelta).clamp(
-      geometry.minScale,
-      geometry.maxScale,
-    );
-    if (newScale == geometry.scale) return;
-    if (!_resizeHandleCheckpointPushed) {
-      _resizeHandleCheckpointPushed = true;
-      _pushUndoCheckpoint();
-    }
-    geometry.apply(
-      geometry.centerX,
-      geometry.centerY,
-      newScale,
-      geometry.rotation,
-    );
-  }
-
-  void _onRotateHandlePointerDown(Offset handleCenter) {
-    _rotateHandleCheckpointPushed = false;
-    _rotatePointerPos = handleCenter;
-    _lastRotateAngle = null;
-  }
-
-  void _onRotateHandlePointerMove(
-    PointerMoveEvent event,
-    _SelectedOverlayGeometry geometry,
-    Offset center,
-  ) {
-    final pos = (_rotatePointerPos ?? center) + event.delta;
-    _rotatePointerPos = pos;
-    final vector = pos - center;
-    if (vector.distance < 1) return;
-    final angle = math.atan2(vector.dy, vector.dx);
-    final last = _lastRotateAngle;
-    _lastRotateAngle = angle;
-    if (last == null) return;
-    var delta = angle - last;
-    // Normaliza a virada de -pi/pi, senão passar por trás do overlay daria
-    // um giro de volta inteira num quadro só.
-    while (delta > math.pi) {
-      delta -= 2 * math.pi;
-    }
-    while (delta < -math.pi) {
-      delta += 2 * math.pi;
-    }
-    if (delta == 0) return;
-    if (!_rotateHandleCheckpointPushed) {
-      _rotateHandleCheckpointPushed = true;
-      _pushUndoCheckpoint();
-    }
-    geometry.apply(
-      geometry.centerX,
-      geometry.centerY,
-      geometry.scale,
-      geometry.rotation + delta,
-    );
-  }
+  /// Gesto em andamento das alças de redimensionar/girar.
+  final _handleDrag = OverlayHandleDrag();
 
   /// As duas alças do item selecionado, sempre por cima de tudo — ver o doc
   /// de `CollageOverlayView` para o porquê de não morarem mais dentro dele.
@@ -1457,82 +1372,62 @@ class _CollagePageState extends State<CollagePage> {
     final geometry = _selectedOverlayGeometry(canvasSize);
     if (geometry == null) return const [];
 
-    final center = Offset(
-      geometry.centerX * canvasSize.width,
-      geometry.centerY * canvasSize.height,
+    final points = overlayHandlePoints(
+      centerX: geometry.centerX,
+      centerY: geometry.centerY,
+      naturalSize: geometry.naturalSize,
+      scale: geometry.scale,
+      rotation: geometry.rotation,
+      canvasSize: canvasSize,
     );
-    final halfW = geometry.naturalSize.width * geometry.scale / 2;
-    final halfH = geometry.naturalSize.height * geometry.scale / 2;
-    final cosR = math.cos(geometry.rotation);
-    final sinR = math.sin(geometry.rotation);
-    Offset rotate(Offset local) => Offset(
-      local.dx * cosR - local.dy * sinR,
-      local.dx * sinR + local.dy * cosR,
-    );
-
-    final resizeCenter = center + rotate(Offset(halfW, halfH));
-    final rotateCenter = center + rotate(Offset(halfW, -halfH));
 
     return [
-      _handleCircle(
-        center: resizeCenter,
+      OverlayHandle(
+        center: points.bottomRight,
         icon: Icons.open_in_full_rounded,
-        onPointerDown: (_) => _resizeHandleCheckpointPushed = false,
-        onPointerMove: (event) =>
-            _onResizeHandlePointerMove(event, geometry, canvasSize),
+        iconSize: 12,
+        onPointerDown: (_) => _handleDrag.startResize(),
+        onPointerMove: (event) {
+          final scale = _handleDrag.resize(
+            event,
+            scale: geometry.scale,
+            rotation: geometry.rotation,
+            minScale: geometry.minScale,
+            maxScale: geometry.maxScale,
+            canvasSize: canvasSize,
+            onFirstChange: _pushUndoCheckpoint,
+          );
+          if (scale == null) return;
+          geometry.apply(
+            geometry.centerX,
+            geometry.centerY,
+            scale,
+            geometry.rotation,
+          );
+        },
       ),
-      _handleCircle(
-        center: rotateCenter,
+      OverlayHandle(
+        center: points.topRight,
         icon: Icons.rotate_right_rounded,
-        onPointerDown: (_) => _onRotateHandlePointerDown(rotateCenter),
-        onPointerMove: (event) =>
-            _onRotateHandlePointerMove(event, geometry, center),
+        iconSize: 14,
+        onPointerDown: (_) => _handleDrag.startRotate(points.topRight),
+        onPointerMove: (event) {
+          final rotation = _handleDrag.rotate(
+            event,
+            center: points.center,
+            rotation: geometry.rotation,
+            onFirstChange: _pushUndoCheckpoint,
+          );
+          if (rotation == null) return;
+          geometry.apply(
+            geometry.centerX,
+            geometry.centerY,
+            geometry.scale,
+            rotation,
+          );
+        },
       ),
     ];
-  }
-
-  Widget _handleCircle({
-    required Offset center,
-    required IconData icon,
-    required void Function(PointerDownEvent) onPointerDown,
-    required void Function(PointerMoveEvent) onPointerMove,
-  }) {
-    final theme = Theme.of(context);
-    const diameter = 24.0;
-    // A área de toque é maior que o círculo visual (48dp, o mínimo
-    // recomendado) para não ficar difícil de acertar a alça em telas
-    // pequenas ou com dedos maiores — o círculo continua do mesmo tamanho e
-    // no mesmo ponto de antes, só centralizado numa área de toque maior.
-    const tapSize = 48.0;
-    return Positioned(
-      left: center.dx - tapSize / 2,
-      top: center.dy - tapSize / 2,
-      child: Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: onPointerDown,
-        onPointerMove: onPointerMove,
-        child: SizedBox(
-          width: tapSize,
-          height: tapSize,
-          child: Center(
-            child: Container(
-              width: diameter,
-              height: diameter,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: theme.colorScheme.surface, width: 2),
-              ),
-              child: Icon(
-                icon,
-                size: icon == Icons.rotate_right_rounded ? 14 : 12,
-                color: theme.colorScheme.onPrimary,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget? _selectionToolbar() {
