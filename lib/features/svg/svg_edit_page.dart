@@ -24,6 +24,7 @@ import '../../core/ui/app_message.dart';
 import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
+import '../../core/ui/crop/crop_tab.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/ui/frame/border_ring.dart';
 import '../../core/ui/photo_placement_view.dart';
@@ -33,11 +34,9 @@ import '../../core/ui/frame/frame_style_picker.dart';
 import '../../core/ui/frame/frame_thumb_shell.dart';
 import '../../core/ui/panel_rows.dart';
 import '../../core/ui/crop/crop_overlay.dart';
-import '../../core/ui/crop/crop_size_fields.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
-import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
@@ -46,22 +45,6 @@ import '../../core/ui/saved_dialog.dart';
 import '../../core/ui/edit_history.dart';
 import '../../core/services/opaque_bounds.dart';
 import '../../app/editor_defaults.dart';
-
-/// Sentinela do preset "Personalizado" na fileira de proporções — mesma
-/// ideia de `_customAspectPreset` em `editor_page.dart`: não é uma proporção
-/// de verdade (`ratio: -1`), só um valor que não bate com nenhum preset de
-/// [AspectPreset.presets], usado pra saber quando mostrar os campos de
-/// largura/altura em vez de travar a uma proporção fixa.
-const _customAspectPreset = AspectPreset(
-  'Personalizado',
-  -1,
-  labelEn: 'Custom',
-);
-
-/// "Ajustar": encosta o recorte no desenho, cortando só a margem totalmente
-/// transparente — a mesma opção de "Editar imagem" (ver
-/// `opaque_bounds.dart`). Como "Personalizado", o -2 nunca vira razão.
-const _trimAspectPreset = AspectPreset('Ajustar', -2, labelEn: 'Fit');
 
 /// Tela de recorte/edição de um SVG — mantém o arquivo como vetor o tempo
 /// todo: a prévia é só composição de widgets (nunca mexe no XML), e o XML só
@@ -91,31 +74,26 @@ class _SvgEditPageState extends State<SvgEditPage> {
     border: EditorDefaults.frameSettings(),
   );
 
-  /// Regras de recorte compartilhadas com as telas de vídeo e foto. O SVG
-  /// usa uma janela mínima menor que o padrão: 32 quebraria um ícone de
-  /// 24x24, bem comum no formato.
-  late final _crop = CropController(
-    sourceWidth: _sourceWidth,
-    sourceHeight: _sourceHeight,
-    minHandleSize: _minCropSize,
+  /// Aba "Recorte", com as regras compartilhadas com as telas de vídeo e
+  /// foto. O SVG usa uma janela mínima menor que o padrão: 32 quebraria um
+  /// ícone de 24x24, bem comum no formato.
+  late final _cropTab = CropTabController(
+    rules: CropController(
+      sourceWidth: _sourceWidth,
+      sourceHeight: _sourceHeight,
+      minHandleSize: _minCropSize,
+    ),
+    customPreset: AspectPreset.custom,
+    trimPreset: AspectPreset.trim,
   );
 
-  /// Preset de proporção travado na aba "Recorte" — guardado à parte de
-  /// `_settings.crop` porque "Personalizado" e um preset podem cair no
-  /// mesmo retângulo (ex.: ao digitar largura/altura que batem com 1:1), e
-  /// o chip marcado tem que continuar sendo o que foi tocado.
-  AspectPreset _aspect = AspectPreset.presets.first;
+  CropController get _crop => _cropTab.rules;
 
   final _history = EditHistory<SvgEditSettings>();
 
   int? _activeSection = 0;
   bool _saving = false;
   bool _sharing = false;
-
-  final _widthController = TextEditingController();
-  final _heightController = TextEditingController();
-  final _widthFocus = FocusNode();
-  final _heightFocus = FocusNode();
 
   /// Seleção, edição e fontes da aba "Texto" — o mesmo controlador de
   /// "Editar imagem"/"Editar vídeo".
@@ -155,10 +133,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
 
   @override
   void dispose() {
-    _widthController.dispose();
-    _heightController.dispose();
-    _widthFocus.dispose();
-    _heightFocus.dispose();
+    _cropTab.dispose();
     _textOverlay.dispose();
     _stickerOverlay.dispose();
     super.dispose();
@@ -470,7 +445,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
               crop: crop == null ? null : _toDisplayCrop(crop),
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
-              freeform: _isFreeformAspect,
+              freeform: _cropTab.isFreeform,
             ),
           ],
         ),
@@ -613,100 +588,40 @@ class _SvgEditPageState extends State<SvgEditPage> {
   // Seção "Recorte"
   // ---------------------------------------------------------------------
 
-  String get _cropLabel =>
-      _aspect.ratio == null ? '$_sourceWidth×$_sourceHeight' : _aspect.label;
+  String get _cropLabel => _cropTab.aspect.ratio == null
+      ? '$_sourceWidth×$_sourceHeight'
+      : _cropTab.aspect.label;
 
-  Widget _cropSection() {
-    final crop = _settings.crop;
-    final visiblePresets = <AspectPreset>[
-      AspectPreset.presets.first,
-      _trimAspectPreset,
-      ...AspectPreset.presets.skip(1),
-      _customAspectPreset,
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        OptionChips<AspectPreset>(
-          options: visiblePresets,
-          selected: visiblePresets.contains(_aspect)
-              ? _aspect
-              : visiblePresets.first,
-          labelBuilder: (preset) => preset.label,
-          onSelected: _selectAspectPreset,
-        ),
-        if (crop != null) ...[
-          const SizedBox(height: 18),
-          if (_isFreeformAspect) ...[
-            CropSizeSummary(crop: crop),
-            const SizedBox(height: 12),
-            CropSizeInputs(
-              crop: crop,
-              widthController: _widthController,
-              heightController: _heightController,
-              widthFocus: _widthFocus,
-              heightFocus: _heightFocus,
-              onSubmitWidth: _applyCropWidth,
-              onSubmitHeight: _applyCropHeight,
-            ),
-            const SizedBox(height: 12),
-          ],
-          CropSizeSlider(
-            percent: _crop.sizePercentOf(crop),
-            onChangeStart: _pushUndoCheckpoint,
-            onChanged: (percent) => _update(
-              _settings.copyWith(crop: _crop.scaledTo(percent, crop: crop)),
-              pushUndo: false,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _centerCurrentCrop,
-              icon: const Icon(Icons.center_focus_strong_rounded),
-              label: Text(tr('Centralizar', 'Center')),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _cropSection() => CropTabPanel(
+    tab: _cropTab,
+    crop: _settings.crop,
+    onSelectPreset: _selectAspectPreset,
+    onSubmitWidth: _applyCropWidth,
+    onSubmitHeight: _applyCropHeight,
+    onResizeStart: _pushUndoCheckpoint,
+    onResized: (crop) =>
+        _update(_settings.copyWith(crop: crop), pushUndo: false),
+    onCenter: _centerCurrentCrop,
+  );
 
   /// Aplica o preset de proporção escolhido: cria um recorte customizado,
   /// remove o recorte ("Original") ou centraliza um recorte na proporção
   /// fixa selecionada.
   void _selectAspectPreset(AspectPreset preset) {
-    if (preset == _trimAspectPreset) {
+    if (preset == AspectPreset.trim) {
       _trimTransparentEdges();
       return;
     }
     setState(() {
-      _aspect = preset;
-
-      if (preset == _customAspectPreset) {
-        _settings = _settings.copyWith(
-          crop: _settings.crop ?? _crop.defaultCustomCrop(),
-        );
-        return;
-      }
-
-      if (preset.ratio == null) {
-        _settings = _settings.copyWith(clearCrop: true);
-        return;
-      }
-
-      _settings = _settings.copyWith(crop: _crop.forRatio(preset.ratio!));
+      final crop = _cropTab.select(preset, _settings.crop);
+      _settings = crop == null
+          ? _settings.copyWith(clearCrop: true)
+          : _settings.copyWith(crop: crop);
     });
   }
 
-  /// Recorte sem proporção travada: "Personalizado" e "Ajustar".
-  bool get _isFreeformAspect =>
-      _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
-
   /// Proporção travada pelo preset atual, ou `null` num recorte livre.
-  double? get _lockedRatio => _isFreeformAspect ? null : _aspect.ratio;
+  double? get _lockedRatio => _cropTab.lockedRatio;
 
   bool _trimming = false;
 
@@ -748,7 +663,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
       );
       return;
     }
-    _aspect = _trimAspectPreset;
+    _cropTab.aspect = AspectPreset.trim;
     _update(_settings.copyWith(crop: bounds));
   }
 
@@ -938,7 +853,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
       scaledDelta,
     );
 
-    // `_aspect.ratio` não é invertido para 90°/270° — um preset travado
+    // `_lockedRatio` não é invertido para 90°/270° — um preset travado
     // (não "Personalizado") combinado com rotação ímpar pode desenhar a
     // janela um pouco fora da proporção que aparece na tela. O caso
     // relatado (arraste "pulando"/reset visual) usa sempre "Personalizado"

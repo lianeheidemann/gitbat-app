@@ -24,6 +24,7 @@ import '../../core/ui/app_message.dart';
 import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
+import '../../core/ui/crop/crop_tab.dart';
 import '../../core/ui/frame/content_fit_picker.dart';
 import '../../core/ui/frame/border_ring.dart';
 import '../../core/ui/frame/frame_color_row.dart';
@@ -34,7 +35,6 @@ import '../../core/ui/frame/frame_style_picker.dart';
 import '../../core/ui/frame/frame_thumb_shell.dart';
 import '../../core/ui/frame/image_frame_picker.dart';
 import '../../core/ui/crop/crop_overlay.dart';
-import '../../core/ui/crop/crop_size_fields.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
@@ -42,7 +42,6 @@ import '../../core/ui/export_progress_dialog.dart';
 import 'widgets/eraser_mask_overlay.dart';
 import 'widgets/eraser_option_button.dart';
 import '../../core/ui/photo_placement_view.dart';
-import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
@@ -58,22 +57,6 @@ const _selectableContentFitModes = [
   ContentFitMode.fill,
   ContentFitMode.expand,
 ];
-
-/// Mesma ideia de `_customAspectPreset` em `editor_page.dart`/
-/// `svg_edit_page.dart`: não é uma proporção de verdade (o -1 nunca é usado
-/// como razão), só marca "livre" — cada alça mexe só no seu lado/canto, sem
-/// travar largura/altura entre si.
-const _customAspectPreset = AspectPreset(
-  'Personalizado',
-  -1,
-  labelEn: 'Custom',
-);
-
-/// "Ajustar": também não é uma proporção (o -2 nunca vira razão).
-/// Tocar nele encosta o recorte nos pixels visíveis, cortando só a margem
-/// totalmente transparente (ver `opaque_bounds.dart`); depois disso o recorte
-/// fica livre como em "Personalizado", para a pessoa refinar se quiser.
-const _trimAspectPreset = AspectPreset('Ajustar', -2, labelEn: 'Fit');
 
 /// Tela dedicada a aplicar uma moldura (procedural ou de imagem) a uma foto
 /// estática. Reaproveita o mesmo modelo ([FrameSettings], [ImageFrameAsset])
@@ -146,22 +129,18 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   final _eraserCanvasKey = GlobalKey<EraserCanvasState>();
 
-  /// Preset travado na aba "Recorte" — guardado à parte de `_frame.crop`
-  /// porque "Personalizado" e um preset podem cair no mesmo retângulo (ex.:
-  /// ao digitar largura/altura que batem com 1:1), e o chip marcado tem que
-  /// continuar sendo o que foi tocado. Mesma ideia de `SvgEditPage._aspect`.
-  AspectPreset _aspect = AspectPreset.presets.first;
-
-  /// Regras de recorte compartilhadas com as telas de vídeo e SVG.
-  late final _crop = CropController(
-    sourceWidth: _photo.width,
-    sourceHeight: _photo.height,
+  /// Aba "Recorte", com as regras compartilhadas com as telas de vídeo e
+  /// SVG.
+  late final _cropTab = CropTabController(
+    rules: CropController(
+      sourceWidth: _photo.width,
+      sourceHeight: _photo.height,
+    ),
+    customPreset: AspectPreset.custom,
+    trimPreset: AspectPreset.trim,
   );
 
-  final _widthController = TextEditingController();
-  final _heightController = TextEditingController();
-  final _widthFocus = FocusNode();
-  final _heightFocus = FocusNode();
+  CropController get _crop => _cropTab.rules;
 
   final _textOverlay = TextOverlayController();
   final _stickerOverlay = StickerOverlayController();
@@ -196,10 +175,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   @override
   void dispose() {
-    _widthController.dispose();
-    _heightController.dispose();
-    _widthFocus.dispose();
-    _heightFocus.dispose();
+    _cropTab.dispose();
     _textOverlay.dispose();
     _stickerOverlay.dispose();
     // Os PNGs da borracha só existem para esta edição: quem quis guardar já
@@ -620,7 +596,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               crop: _frame.crop,
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
-              freeform: _isFreeformAspect,
+              freeform: _cropTab.isFreeform,
               onPinchStart: () {
                 final crop = _frame.crop;
                 if (crop != null) _crop.pinchStart(crop);
@@ -808,101 +784,40 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // Seção "Recorte"
   // ---------------------------------------------------------------------
 
-  String get _cropLabel => _aspect.ratio == null
+  String get _cropLabel => _cropTab.aspect.ratio == null
       ? '${_photo.width}×${_photo.height}'
-      : _aspect.label;
+      : _cropTab.aspect.label;
 
-  Widget _cropSection() {
-    final crop = _frame.crop;
-    final visiblePresets = <AspectPreset>[
-      AspectPreset.presets.first,
-      _trimAspectPreset,
-      ...AspectPreset.presets.skip(1),
-      _customAspectPreset,
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        OptionChips<AspectPreset>(
-          options: visiblePresets,
-          selected: visiblePresets.contains(_aspect)
-              ? _aspect
-              : visiblePresets.first,
-          labelBuilder: (preset) => preset.label,
-          onSelected: _selectAspectPreset,
-        ),
-        if (crop != null) ...[
-          const SizedBox(height: 18),
-          if (_isFreeformAspect) ...[
-            CropSizeSummary(crop: crop),
-            const SizedBox(height: 12),
-            CropSizeInputs(
-              crop: crop,
-              widthController: _widthController,
-              heightController: _heightController,
-              widthFocus: _widthFocus,
-              heightFocus: _heightFocus,
-              onSubmitWidth: _applyCropWidth,
-              onSubmitHeight: _applyCropHeight,
-            ),
-            const SizedBox(height: 12),
-          ],
-          CropSizeSlider(
-            percent: _crop.sizePercentOf(crop),
-            onChangeStart: _pushUndoCheckpoint,
-            onChanged: (percent) => _updateFrame(
-              _frame.copyWith(crop: _crop.scaledTo(percent, crop: crop)),
-              pushUndo: false,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _centerCurrentCrop,
-              icon: const Icon(Icons.center_focus_strong_rounded),
-              label: Text(tr('Centralizar', 'Center')),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _cropSection() => CropTabPanel(
+    tab: _cropTab,
+    crop: _frame.crop,
+    onSelectPreset: _selectAspectPreset,
+    onSubmitWidth: _applyCropWidth,
+    onSubmitHeight: _applyCropHeight,
+    onResizeStart: _pushUndoCheckpoint,
+    onResized: (crop) =>
+        _updateFrame(_frame.copyWith(crop: crop), pushUndo: false),
+    onCenter: _centerCurrentCrop,
+  );
 
   /// Aplica o preset de proporção escolhido: cria um recorte customizado,
   /// remove o recorte ("Original") ou centraliza um recorte na proporção
   /// fixa selecionada.
   void _selectAspectPreset(AspectPreset preset) {
-    if (preset == _trimAspectPreset) {
+    if (preset == AspectPreset.trim) {
       unawaited(_trimTransparentEdges());
       return;
     }
     setState(() {
-      _aspect = preset;
-
-      if (preset == _customAspectPreset) {
-        _frame = _frame.copyWith(
-          crop: _frame.crop ?? _crop.defaultCustomCrop(),
-        );
-        return;
-      }
-
-      if (preset.ratio == null) {
-        _frame = _frame.copyWith(clearCrop: true);
-        return;
-      }
-
-      _frame = _frame.copyWith(crop: _crop.forRatio(preset.ratio!));
+      final crop = _cropTab.select(preset, _frame.crop);
+      _frame = crop == null
+          ? _frame.copyWith(clearCrop: true)
+          : _frame.copyWith(crop: crop);
     });
   }
 
-  /// Recorte sem proporção travada: "Personalizado" e "Ajustar".
-  bool get _isFreeformAspect =>
-      _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
-
   /// Proporção travada pelo preset atual, ou `null` num recorte livre.
-  double? get _lockedRatio => _isFreeformAspect ? null : _aspect.ratio;
+  double? get _lockedRatio => _cropTab.lockedRatio;
 
   /// Encosta o recorte nos pixels visíveis da foto atual — já com o que a
   /// borracha apagou, porque lê `_photo` e não a foto que abriu a tela.
@@ -951,7 +866,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       );
       return;
     }
-    _aspect = _trimAspectPreset;
+    _cropTab.aspect = AspectPreset.trim;
     _updateFrame(_frame.copyWith(crop: bounds));
   }
 
@@ -1018,16 +933,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     Offset displayDelta,
     Size previewSize,
   ) {
-    final crop = _frame.crop;
-    if (crop == null || previewSize.width <= 0 || previewSize.height <= 0) {
-      return;
-    }
-
-    final next = _crop.resizeBy(
-      crop: crop,
-      handle: handle,
-      sourceDelta: _toSourceDelta(displayDelta, previewSize),
-      ratio: _lockedRatio,
+    final next = _cropTab.resizeFromDisplay(
+      _frame.crop,
+      handle,
+      displayDelta,
+      previewSize,
     );
     if (next == null) return;
     _updateFrame(_frame.copyWith(crop: next));
@@ -1036,19 +946,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// Mesma conversão de [_resizeCropFromHandle], para o botão de mover a
   /// janela inteira.
   void _moveCropFromHandle(Offset displayDelta, Size previewSize) {
-    final crop = _frame.crop;
-    if (crop == null || previewSize.width <= 0 || previewSize.height <= 0) {
-      return;
-    }
-
-    final next = _crop.moveBy(
-      crop: crop,
-      sourceDelta: _toSourceDelta(displayDelta, previewSize),
+    final next = _cropTab.moveFromDisplay(
+      _frame.crop,
+      displayDelta,
+      previewSize,
       // Trava no centro a até ~10 px (na tela) dele.
-      snapDistance: _toSourceDelta(
-        const Offset(_centerSnapDistance, _centerSnapDistance),
-        previewSize,
-      ),
+      centerSnap: _centerSnapDistance,
     );
     if (next == null) return;
     _updateFrame(_frame.copyWith(crop: next));
@@ -1067,12 +970,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     if (next == null) return;
     _updateFrame(_frame.copyWith(crop: next));
   }
-
-  /// Converte um arraste em pixels da prévia exibida para pixels da foto.
-  Offset _toSourceDelta(Offset displayDelta, Size previewSize) => Offset(
-    displayDelta.dx * _photo.width / previewSize.width,
-    displayDelta.dy * _photo.height / previewSize.height,
-  );
 
   // ---------------------------------------------------------------------
   // Seção "Borda" (moldura procedural)

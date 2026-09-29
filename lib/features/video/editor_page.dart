@@ -19,6 +19,7 @@ import '../../core/ui/app_message.dart';
 import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
+import '../../core/ui/crop/crop_tab.dart';
 import '../../core/ui/frame/content_fit_picker.dart';
 import '../../core/ui/frame/frame_color_row.dart';
 import '../../core/ui/frame/frame_rotate_button.dart';
@@ -28,7 +29,6 @@ import '../../core/ui/frame/frame_style_picker.dart';
 import '../../core/ui/frame/frame_thumb_shell.dart';
 import '../../core/ui/frame/image_frame_picker.dart';
 import '../../core/ui/crop/crop_overlay.dart';
-import '../../core/ui/crop/crop_size_fields.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
@@ -42,6 +42,8 @@ import '../../core/ui/edit_history.dart';
 import 'widgets/webp_convert_panel.dart';
 import '../../app/language_controller.dart';
 
+/// O recorte livre do vídeo — mesmo papel de [AspectPreset.custom], com o
+/// rótulo no plural que a tela sempre teve.
 const _customAspectPreset = AspectPreset(
   'Personalizados',
   -1,
@@ -97,7 +99,6 @@ class _EditorPageState extends State<EditorPage> {
   bool _previewFailed = false;
   bool _measuring = false;
   bool _openingConversion = false;
-  AspectPreset _aspect = AspectPreset.presets.first;
   bool _ditherExpanded = false;
   bool _paletteExpanded = false;
   bool _contentFitExpanded = false;
@@ -111,20 +112,20 @@ class _EditorPageState extends State<EditorPage> {
   /// contínuos (sliders) empilhando um checkpoint só no começo.
   final _history = EditHistory<ConversionSettings>();
 
-  /// Regras de recorte compartilhadas com as telas de foto e SVG. O vídeo
-  /// arredonda para par (exigência do filtro `crop` do FFmpeg) e, ao
+  /// Aba "Recorte", com as regras compartilhadas com as telas de foto e SVG.
+  /// O vídeo arredonda para par (exigência do filtro `crop` do FFmpeg) e, ao
   /// contrário das outras duas, não acumula a sobra fracionária do arrasto.
-  late final _crop = CropController(
-    sourceWidth: _video.width,
-    sourceHeight: _video.height,
-    evenOnly: true,
-    accumulateDragRemainder: false,
+  late final _cropTab = CropTabController(
+    rules: CropController(
+      sourceWidth: _video.width,
+      sourceHeight: _video.height,
+      evenOnly: true,
+      accumulateDragRemainder: false,
+    ),
+    customPreset: _customAspectPreset,
   );
 
-  final _widthController = TextEditingController();
-  final _heightController = TextEditingController();
-  final _widthFocus = FocusNode();
-  final _heightFocus = FocusNode();
+  CropController get _crop => _cropTab.rules;
 
   final _textOverlay = TextOverlayController();
   final _stickerOverlay = StickerOverlayController();
@@ -184,10 +185,7 @@ class _EditorPageState extends State<EditorPage> {
   void dispose() {
     _player?.dispose();
     _sectionsScrollController.dispose();
-    _widthController.dispose();
-    _heightController.dispose();
-    _widthFocus.dispose();
-    _heightFocus.dispose();
+    _cropTab.dispose();
     _textOverlay.dispose();
     _stickerOverlay.dispose();
     super.dispose();
@@ -1359,7 +1357,7 @@ class _EditorPageState extends State<EditorPage> {
               crop: _settings.crop,
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
-              freeform: _aspect == _customAspectPreset,
+              freeform: _cropTab.isFreeform,
             ),
           ],
         ),
@@ -1460,16 +1458,11 @@ class _EditorPageState extends State<EditorPage> {
     Offset displayDelta,
     Size previewSize,
   ) {
-    final crop = _settings.crop;
-    if (crop == null || previewSize.width <= 0 || previewSize.height <= 0) {
-      return;
-    }
-
-    final next = _crop.resizeBy(
-      crop: crop,
-      handle: handle,
-      sourceDelta: _toSourceDelta(displayDelta, previewSize),
-      ratio: _lockedRatio,
+    final next = _cropTab.resizeFromDisplay(
+      _settings.crop,
+      handle,
+      displayDelta,
+      previewSize,
     );
     if (next == null) return;
     _update(_settings.copyWith(crop: next));
@@ -1479,24 +1472,14 @@ class _EditorPageState extends State<EditorPage> {
   /// para pixels do vídeo e desloca a janela de recorte, sem sair da área
   /// do vídeo.
   void _moveCropFromHandle(Offset displayDelta, Size previewSize) {
-    final crop = _settings.crop;
-    if (crop == null || previewSize.width <= 0 || previewSize.height <= 0) {
-      return;
-    }
-
-    final next = _crop.moveBy(
-      crop: crop,
-      sourceDelta: _toSourceDelta(displayDelta, previewSize),
+    final next = _cropTab.moveFromDisplay(
+      _settings.crop,
+      displayDelta,
+      previewSize,
     );
     if (next == null) return;
     _update(_settings.copyWith(crop: next));
   }
-
-  /// Converte um arraste em pixels da prévia exibida para pixels do vídeo.
-  Offset _toSourceDelta(Offset displayDelta, Size previewSize) => Offset(
-    displayDelta.dx * _video.width / previewSize.width,
-    displayDelta.dy * _video.height / previewSize.height,
-  );
 
   /// Barra de progresso do vídeo com o trecho selecionado destacado; toca
   /// em qualquer ponto para pular a prévia para lá, e volta ao início do
@@ -1702,69 +1685,25 @@ class _EditorPageState extends State<EditorPage> {
   /// Seção de formato/recorte: presets de proporção e, quando há recorte
   /// ativo, os campos numéricos da janela.
   LabeledSection _aspectSection() {
-    final crop = _settings.crop;
-    final visiblePresets = <AspectPreset>[
-      ...AspectPreset.presets,
-      _customAspectPreset,
-    ];
-
+    final aspect = _cropTab.aspect;
     return LabeledSection(
       icon: Icons.crop_rounded,
       title: tr('Formato da janela', 'Window shape'),
-      value: _aspect.ratio == null
+      value: aspect.ratio == null
           ? '${_video.width}×${_video.height}'
-          : _aspect.label,
+          : aspect.label,
       originalValue: _ratioLabel(_video.width, _video.height),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          OptionChips<AspectPreset>(
-            options: visiblePresets,
-            selected: visiblePresets.contains(_aspect)
-                ? _aspect
-                : visiblePresets.first,
-            // Só a numeração da proporção quando ela existe (o rótulo já
-            // é isso) — o texto por extenso ("Quadrado", "Retrato"...)
-            // deixava os chips mais largos do que precisava.
-            labelBuilder: (preset) => preset.label,
-            onSelected: _selectAspectPreset,
-          ),
-          if (crop != null) ...[
-            const SizedBox(height: 18),
-            if (_aspect == _customAspectPreset) ...[
-              CropSizeSummary(crop: crop, showPixelUnit: true),
-              const SizedBox(height: 12),
-              CropSizeInputs(
-                crop: crop,
-                widthController: _widthController,
-                heightController: _heightController,
-                widthFocus: _widthFocus,
-                heightFocus: _heightFocus,
-                onSubmitWidth: _applyCropWidth,
-                onSubmitHeight: _applyCropHeight,
-                showPixelUnit: true,
-              ),
-              const SizedBox(height: 12),
-            ],
-            CropSizeSlider(
-              percent: _crop.sizePercentOf(crop),
-              onChangeStart: _pushUndoCheckpoint,
-              onChanged: (percent) => _update(
-                _settings.copyWith(crop: _crop.scaledTo(percent, crop: crop)),
-                pushUndo: false,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _centerCurrentCrop,
-                icon: const Icon(Icons.center_focus_strong_rounded),
-                label: Text(tr('Centralizar', 'Center')),
-              ),
-            ),
-          ],
-        ],
+      child: CropTabPanel(
+        tab: _cropTab,
+        crop: _settings.crop,
+        onSelectPreset: _selectAspectPreset,
+        onSubmitWidth: _applyCropWidth,
+        onSubmitHeight: _applyCropHeight,
+        onResizeStart: _pushUndoCheckpoint,
+        onResized: (crop) =>
+            _update(_settings.copyWith(crop: crop), pushUndo: false),
+        onCenter: _centerCurrentCrop,
+        showPixelUnit: true,
       ),
     );
   }
@@ -1774,27 +1713,15 @@ class _EditorPageState extends State<EditorPage> {
   /// fixa selecionada.
   void _selectAspectPreset(AspectPreset preset) {
     setState(() {
-      _aspect = preset;
-
-      if (preset == _customAspectPreset) {
-        _settings = _settings.copyWith(
-          crop: _settings.crop ?? _crop.defaultCustomCrop(),
-        );
-        return;
-      }
-
-      if (preset.ratio == null) {
-        _settings = _settings.copyWith(clearCrop: true);
-        return;
-      }
-
-      _settings = _settings.copyWith(crop: _crop.forRatio(preset.ratio!));
+      final crop = _cropTab.select(preset, _settings.crop);
+      _settings = crop == null
+          ? _settings.copyWith(clearCrop: true)
+          : _settings.copyWith(crop: crop);
     });
   }
 
   /// Proporção travada pelo preset atual, ou `null` em "Personalizados".
-  double? get _lockedRatio =>
-      _aspect == _customAspectPreset ? null : _aspect.ratio;
+  double? get _lockedRatio => _cropTab.lockedRatio;
 
   /// Interpreta o texto digitado no campo de largura e aplica, se válido.
   /// Avisa quando o valor é ajustado por passar dos limites do vídeo.
