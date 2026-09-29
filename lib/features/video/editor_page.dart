@@ -15,6 +15,7 @@ import '../../core/services/imported_frame_store.dart';
 import '../../core/services/size_estimator.dart';
 import 'converting_page.dart';
 import '../../core/ui/app_bar_title.dart';
+import '../../core/ui/app_message.dart';
 import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
@@ -29,6 +30,7 @@ import '../../core/ui/frame/image_frame_picker.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/crop_size_fields.dart';
 import '../../core/ui/crop/cropped_view.dart';
+import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/labeled_section.dart';
 import '../../core/ui/preview_settings_panel.dart';
@@ -36,6 +38,7 @@ import '../../core/ui/rotate_flip_panel.dart';
 import 'widgets/size_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/edit_history.dart';
 import 'widgets/webp_convert_panel.dart';
 import '../../app/language_controller.dart';
 
@@ -104,10 +107,9 @@ class _EditorPageState extends State<EditorPage> {
   int? _activeSection = 0;
 
   /// Histórico de desfazer/refazer das configurações, igual ao da tela de
-  /// montagem: pilhas do próprio [ConversionSettings], com os gestos
+  /// montagem: estados do próprio [ConversionSettings], com os gestos
   /// contínuos (sliders) empilhando um checkpoint só no começo.
-  final List<ConversionSettings> _undoStack = [];
-  final List<ConversionSettings> _redoStack = [];
+  final _history = EditHistory<ConversionSettings>();
 
   /// Regras de recorte compartilhadas com as telas de foto e SVG. O vídeo
   /// arredonda para par (exigência do filtro `crop` do FFmpeg) e, ao
@@ -193,36 +195,24 @@ class _EditorPageState extends State<EditorPage> {
 
   /// Substitui as configurações atuais e reconstrói a tela.
   void _update(ConversionSettings next, {bool pushUndo = true}) {
-    if (pushUndo) {
-      _undoStack.add(_settings);
-      _redoStack.clear();
-    }
+    if (pushUndo) _history.push(_settings);
     setState(() => _settings = next);
   }
 
   /// Empilha o estado atual antes de um gesto contínuo (arrastar um slider),
   /// para o arrasto inteiro virar UM passo de desfazer.
-  void _pushUndoCheckpoint() {
-    _undoStack.add(_settings);
-    _redoStack.clear();
-  }
+  void _pushUndoCheckpoint() => _history.push(_settings);
 
   void _undo() {
-    if (_undoStack.isEmpty) return;
-    final previous = _undoStack.removeLast();
-    setState(() {
-      _redoStack.add(_settings);
-      _settings = previous;
-    });
+    final previous = _history.undo(_settings);
+    if (previous == null) return;
+    setState(() => _settings = previous);
   }
 
   void _redo() {
-    if (_redoStack.isEmpty) return;
-    final next = _redoStack.removeLast();
-    setState(() {
-      _undoStack.add(_settings);
-      _settings = next;
-    });
+    final next = _history.redo(_settings);
+    if (next == null) return;
+    setState(() => _settings = next);
   }
 
   /// Move o player de prévia para o instante [seconds].
@@ -259,11 +249,7 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   /// Mostra uma snackbar simples, substituindo qualquer uma já visível.
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _showMessage(String message) => showAppMessage(context, message);
 
   /// Pausa a prévia e navega para a tela de conversão com as configurações
   /// atuais.
@@ -436,15 +422,11 @@ class _EditorPageState extends State<EditorPage> {
       appBar: AppBar(
         title: AppBarTitle(tr('Editar vídeo', 'Edit video')),
         actions: [
-          IconButton(
-            tooltip: tr('Desfazer', 'Undo'),
-            onPressed: _undoStack.isEmpty ? null : _undo,
-            icon: const Icon(Icons.undo_rounded),
-          ),
-          IconButton(
-            tooltip: tr('Refazer', 'Redo'),
-            onPressed: _redoStack.isEmpty ? null : _redo,
-            icon: const Icon(Icons.redo_rounded),
+          ...undoRedoActions(
+            canUndo: _history.canUndo,
+            canRedo: _history.canRedo,
+            onUndo: _undo,
+            onRedo: _redo,
           ),
           IconButton(
             tooltip: tr(

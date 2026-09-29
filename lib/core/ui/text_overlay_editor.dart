@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../models/collage_text.dart';
 import '../services/imported_font_store.dart';
+import 'app_message.dart';
 import 'collage_overlay_view.dart';
 import 'panel_rows.dart';
 import '../painting/overlay_painting.dart' show paintCollageTextBackground;
@@ -872,9 +873,7 @@ class TextOverlayPanel extends StatelessWidget {
       _applyFont(textId, font.family);
     } on ImportedFontException catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(e.message)));
+      showAppMessage(context, e.message);
     }
   }
 

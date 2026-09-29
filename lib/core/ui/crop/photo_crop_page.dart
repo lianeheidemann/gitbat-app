@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/crop_rect.dart';
 import '../../services/opaque_bounds.dart';
 import 'crop_controller.dart';
+import '../app_message.dart';
 import '../checkerboard_background.dart';
 import 'crop_overlay.dart';
 import 'crop_size_fields.dart';
@@ -213,9 +214,7 @@ class _PhotoCropPageState extends State<PhotoCropPage> {
 
   void _snack(String text) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text)));
+    showAppMessage(context, text);
   }
 
   /// Se a proporção digitada bater com um preset já na fileira (ou com "Da

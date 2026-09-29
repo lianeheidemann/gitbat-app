@@ -20,6 +20,7 @@ import 'services/magic_eraser.dart';
 import '../../core/services/opaque_bounds.dart';
 import 'services/photo_frame_compositor.dart';
 import '../../core/ui/app_bar_title.dart';
+import '../../core/ui/app_message.dart';
 import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
@@ -35,6 +36,7 @@ import '../../core/ui/frame/image_frame_picker.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/crop_size_fields.dart';
 import '../../core/ui/crop/cropped_view.dart';
+import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/export_progress_dialog.dart';
 import 'widgets/eraser_mask_overlay.dart';
@@ -46,6 +48,7 @@ import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import '../../core/ui/saved_dialog.dart';
+import '../../core/ui/edit_history.dart';
 import '../../app/editor_defaults.dart';
 
 /// Mesmos três modos apresentados ao usuário em `EditorPage` — `fit` só
@@ -171,13 +174,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   int? _activeSection = 0;
 
   /// Histórico de desfazer/refazer da moldura, no mesmo formato da tela de
-  /// montagem: pilhas do próprio [FrameSettings], com os arrastes contínuos
+  /// montagem: estados do próprio [FrameSettings], com os arrastes contínuos
   /// (sliders) empilhando um checkpoint só no início do gesto.
   /// Guarda também qual foto estava em uso: antes da borracha bastava a
   /// moldura, mas apagar algo troca o arquivo, e desfazer tem que voltar os
   /// dois juntos.
-  final List<_EditStep> _undoStack = [];
-  final List<_EditStep> _redoStack = [];
+  final _history = EditHistory<_EditStep>();
 
   bool _saving = false;
   bool _sharing = false;
@@ -270,45 +272,33 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   _EditStep get _currentStep => (frame: _frame, photo: _photo);
 
   void _updateFrame(FrameSettings frame, {bool pushUndo = true}) {
-    if (pushUndo) {
-      _undoStack.add(_currentStep);
-      _redoStack.clear();
-    }
+    if (pushUndo) _history.push(_currentStep);
     setState(() => _frame = frame);
   }
 
   /// Empilha o estado atual antes de um gesto contínuo (slider), para o
   /// arrasto inteiro virar UM passo de desfazer em vez de um por quadro.
-  void _pushUndoCheckpoint() {
-    _undoStack.add(_currentStep);
-    _redoStack.clear();
-  }
+  void _pushUndoCheckpoint() => _history.push(_currentStep);
 
   void _undo() {
-    if (_undoStack.isEmpty) return;
-    final previous = _undoStack.removeLast();
+    final previous = _history.undo(_currentStep);
+    if (previous == null) return;
     setState(() {
-      _redoStack.add(_currentStep);
       _frame = previous.frame;
       _photo = previous.photo;
     });
   }
 
   void _redo() {
-    if (_redoStack.isEmpty) return;
-    final next = _redoStack.removeLast();
+    final next = _history.redo(_currentStep);
+    if (next == null) return;
     setState(() {
-      _undoStack.add(_currentStep);
       _frame = next.frame;
       _photo = next.photo;
     });
   }
 
-  void _message(String text) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text)));
-  }
+  void _message(String text) => showAppMessage(context, text);
 
   Future<File> _writeTempPng(Uint8List bytes) async {
     final dir = await getTemporaryDirectory();
@@ -492,41 +482,25 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       appBar: AppBar(
         title: AppBarTitle(tr('Editar imagem', 'Edit image')),
         actions: [
-          IconButton(
-            tooltip: tr('Desfazer', 'Undo'),
-            onPressed: _undoStack.isEmpty ? null : _undo,
-            icon: const Icon(Icons.undo_rounded),
+          ...undoRedoActions(
+            canUndo: _history.canUndo,
+            canRedo: _history.canRedo,
+            onUndo: _undo,
+            onRedo: _redo,
           ),
-          IconButton(
-            tooltip: tr('Refazer', 'Redo'),
-            onPressed: _redoStack.isEmpty ? null : _redo,
-            icon: const Icon(Icons.redo_rounded),
-          ),
-          IconButton(
-            tooltip: _saving
-                ? tr('Salvando…', 'Saving…')
-                : tr('Salvar na galeria', 'Save to gallery'),
+          BusyIconButton(
+            busy: _saving,
+            tooltip: tr('Salvar na galeria', 'Save to gallery'),
+            busyTooltip: tr('Salvando…', 'Saving…'),
             onPressed: busy ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.download_rounded),
+            icon: const Icon(Icons.download_rounded),
           ),
-          IconButton(
-            tooltip: _sharing
-                ? tr('Preparando…', 'Preparing…')
-                : tr('Compartilhar', 'Share'),
+          BusyIconButton(
+            busy: _sharing,
+            tooltip: tr('Compartilhar', 'Share'),
+            busyTooltip: tr('Preparando…', 'Preparing…'),
             onPressed: busy ? null : _share,
-            icon: _sharing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.share_outlined),
+            icon: const Icon(Icons.share_outlined),
           ),
         ],
       ),
@@ -1686,8 +1660,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       _erasedFiles.add(file.path);
       if (!mounted) return;
       setState(() {
-        _undoStack.add(before);
-        _redoStack.clear();
+        _history.push(before);
         _photo = erased;
         _eraserMask = EraserMask.empty;
         _lastErased = mask;

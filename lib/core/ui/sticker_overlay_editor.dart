@@ -10,6 +10,7 @@ import 'stickers_panel.dart';
 import '../models/collage_sticker.dart';
 import '../services/imported_asset_store.dart';
 import '../services/sticker_folder_store.dart';
+import 'app_message.dart';
 import 'collage_overlay_view.dart';
 import 'text_input_dialog.dart';
 import 'dialog_title.dart';
@@ -359,11 +360,7 @@ class _StickerOverlayPanelState extends State<StickerOverlayPanel> {
   static const _stickerStore = StickerOverlayController._stickerStore;
   static const _folderStore = StickerOverlayController._folderStore;
 
-  void _message(String text) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text)));
-  }
+  void _message(String text) => showAppMessage(context, text);
 
   void _add(CollageSticker Function(String id, int z) build) {
     final item = build(
