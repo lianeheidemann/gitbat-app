@@ -242,11 +242,7 @@ Color _mostDistinctThirdColor(
   var result = candidates.first;
   var resultScore = _combinedColorDistance(primary, secondary, result);
   for (final candidate in candidates.skip(1)) {
-    final candidateScore = _combinedColorDistance(
-      primary,
-      secondary,
-      candidate,
-    );
+    final candidateScore = _combinedColorDistance(primary, secondary, candidate);
     if (candidateScore > resultScore) {
       result = candidate;
       resultScore = candidateScore;
