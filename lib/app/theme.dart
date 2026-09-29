@@ -175,14 +175,15 @@ ColorScheme _multicolorLightScheme(ColorScheme base, AppPalette palette) {
     palette.seed,
     palette.accentGradient,
   );
+  final tertiaryCandidates = <Color>[
+    palette.darkTertiary?,
+    palette.contentFrame,
+    ...palette.accentGradient,
+  ];
   final tertiarySource = _mostDistinctThirdColor(
     palette.seed,
     secondarySource,
-    [
-      palette.darkTertiary?,
-      palette.contentFrame,
-      ...palette.accentGradient,
-    ],
+    tertiaryCandidates,
   );
   final secondary = _lightRoleColor(secondarySource);
   final tertiary = _lightRoleColor(tertiarySource);
@@ -218,13 +219,14 @@ ColorScheme _multicolorLightScheme(ColorScheme base, AppPalette palette) {
 }
 
 Color _furthestColor(Color reference, Iterable<Color> colors) {
-  return colors.reduce(
-    (current, candidate) =>
-        _colorDistance(reference, candidate) >
-            _colorDistance(reference, current)
-        ? candidate
-        : current,
-  );
+  var result = colors.first;
+  for (final candidate in colors.skip(1)) {
+    if (_colorDistance(reference, candidate) >
+        _colorDistance(reference, result)) {
+      result = candidate;
+    }
+  }
+  return result;
 }
 
 Color _mostDistinctThirdColor(
@@ -237,15 +239,24 @@ Color _mostDistinctThirdColor(
       .toList();
   final candidates = distinctColors.isEmpty ? colors : distinctColors;
 
-  return candidates.reduce((current, candidate) {
-    final currentScore =
-        _colorDistance(primary, current) +
-        _colorDistance(secondary, current);
-    final candidateScore =
-        _colorDistance(primary, candidate) +
-        _colorDistance(secondary, candidate);
-    return candidateScore > currentScore ? candidate : current;
-  });
+  var result = candidates.first;
+  var resultScore = _combinedColorDistance(primary, secondary, result);
+  for (final candidate in candidates.skip(1)) {
+    final candidateScore = _combinedColorDistance(
+      primary,
+      secondary,
+      candidate,
+    );
+    if (candidateScore > resultScore) {
+      result = candidate;
+      resultScore = candidateScore;
+    }
+  }
+  return result;
+}
+
+int _combinedColorDistance(Color first, Color second, Color candidate) {
+  return _colorDistance(first, candidate) + _colorDistance(second, candidate);
 }
 
 int _colorDistance(Color first, Color second) {
