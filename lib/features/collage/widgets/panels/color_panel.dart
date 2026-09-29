@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/color_adjust_controls.dart';
+import '../../models/collage_cell.dart';
 import '../../models/collage_settings.dart';
 import 'collage_panel_actions.dart';
 

@@ -13,6 +13,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'models/collage_background.dart';
 import '../../core/models/sticker_catalog.dart';
 import 'models/collage_cell.dart';
+import 'models/collage_defaults.dart';
 import 'models/collage_export.dart';
 import 'models/collage_layout.dart';
 import 'models/collage_settings.dart';
@@ -142,10 +143,10 @@ class _CollagePageState extends State<CollagePage> {
       CollageSettings.forLayout(
         _defaultLayoutFor(widget.photos.length),
         widget.photos,
-        cellStyle: EditorDefaults.collageCell(),
+        cellStyle: CollageDefaults.cell(),
       ).copyWith(
         borderColor: EditorDefaults.frame,
-        background: EditorDefaults.collageBackground(),
+        background: CollageDefaults.background(),
       );
 
   /// Valor próprio da linha "Tudo" da aba "Margem" — só muda quando ELA é
@@ -988,7 +989,7 @@ class _CollagePageState extends State<CollagePage> {
         layout: layout,
         cells: [
           ..._settings.cells,
-          _settings.withSharedCellStyle(EditorDefaults.collageCell()),
+          _settings.withSharedCellStyle(CollageDefaults.cell()),
         ],
       ),
     );
@@ -1652,7 +1653,7 @@ class _CollagePageState extends State<CollagePage> {
       layout.cellCount,
       (i) => i < oldCells.length
           ? oldCells[i]
-          : _settings.withSharedCellStyle(EditorDefaults.collageCell()),
+          : _settings.withSharedCellStyle(CollageDefaults.cell()),
     );
     _selectedAreaCell = null;
     _lockedAreaCells.clear();
@@ -1681,7 +1682,7 @@ class _CollagePageState extends State<CollagePage> {
   /// então a primeira célula representa bem todas — mesma lógica de
   /// [CollageBorderPanel].
   CollageBackground get _targetBackground => _backgroundTargetsPhotos
-      ? (_firstCell?.background ?? EditorDefaults.collageBackground())
+      ? (_firstCell?.background ?? CollageDefaults.background())
       : _settings.background;
 
   void _applyBackground(CollageBackground background, {bool pushUndo = true}) {

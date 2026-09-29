@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-// ColorAdjustments vem reexportado por collage_cell.dart.
-import '../../features/collage/models/collage_cell.dart';
+import 'color_adjustments.dart';
 import '../../app/translations.dart';
 
 /// Os ajustes de cor oferecidos na folha "Ajustar cor" de uma foto da
@@ -27,18 +26,8 @@ enum CollageColorAdjustment {
   String get label => trKey(labelPt);
   final IconData icon;
 
-  double valueOf(CollageCellSettings cell) => switch (this) {
-    CollageColorAdjustment.brightness => cell.brightness,
-    CollageColorAdjustment.exposure => cell.exposure,
-    CollageColorAdjustment.contrast => cell.contrast,
-    CollageColorAdjustment.highlights => cell.highlights,
-    CollageColorAdjustment.shadows => cell.shadows,
-    CollageColorAdjustment.saturation => cell.saturation,
-    CollageColorAdjustment.hue => cell.hue,
-    CollageColorAdjustment.temperature => cell.temperature,
-  };
-
-  /// Mesma leitura de [valueOf], para as telas que guardam os ajustes num
+  /// Mesma leitura de `valueOf` (a da célula da montagem, em
+  /// `collage_cell.dart`), para as telas que guardam os ajustes num
   /// [ColorAdjustments] só (moldura e edição de GIF) em vez de um por
   /// célula.
   double valueIn(ColorAdjustments a) => switch (this) {
@@ -62,16 +51,4 @@ enum CollageColorAdjustment {
     CollageColorAdjustment.hue => a.copyWith(hue: value),
     CollageColorAdjustment.temperature => a.copyWith(temperature: value),
   };
-
-  CollageCellSettings apply(CollageCellSettings cell, double value) =>
-      switch (this) {
-        CollageColorAdjustment.brightness => cell.copyWith(brightness: value),
-        CollageColorAdjustment.exposure => cell.copyWith(exposure: value),
-        CollageColorAdjustment.contrast => cell.copyWith(contrast: value),
-        CollageColorAdjustment.highlights => cell.copyWith(highlights: value),
-        CollageColorAdjustment.shadows => cell.copyWith(shadows: value),
-        CollageColorAdjustment.saturation => cell.copyWith(saturation: value),
-        CollageColorAdjustment.hue => cell.copyWith(hue: value),
-        CollageColorAdjustment.temperature => cell.copyWith(temperature: value),
-      };
 }
