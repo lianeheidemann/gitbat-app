@@ -9,7 +9,6 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'models/collage_background.dart';
-import '../../core/models/sticker_catalog.dart';
 import 'models/collage_cell.dart';
 import 'models/collage_defaults.dart';
 import 'models/collage_export.dart';
@@ -36,6 +35,7 @@ import '../../core/ui/collage_overlay_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/overlay_handles.dart';
+import '../../core/ui/sticker_library.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import 'painting/collage_painter.dart';
 import '../../core/ui/export_progress_dialog.dart';
@@ -47,9 +47,7 @@ import 'widgets/panels/background_panel.dart';
 import 'widgets/panels/border_panel.dart';
 import 'widgets/panels/color_panel.dart';
 import 'widgets/panels/margin_panel.dart';
-import '../../core/ui/stickers_panel.dart';
 import 'widgets/panels/text_panel.dart';
-import '../../core/ui/text_input_dialog.dart';
 import 'widgets/panels/layout_panel.dart';
 import 'widgets/panels/areas_panel.dart';
 import '../../core/ui/preview_settings_panel.dart';
@@ -137,9 +135,10 @@ class _CollagePageState extends State<CollagePage> {
   static const _folderStore = StickerFolderStore();
   static const _fontStore = ImportedFontStore();
 
-  /// Id da pasta recém-criada que ainda precisa ficar visível na fileira —
-  /// ver [_createStickerFolder]. `null` quando não há rolagem pendente.
-  String? _pendingFolderScrollId;
+  /// Pastas e stickers importados da aba "Stickers" — a mesma biblioteca dos
+  /// outros editores, carregada aqui junto com os fundos e as fontes (ver
+  /// [_loadImportedAssets]).
+  final _stickerLibrary = StickerLibrary();
 
   late CollageSettings _settings =
       CollageSettings.forLayout(
@@ -160,7 +159,6 @@ class _CollagePageState extends State<CollagePage> {
   late double _marginAllValue =
       (_settings.outerMarginRatio + _settings.innerMarginRatio) / 2;
 
-  List<ImportedAsset> _importedStickers = [];
   List<ImportedAsset> _importedBackgrounds = [];
 
   /// Fontes próprias do usuário, já registradas no engine por
@@ -228,14 +226,6 @@ class _CollagePageState extends State<CollagePage> {
   /// exemplo): nesse caso a proporção é customizada de fato.
   bool _customAspectSelected = false;
 
-  /// Pasta aberta na aba "Stickers": id de uma embutida ([BundledStickerFolder.id])
-  /// ou de uma criada pelo usuário ([BundledStickerFolder.id]).
-  String _stickerFolderId = BundledStickerFolder.reactions.id;
-
-  /// Pastas criadas pelo usuário, carregadas junto com os stickers
-  /// importados — ver [StickerFolderStore].
-  List<StickerFolder> _customFolders = [];
-
   bool _saving = false;
   bool _sharing = false;
 
@@ -265,6 +255,7 @@ class _CollagePageState extends State<CollagePage> {
     _textController.dispose();
     _textFocus.dispose();
     _export.dispose();
+    _stickerLibrary.dispose();
     super.dispose();
   }
 
@@ -318,22 +309,13 @@ class _CollagePageState extends State<CollagePage> {
     final fonts = await _fontStore.loadAll();
     if (!mounted) return;
     setState(() {
-      _importedStickers = stickers;
+      _stickerLibrary
+        ..importedStickers = stickers
+        ..customFolders = folders
+        ..dropFolderIfGone();
       _importedBackgrounds = backgrounds;
-      _customFolders = folders;
       _importedFonts = fonts;
-      _dropStickerFolderIfGone();
     });
-  }
-
-  /// Volta para "Importados" quando a pasta aberta não existe mais — só
-  /// acontece se ela for apagada, mas deixa a barra sempre com alguma pasta
-  /// marcada em vez de nenhuma.
-  void _dropStickerFolderIfGone() {
-    final exists =
-        BundledStickerFolder.values.any((f) => f.id == _stickerFolderId) ||
-        _customFolders.any((f) => f.id == _stickerFolderId);
-    if (!exists) _stickerFolderId = BundledStickerFolder.imported.id;
   }
 
   // ---------------------------------------------------------------------
@@ -655,21 +637,13 @@ class _CollagePageState extends State<CollagePage> {
       settings: _settings,
       actions: _panelActions,
     ),
-    _CollageTab.stickers => CollageStickersPanel(
-      stickerFolderId: _stickerFolderId,
-      customFolders: _customFolders,
-      importedStickers: _importedStickers,
-      pendingFolderScrollId: _pendingFolderScrollId,
-      // Atribuição simples de propósito: quem consome é o `Builder` da
-      // fileira, durante o build, e `setState` ali lançaria exceção.
-      onPendingScrollConsumed: () => _pendingFolderScrollId = null,
-      onFolderSelected: (id) => setState(() => _stickerFolderId = id),
-      onOpenFolderMenu: _openFolderMenu,
-      onCreateFolder: _createStickerFolder,
-      onAddBundledSticker: _addBundledSticker,
-      onAddImportedSticker: _addStickerFromAsset,
-      onRemoveSticker: _confirmRemoveSticker,
-      onImportSticker: _importSticker,
+    _CollageTab.stickers => StickerLibraryPanel(
+      library: _stickerLibrary,
+      placed: _settings.stickers,
+      usedIn: (pt: 'da montagem', en: 'from the collage'),
+      onAddBundled: _addBundledSticker,
+      onAddImported: _addStickerFromAsset,
+      onRemovePlaced: _removePlacedStickers,
     ),
     _CollageTab.text => CollageTextPanel(
       selectedText: _selectedOverlayId == null
@@ -1661,150 +1635,6 @@ class _CollagePageState extends State<CollagePage> {
   // Seção "Stickers" / "Texto"
   // ---------------------------------------------------------------------
 
-  Future<void> _createStickerFolder() async {
-    final name = await _promptTextInput(
-      initial: '',
-      title: tr('Nova pasta', 'New folder'),
-      maxLines: 1,
-    );
-    if (name == null) return; // Cancelado — nada a avisar.
-    if (name.trim().isEmpty) {
-      // Sem isto, um nome que não chegou a registrar (ex.: o teclado ainda
-      // compondo o texto no instante do toque) fazia "Nova pasta" parecer
-      // não fazer nada.
-      _message(
-        tr('Digite um nome para a pasta.', 'Type a name for the folder.'),
-      );
-      return;
-    }
-    try {
-      final folder = await _folderStore.create(name);
-      if (!mounted) return;
-      setState(() {
-        _customFolders = [..._customFolders, folder];
-        _stickerFolderId = folder.id;
-        // A pasta nova nasce perto do fim da fileira (antes só de "Nova
-        // pasta"), fora da parte já visível se houver muitas pastas — o
-        // item dela mesma, ao entrar na árvore, pede pra rolar até si (ver
-        // o `Builder` em [CollageStickersPanel]).
-        _pendingFolderScrollId = folder.id;
-      });
-    } catch (e) {
-      // Uma pasta que falha ao salvar não pode desaparecer em silêncio —
-      // sem isto, tocar "Nova pasta" simplesmente não fazia nada visível.
-      if (!mounted) return;
-      _message(
-        tr('Não deu para criar a pasta: $e', 'Could not create the folder: $e'),
-      );
-    }
-  }
-
-  /// Menu de segurar uma pasta criada — as embutidas não passam
-  /// `onLongPress`, então não chegam aqui.
-  void _openFolderMenu(StickerFolder folder) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.drive_file_rename_outline),
-              title: Text(tr('Renomear', 'Rename')),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _renameStickerFolder(folder);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: Text(tr('Apagar', 'Delete')),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _confirmRemoveStickerFolder(folder);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _renameStickerFolder(StickerFolder folder) async {
-    final name = await _promptTextInput(
-      initial: folder.name,
-      title: tr('Renomear pasta', 'Rename folder'),
-      maxLines: 1,
-    );
-    if (name == null || name.trim().isEmpty) return;
-    await _folderStore.rename(folder.id, name);
-    if (!mounted) return;
-    setState(() {
-      _customFolders = [
-        for (final f in _customFolders)
-          f.id == folder.id ? StickerFolder(id: f.id, name: name.trim()) : f,
-      ];
-    });
-  }
-
-  /// Apagar a pasta não apaga o que o usuário importou para ela: os stickers
-  /// voltam para "Importados" (`moveFolderToRoot`), e o diálogo diz isso
-  /// antes de confirmar.
-  Future<void> _confirmRemoveStickerFolder(StickerFolder folder) async {
-    final inFolder = _importedStickers
-        .where((a) => a.folderId == folder.id)
-        .length;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: DialogTitle(tr('Apagar pasta?', 'Delete folder?')),
-        content: Text(
-          inFolder == 0
-              ? tr(
-                  '"${folder.name}" vai ser apagada.',
-                  '"${folder.name}" will be deleted.',
-                )
-              : tr(
-                  '"${folder.name}" vai ser apagada. '
-                      '${inFolder == 1 ? 'O sticker que está' : 'Os $inFolder stickers que estão'} '
-                      'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
-                  '"${folder.name}" will be deleted. '
-                      '${inFolder == 1 ? 'The sticker in it goes' : 'The $inFolder stickers in it go'} '
-                      'back to "Imported".',
-                ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(tr('Apagar', 'Delete')),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await _stickerStore.moveFolderToRoot(folder.id);
-    await _folderStore.remove(folder.id);
-    if (!mounted) return;
-    setState(() {
-      _customFolders = _customFolders.where((f) => f.id != folder.id).toList();
-      _importedStickers = [
-        for (final asset in _importedStickers)
-          asset.folderId == folder.id
-              ? ImportedAsset(
-                  id: asset.id,
-                  label: asset.label,
-                  filePath: asset.filePath,
-                  isVector: asset.isVector,
-                  nativeAspectRatio: asset.nativeAspectRatio,
-                )
-              : asset,
-      ];
-      _dropStickerFolderIfGone();
-    });
-  }
-
   void _addBundledSticker((String path, String label) sticker) {
     final item = CollageSticker(
       id: 's_${DateTime.now().microsecondsSinceEpoch}',
@@ -1817,17 +1647,6 @@ class _CollagePageState extends State<CollagePage> {
     );
     _update(_settings.addingSticker(item));
     setState(() => _selectedOverlayId = item.id);
-  }
-
-  Future<void> _importSticker({String? folderId}) async {
-    try {
-      final asset = await _stickerStore.import(folderId: folderId);
-      if (!mounted) return;
-      setState(() => _importedStickers = [..._importedStickers, asset]);
-      _addStickerFromAsset(asset);
-    } on ImportedAssetException catch (e) {
-      _message(e.message);
-    }
   }
 
   void _addStickerFromAsset(ImportedAsset asset) {
@@ -1846,50 +1665,10 @@ class _CollagePageState extends State<CollagePage> {
     setState(() => _selectedOverlayId = sticker.id);
   }
 
-  Future<void> _confirmRemoveSticker(ImportedAsset asset) async {
-    final inUse = _settings.stickers
-        .where((s) => s.imageFilePath == asset.filePath)
-        .toList();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: DialogTitle(tr('Remover sticker?', 'Remove sticker?')),
-        content: Text(
-          inUse.isEmpty
-              ? tr(
-                  '"${asset.label}" vai ser removido da lista.',
-                  '"${asset.label}" will be removed from the list.',
-                )
-              : tr(
-                  '"${asset.label}" vai ser removido da lista e também da '
-                      'montagem, onde está usado ${inUse.length} '
-                      '${inUse.length == 1 ? 'vez' : 'vezes'}.',
-                  '"${asset.label}" will be removed from the list and also '
-                      'from the collage, where it is used ${inUse.length} '
-                      '${inUse.length == 1 ? 'time' : 'times'}.',
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(tr('Remover', 'Remove')),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    await _stickerStore.remove(asset.id);
-    if (!mounted) return;
-    setState(
-      () => _importedStickers = _importedStickers
-          .where((a) => a.id != asset.id)
-          .toList(),
-    );
-    if (inUse.isEmpty) return;
-    // O arquivo acabou de ser apagado do aparelho: deixar as cópias já
-    // colocadas na montagem apontando para ele quebrava a prévia e fazia a
-    // exportação inteira falhar com "Não foi possível gerar a imagem".
+  /// O arquivo acabou de ser apagado do aparelho: deixar as cópias já
+  /// colocadas na montagem apontando para ele quebrava a prévia e fazia a
+  /// exportação inteira falhar com "Não foi possível gerar a imagem".
+  void _removePlacedStickers(List<CollageSticker> inUse) {
     var updated = _settings;
     for (final sticker in inUse) {
       updated = updated.removingSticker(sticker.id);
@@ -1948,19 +1727,6 @@ class _CollagePageState extends State<CollagePage> {
     });
     _textFocus.requestFocus();
   }
-
-  Future<String?> _promptTextInput({
-    required String initial,
-    String? title,
-    int maxLines = 3,
-  }) => showDialog<String>(
-    context: context,
-    builder: (dialogContext) => TextInputDialog(
-      initial: initial,
-      title: title ?? tr('Texto', 'Text'),
-      maxLines: maxLines,
-    ),
-  );
 
   /// Folha com as [bundledCollageFonts] em miniaturas "Aa", cada uma
   /// renderizada na própria fonte — mesmo padrão visual dos outros sheets
