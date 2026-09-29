@@ -179,7 +179,7 @@ ColorScheme _multicolorLightScheme(ColorScheme base, AppPalette palette) {
     palette.seed,
     secondarySource,
     [
-      if (palette.darkTertiary case final color?) color,
+      palette.darkTertiary?,
       palette.contentFrame,
       ...palette.accentGradient,
     ],
@@ -217,25 +217,36 @@ ColorScheme _multicolorLightScheme(ColorScheme base, AppPalette palette) {
   );
 }
 
-Color _furthestColor(Color reference, Iterable<Color> colors) => colors.reduce(
-  (current, candidate) =>
-      _colorDistance(reference, candidate) >
-          _colorDistance(reference, current)
-      ? candidate
-      : current,
-);
+Color _furthestColor(Color reference, Iterable<Color> colors) {
+  return colors.reduce(
+    (current, candidate) =>
+        _colorDistance(reference, candidate) >
+            _colorDistance(reference, current)
+        ? candidate
+        : current,
+  );
+}
 
 Color _mostDistinctThirdColor(
   Color primary,
   Color secondary,
   Iterable<Color> colors,
-) => colors.reduce((current, candidate) {
-  final currentScore = _colorDistance(primary, current) +
-      _colorDistance(secondary, current);
-  final candidateScore = _colorDistance(primary, candidate) +
-      _colorDistance(secondary, candidate);
-  return candidateScore > currentScore ? candidate : current;
-});
+) {
+  final distinctColors = colors
+      .where((color) => color != primary && color != secondary)
+      .toList();
+  final candidates = distinctColors.isEmpty ? colors : distinctColors;
+
+  return candidates.reduce((current, candidate) {
+    final currentScore =
+        _colorDistance(primary, current) +
+        _colorDistance(secondary, current);
+    final candidateScore =
+        _colorDistance(primary, candidate) +
+        _colorDistance(secondary, candidate);
+    return candidateScore > currentScore ? candidate : current;
+  });
+}
 
 int _colorDistance(Color first, Color second) {
   final firstValue = first.toARGB32();
