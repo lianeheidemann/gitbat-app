@@ -98,8 +98,8 @@ const Map<String, String> modelTranslations = {
   'Tríade': 'Triad',
   'Quadrada': 'Square',
   'Aurora Coral': 'Coral Aurora',
-  'Turquesa Clássica': 'Classic Turquoise',
-  'Turquesa Vintage': 'Vintage Turquoise',
+  'Turquesa': 'Turquoise',
+  'Vintage': 'Vintage',
   'Pôr do Sol Rosa': 'Pink Sunset',
   'Brisa Oceânica': 'Ocean Breeze',
   'Lilás e Creme': 'Lilac and Cream',
@@ -121,7 +121,6 @@ const Map<String, String> modelTranslations = {
   'Cítrico Elétrico': 'Electric Citrus',
   'Riviera Rosa': 'Pink Riviera',
   'Lagoa do Deserto': 'Desert Lagoon',
-  'Framboesa Azul': 'Blue Raspberry',
   'Solar Marinho': 'Solar Navy',
   // Molduras e fundos embutidos
   'Transparente': 'Transparent',
