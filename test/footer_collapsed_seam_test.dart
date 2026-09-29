@@ -172,7 +172,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
     await tester.pumpAndSettle();
 
-    final alca = find.byKey(const ValueKey('collagePanelHandle'));
+    final alca = find.byKey(const ValueKey('editorPanelHandle'));
 
     _conferir(tester, alca, recolhido: false);
 

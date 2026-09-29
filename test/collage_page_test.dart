@@ -1007,7 +1007,7 @@ void main() {
     await tester.drag(find.byType(SvgPicture).last, const Offset(0, 200));
     await tester.pumpAndSettle();
     await tester.fling(
-      find.byKey(const ValueKey('collagePanelHandle')),
+      find.byKey(const ValueKey('editorPanelHandle')),
       const Offset(0, 60),
       800,
     );
@@ -1021,7 +1021,7 @@ void main() {
 
     // Puxar de volta para cima traz os controles.
     await tester.fling(
-      find.byKey(const ValueKey('collagePanelHandle')),
+      find.byKey(const ValueKey('editorPanelHandle')),
       const Offset(0, -60),
       800,
     );

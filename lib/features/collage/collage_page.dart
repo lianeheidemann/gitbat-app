@@ -214,12 +214,6 @@ class _CollagePageState extends State<CollagePage> {
   /// fundo da montagem inteira, `true` = o fundo de dentro de cada foto.
   bool _backgroundTargetsPhotos = false;
 
-  /// `true` com o painel do rodapé encolhido para só a alça — recolher NÃO é
-  /// fechar: a aba continua sendo a aba aberta, então sticker e texto seguem
-  /// selecionáveis e moviméis na prévia enquanto os controles deles estão
-  /// fora da tela.
-  bool _panelCollapsed = false;
-
   /// `true` quando o chip "x:y" da aba "Proporção" está escolhido — é ele que
   /// mostra os campos de largura e altura. Fica ligado sozinho quando a
   /// proporção atual não bate com nenhum chip pronto (arrastar o slider, por
@@ -484,8 +478,18 @@ class _CollagePageState extends State<CollagePage> {
               ),
             ),
             ?toolbar,
-            collapsibleEditorPanel(child: _activeTabPanel()),
-            _footerTabs(),
+            // Recolher o painel pela alça não é fechar: a aba continua
+            // aberta, então sticker e texto seguem selecionáveis e móveis na
+            // prévia enquanto os controles deles estão fora da tela.
+            EditorTabsFooter(
+              sections: _sections,
+              activeIndex: _activeTab?.index,
+              onSelected: (index) => setState(
+                () => _activeTab = index == null
+                    ? null
+                    : _CollageTab.values[index],
+              ),
+            ),
           ],
         ),
       ),
@@ -496,78 +500,15 @@ class _CollagePageState extends State<CollagePage> {
   // Rodapé de abas
   // ---------------------------------------------------------------------
 
-  /// Painel da aba aberta: altura limitada com rolagem própria (seções mais
-  /// longas, como Fundo, não estouram a tela).
-  ///
-  /// Devolve `null` sem aba aberta — quem dá movimento a abrir e fechar é o
-  /// [collapsibleEditorPanel] em volta, no `build`.
-  Widget? _activeTabPanel() {
-    final tab = _activeTab;
-    if (tab == null) return null;
-    final theme = Theme.of(context);
-    return AnimatedSize(
-      // Recolher pela alça e trocar de aba: o painel continua montado e só
-      // muda de altura.
-      duration: editorPanelMotionDuration,
-      curve: editorPanelMotionCurve,
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        // Mesmo teto do rodapé das outras telas (ver
-        // `EditorTabsFooter.maxPanelHeight`): o painel cobre a prévia, e o
-        // que passar daqui continua acessível pela rolagem que ele já tem.
-        constraints: const BoxConstraints(maxHeight: 200),
-        decoration: BoxDecoration(
-          color: _panelCollapsed
-              ? theme.colorScheme.surface
-              : theme.colorScheme.surfaceContainerLow,
-          border: Border(top: _footerTopLine(theme)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _panelDragHandle(),
-            if (!_panelCollapsed)
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-                  child: _panelContentFor(tab),
-                ),
-              ),
-          ],
-        ),
+  /// As abas na ordem de [_CollageTab], sem valor de resumo no painel.
+  List<EditorSection> get _sections => [
+    for (final tab in _CollageTab.values)
+      EditorSection(
+        icon: _tabIcon(tab),
+        title: _tabLabel(tab),
+        builder: (_) => _panelContentFor(tab),
       ),
-    );
-  }
-
-  /// Alça no topo do painel: puxar para baixo encolhe o painel até só ela,
-  /// puxar para cima traz os controles de volta, e tocar alterna os dois.
-  /// Encolher deixa a prévia com quase toda a tela sem perder a aba aberta —
-  /// dá para arrastar o sticker ou o texto e depois voltar aos controles de
-  /// onde parou. Para fechar mesmo, é tocar de novo na aba do rodapé.
-  Widget _panelDragHandle() {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      key: const ValueKey('collagePanelHandle'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () => setState(() => _panelCollapsed = !_panelCollapsed),
-      onVerticalDragEnd: (details) {
-        final velocity = details.primaryVelocity;
-        if (velocity == null || velocity == 0) return;
-        setState(() => _panelCollapsed = velocity > 0);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Container(
-          width: 36,
-          height: 4,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.outlineVariant,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
-  }
+  ];
 
   Widget _panelContentFor(_CollageTab tab) => switch (tab) {
     _CollageTab.layout => CollageLayoutPanel(
@@ -662,75 +603,6 @@ class _CollagePageState extends State<CollagePage> {
     ),
     _CollageTab.settings => const PreviewSettingsPanel(),
   };
-
-  Widget _footerTabs() {
-    final theme = Theme.of(context);
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        // Recolhido, quem desenha a linha de cima é a tira da alça.
-        border: _panelCollapsed && _activeTab != null
-            ? null
-            : Border(top: _footerTopLine(theme)),
-      ),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        children: [for (final tab in _CollageTab.values) _footerTabButton(tab)],
-      ),
-    );
-  }
-
-  /// A linha que separa o rodapé da prévia. Só uma por vez desenha: com o
-  /// painel recolhido ela é da tira da alça, senão é da barra.
-  ///
-  /// Antes cada uma trazia a sua, e recolhido isso desenhava duas linhas
-  /// paralelas a 17px uma da outra, com uma faixa de outro tom entre elas —
-  /// lia-se como falha de renderização, não como parte do controle.
-  BorderSide _footerTopLine(ThemeData theme) => BorderSide(
-    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-  );
-
-  Widget _footerTabButton(_CollageTab tab) {
-    final theme = Theme.of(context);
-    final selected = _activeTab == tab;
-    final color = selected
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurfaceVariant;
-    return InkWell(
-      onTap: () => setState(() {
-        _activeTab = selected ? null : tab;
-        // Abrir (ou trocar de) aba sempre mostra o conteúdo: recolhido é um
-        // estado do painel aberto, não algo que a aba herda.
-        _panelCollapsed = false;
-      }),
-      // Pelo menos 60 de largura, crescendo para rótulos mais longos
-      // ("Configurações") em vez de cortá-los.
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 60),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_tabIcon(tab), size: 20, color: color),
-              const SizedBox(height: 4),
-              Text(
-                _tabLabel(tab),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   IconData _tabIcon(_CollageTab tab) => switch (tab) {
     _CollageTab.layout => Icons.grid_view_outlined,

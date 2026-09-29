@@ -129,6 +129,7 @@ class _EditorTabsFooterState extends State<EditorTabsFooter> {
   Widget _dragHandle(BuildContext context) {
     final theme = Theme.of(context);
     return GestureDetector(
+      key: const ValueKey('editorPanelHandle'),
       behavior: HitTestBehavior.opaque,
       onTap: () => setState(() => _collapsed = !_collapsed),
       onVerticalDragEnd: (details) {
@@ -297,10 +298,9 @@ Widget collapsibleEditorPanel({required Widget? child}) {
 /// Valor atual de uma aba, alinhado à direita — sem repetir o nome da aba:
 /// a própria aba do rodapé já fica marcada em cor diferente e em negrito
 /// quando selecionada (`_tabButton`), então escrevê-lo de novo aqui só
-/// custava espaço vertical num painel com teto de 200px (mesma economia já
-/// feita para a tela de Montagem, que tem seu próprio rodapé em
-/// `collage_page.dart`). `null` (a maioria das abas, que não tem um valor
-/// de resumo) não desenha nada.
+/// custava espaço vertical num painel com teto de 200px. `null` (a maioria
+/// das abas, que não tem um valor de resumo — todas as da Montagem) não
+/// desenha nada.
 Widget editorPanelValueLine(BuildContext context, [String? value]) {
   if (value == null) return const SizedBox.shrink();
   final theme = Theme.of(context);
