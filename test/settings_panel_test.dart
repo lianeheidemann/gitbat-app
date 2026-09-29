@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gitbat/app/app_palette.dart';
+import 'package:gitbat/app/language_controller.dart';
 import 'package:gitbat/app/theme.dart';
 import 'package:gitbat/app/theme_controller.dart';
+import 'package:gitbat/core/ui/palette_picker.dart';
 import 'package:gitbat/core/ui/preview_settings_panel.dart';
 
 // A aba "Configurações" das telas de edição troca o tema claro/escuro e a
@@ -65,6 +67,62 @@ void main() {
     expect(appPalettes, hasLength(34));
     expect(appPalettes.map((palette) => palette.id).toSet(), hasLength(34));
     expect(appPalettes.skip(8), hasLength(26));
+  });
+
+  test('paletas aparecem em ordem alfabética no idioma da interface', () {
+    languageNotifier.value = AppLanguage.pt;
+    addTearDown(() => languageNotifier.value = AppLanguage.pt);
+
+    expect(
+      palettesSortedByDisplayName().map((palette) => palette.id),
+      orderedEquals(const [
+        'aurora-coral',
+        'blush-salvia',
+        'brasa-e-areia',
+        'brisa-oceanica',
+        'ceu-e-limao',
+        'citrico-eletrico',
+        'citrico-grafite',
+        'cyber-pastel',
+        'dalia',
+        'doce-meia-noite',
+        'framboesa-azul',
+        'frutas-vermelhas',
+        'fucsia-menta',
+        'lagoa-deserto',
+        'lavanda',
+        'lilas-creme',
+        'menta',
+        'morceguinho',
+        'noturno-salvia',
+        'orquidea-neon',
+        'ouro-costeiro',
+        'pessego',
+        'pitaya-limao',
+        'pop-tropical',
+        'por-do-sol-rosa',
+        'prado-nebuloso',
+        'quadrada',
+        'riviera-rosa',
+        'rosa',
+        'solar-marinho',
+        'terracota-lagoa',
+        'triade',
+        'turquesa-classica',
+        'turquesa-vintage',
+      ]),
+    );
+
+    languageNotifier.value = AppLanguage.en;
+    final englishNames = palettesSortedByDisplayName()
+        .map((palette) => palette.label)
+        .toList();
+    final expectedEnglishNames = [...englishNames]
+      ..sort(
+        (first, second) =>
+            first.toLowerCase().compareTo(second.toLowerCase()),
+      );
+    expect(englishNames, orderedEquals(expectedEnglishNames));
   });
 
   for (final palette in appPalettes) {
