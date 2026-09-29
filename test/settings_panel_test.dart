@@ -160,6 +160,44 @@ void main() {
     }
   });
 
+  test('paletas claras revisadas usam três cores de identidade', () {
+    const expectedIds = {
+      'aurora-coral',
+      'blush-salvia',
+      'brasa-e-areia',
+      'citrico-eletrico',
+      'citrico-grafite',
+      'cyber-pastel',
+      'frutas-vermelhas',
+      'fucsia-menta',
+      'lagoa-deserto',
+      'menta',
+      'orquidea-neon',
+      'ouro-costeiro',
+      'pessego',
+      'pop-tropical',
+      'prado-nebuloso',
+      'solar-marinho',
+      'terracota-lagoa',
+    };
+    final revised = appPalettes
+        .where((palette) => palette.multicolorLight)
+        .toList();
+
+    expect(revised.map((palette) => palette.id).toSet(), expectedIds);
+    for (final palette in revised) {
+      final scheme = buildTheme(Brightness.light, palette).colorScheme;
+      expect(scheme.secondary, isNot(scheme.primary), reason: palette.label);
+      expect(scheme.tertiary, isNot(scheme.primary), reason: palette.label);
+      expect(scheme.tertiary, isNot(scheme.secondary), reason: palette.label);
+      expect(
+        scheme.surfaceContainerLow,
+        isNot(scheme.surfaceContainerHigh),
+        reason: palette.label,
+      );
+    }
+  });
+
   test('tríade e quadrada preservam o azul da marca', () {
     expect(appPalettes, containsAll([triadPalette, squarePalette]));
     expect(triadPalette.accentGradient, contains(const Color(0xFF60DDB2)));
