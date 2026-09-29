@@ -28,8 +28,8 @@ void main() {
       );
     }
 
-    await tester.tap(find.byKey(const ValueKey('paletteSwatch-menta')));
+    await tester.tap(find.byKey(const ValueKey('paletteSwatch-aurora-coral')));
     await tester.pumpAndSettle();
-    expect(paletteNotifier.value, mintPalette);
+    expect(paletteNotifier.value, auroraCoralPalette);
   });
 }

@@ -2,7 +2,55 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_palette.dart';
 import '../../app/language_controller.dart';
+import '../../app/theme.dart';
 import '../../app/theme_controller.dart';
+
+const _accentFolding = <String, String>{
+  'á': 'a',
+  'à': 'a',
+  'â': 'a',
+  'ã': 'a',
+  'ä': 'a',
+  'é': 'e',
+  'è': 'e',
+  'ê': 'e',
+  'ë': 'e',
+  'í': 'i',
+  'ì': 'i',
+  'î': 'i',
+  'ï': 'i',
+  'ó': 'o',
+  'ò': 'o',
+  'ô': 'o',
+  'õ': 'o',
+  'ö': 'o',
+  'ú': 'u',
+  'ù': 'u',
+  'û': 'u',
+  'ü': 'u',
+  'ç': 'c',
+};
+
+String _paletteNameSortKey(String name) => name
+    .toLowerCase()
+    .split('')
+    .map((character) => _accentFolding[character] ?? character)
+    .join();
+
+/// Paletas em ordem alfabética pelo nome traduzido exibido na interface.
+///
+/// A lista original permanece intacta porque seu primeiro item também define
+/// a paleta padrão do aplicativo.
+List<AppPalette> palettesSortedByDisplayName() {
+  final palettes = [...appPalettes];
+  palettes.sort((first, second) {
+    final nameComparison = _paletteNameSortKey(
+      first.label,
+    ).compareTo(_paletteNameSortKey(second.label));
+    return nameComparison != 0 ? nameComparison : first.id.compareTo(second.id);
+  });
+  return palettes;
+}
 
 /// Seletor único de paletas usado tanto nas telas de edição quanto na página
 /// geral de configurações. A escolha é aplicada e salva imediatamente.
@@ -14,6 +62,7 @@ class PalettePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palettes = palettesSortedByDisplayName();
     return ValueListenableBuilder<AppPalette>(
       valueListenable: paletteNotifier,
       builder: (context, current, _) => Column(
@@ -43,14 +92,14 @@ class PalettePicker extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (var index = 0; index < appPalettes.length; index++) ...[
+                for (var index = 0; index < palettes.length; index++) ...[
                   _PaletteOption(
-                    palette: appPalettes[index],
-                    selected: appPalettes[index].id == current.id,
+                    palette: palettes[index],
+                    selected: palettes[index].id == current.id,
                     showLabel: showLabels,
-                    onTap: () => setPalette(appPalettes[index]),
+                    onTap: () => setPalette(palettes[index]),
                   ),
-                  if (index < appPalettes.length - 1)
+                  if (index < palettes.length - 1)
                     SizedBox(width: showLabels ? 6 : 10),
                 ],
               ],
@@ -104,7 +153,7 @@ class _PaletteOption extends StatelessWidget {
   }
 }
 
-/// Amostra compacta da paleta: as três cores de identidade e o fundo escuro.
+/// Amostra compacta das cores realmente exibidas pela paleta no tema atual.
 class _PaletteSwatch extends StatelessWidget {
   const _PaletteSwatch({
     required this.palette,
@@ -118,7 +167,9 @@ class _PaletteSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final paletteScheme = buildTheme(theme.brightness, palette).colorScheme;
     return Semantics(
       button: true,
       selected: selected,
@@ -149,12 +200,12 @@ class _PaletteSwatch extends StatelessWidget {
                   end: Alignment.bottomRight,
                   stops: const [0.34, 0.34, 0.52, 0.52, 0.68, 0.68],
                   colors: [
-                    palette.seed,
-                    palette.accentGradient.last,
-                    palette.accentGradient.last,
-                    palette.darkTertiary ?? palette.contentFrame,
-                    palette.darkTertiary ?? palette.contentFrame,
-                    palette.darkBackground,
+                    paletteScheme.primary,
+                    paletteScheme.secondary,
+                    paletteScheme.secondary,
+                    paletteScheme.tertiary,
+                    paletteScheme.tertiary,
+                    paletteScheme.surfaceContainerHighest,
                   ],
                 ),
               ),

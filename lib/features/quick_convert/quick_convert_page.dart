@@ -17,6 +17,7 @@ import '../../core/services/output_service.dart';
 import '../../core/ui/app_bar_title.dart';
 import 'widgets/source_file_card.dart';
 import '../../core/ui/saved_dialog.dart';
+import '../../core/ui/theme_mode_button.dart';
 import 'services/animated_webp_source.dart';
 
 /// Tela única de "Converter formato": escolher o arquivo e escolher para qual
@@ -246,6 +247,7 @@ class _QuickConvertPageState extends State<QuickConvertPage> {
     return Scaffold(
       appBar: AppBar(
         title: AppBarTitle(tr('Converter formato', 'Convert format')),
+        actions: const [ThemeModeButton()],
       ),
       body: SafeArea(
         // Os dois estados têm a mesma estrutura, alinhada ao topo: anexar um

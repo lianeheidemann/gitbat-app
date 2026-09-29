@@ -45,7 +45,10 @@ ThemeData buildTheme(Brightness brightness, [AppPalette palette = batPalette]) {
   final refine = brightness == Brightness.dark
       ? palette.refineDark
       : palette.refineLight;
-  final scheme = refine == null ? generated : refine(generated);
+  final refined = refine == null ? generated : refine(generated);
+  final scheme = brightness == Brightness.light && palette.multicolorLight
+      ? _multicolorLightScheme(refined, palette)
+      : refined;
 
   const buttonText = TextStyle(
     fontSize: _buttonTextSize,
@@ -165,6 +168,109 @@ ThemeData buildTheme(Brightness brightness, [AppPalette palette = batPalette]) {
     ),
     dividerColor: scheme.outlineVariant.withValues(alpha: 0.45),
   );
+}
+
+ColorScheme _multicolorLightScheme(ColorScheme base, AppPalette palette) {
+  final secondarySource = _furthestColor(palette.seed, palette.accentGradient);
+  final tertiaryCandidates = <Color>[
+    ?palette.darkTertiary,
+    palette.contentFrame,
+    ...palette.accentGradient,
+  ];
+  final tertiarySource = _mostDistinctThirdColor(
+    palette.seed,
+    secondarySource,
+    tertiaryCandidates,
+  );
+  final secondary = _lightRoleColor(secondarySource);
+  final tertiary = _lightRoleColor(tertiarySource);
+  final surface = Color.lerp(palette.contentBackground, Colors.white, 0.58)!;
+
+  return base.copyWith(
+    secondary: secondary,
+    onSecondary: Colors.white,
+    secondaryContainer: Color.lerp(secondarySource, Colors.white, 0.76),
+    onSecondaryContainer: _lightRoleColor(secondarySource),
+    tertiary: tertiary,
+    onTertiary: Colors.white,
+    tertiaryContainer: Color.lerp(tertiarySource, Colors.white, 0.76),
+    onTertiaryContainer: _lightRoleColor(tertiarySource),
+    surface: surface,
+    surfaceContainerLowest: Colors.white,
+    surfaceContainerLow: Color.lerp(surface, secondarySource, 0.07),
+    surfaceContainer: Color.lerp(surface, tertiarySource, 0.09),
+    surfaceContainerHigh: Color.lerp(
+      palette.contentBackground,
+      secondarySource,
+      0.12,
+    ),
+    surfaceContainerHighest: Color.lerp(
+      palette.contentBackground,
+      tertiarySource,
+      0.16,
+    ),
+    outline: Color.lerp(base.outline, secondary, 0.28),
+    outlineVariant: Color.lerp(base.outlineVariant, tertiarySource, 0.18),
+    surfaceTint: base.primary,
+  );
+}
+
+Color _furthestColor(Color reference, Iterable<Color> colors) {
+  var result = colors.first;
+  for (final candidate in colors.skip(1)) {
+    if (_colorDistance(reference, candidate) >
+        _colorDistance(reference, result)) {
+      result = candidate;
+    }
+  }
+  return result;
+}
+
+Color _mostDistinctThirdColor(
+  Color primary,
+  Color secondary,
+  Iterable<Color> colors,
+) {
+  final distinctColors = colors
+      .where((color) => color != primary && color != secondary)
+      .toList();
+  final candidates = distinctColors.isEmpty ? colors : distinctColors;
+
+  var result = candidates.first;
+  var resultScore = _combinedColorDistance(primary, secondary, result);
+  for (final candidate in candidates.skip(1)) {
+    final candidateScore = _combinedColorDistance(
+      primary,
+      secondary,
+      candidate,
+    );
+    if (candidateScore > resultScore) {
+      result = candidate;
+      resultScore = candidateScore;
+    }
+  }
+  return result;
+}
+
+int _combinedColorDistance(Color first, Color second, Color candidate) {
+  return _colorDistance(first, candidate) + _colorDistance(second, candidate);
+}
+
+int _colorDistance(Color first, Color second) {
+  final firstValue = first.toARGB32();
+  final secondValue = second.toARGB32();
+  final red = ((firstValue >> 16) & 0xff) - ((secondValue >> 16) & 0xff);
+  final green = ((firstValue >> 8) & 0xff) - ((secondValue >> 8) & 0xff);
+  final blue = (firstValue & 0xff) - (secondValue & 0xff);
+  return red * red + green * green + blue * blue;
+}
+
+Color _lightRoleColor(Color color) {
+  final hsl = HSLColor.fromColor(color);
+  return hsl
+      .withSaturation(hsl.saturation.clamp(0.38, 0.82).toDouble())
+      .withLightness(hsl.lightness.clamp(0.30, 0.44).toDouble())
+      .toColor();
 }
 
 /// Degradê de destaque da paleta atual (botão principal da tela de

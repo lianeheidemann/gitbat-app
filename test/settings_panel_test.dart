@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gitbat/app/app_palette.dart';
+import 'package:gitbat/app/language_controller.dart';
 import 'package:gitbat/app/theme.dart';
 import 'package:gitbat/app/theme_controller.dart';
+import 'package:gitbat/core/ui/palette_picker.dart';
 import 'package:gitbat/core/ui/preview_settings_panel.dart';
 
 // A aba "Configurações" das telas de edição troca o tema claro/escuro e a
@@ -61,10 +63,65 @@ void main() {
     expect(paletteById('nao-existe'), appPalettes.first);
   });
 
-  test('paletas v2 adicionam 25 opções com ids únicos', () {
+  test('paletas v2 e a versão clássica têm ids únicos', () {
     expect(appPalettes, hasLength(33));
     expect(appPalettes.map((palette) => palette.id).toSet(), hasLength(33));
     expect(appPalettes.skip(8), hasLength(25));
+    expect(paletteById('framboesa-azul'), batPalette);
+  });
+
+  test('paletas aparecem em ordem alfabética no idioma da interface', () {
+    languageNotifier.value = AppLanguage.pt;
+    addTearDown(() => languageNotifier.value = AppLanguage.pt);
+
+    expect(
+      palettesSortedByDisplayName().map((palette) => palette.id),
+      orderedEquals(const [
+        'aurora-coral',
+        'blush-salvia',
+        'brasa-e-areia',
+        'brisa-oceanica',
+        'ceu-e-limao',
+        'citrico-eletrico',
+        'citrico-grafite',
+        'cyber-pastel',
+        'dalia',
+        'doce-meia-noite',
+        'frutas-vermelhas',
+        'fucsia-menta',
+        'lagoa-deserto',
+        'lavanda',
+        'lilas-creme',
+        'menta',
+        'morceguinho',
+        'noturno-salvia',
+        'orquidea-neon',
+        'ouro-costeiro',
+        'pessego',
+        'pitaya-limao',
+        'pop-tropical',
+        'por-do-sol-rosa',
+        'prado-nebuloso',
+        'quadrada',
+        'riviera-rosa',
+        'rosa',
+        'solar-marinho',
+        'terracota-lagoa',
+        'triade',
+        'turquesa-classica',
+        'turquesa-vintage',
+      ]),
+    );
+
+    languageNotifier.value = AppLanguage.en;
+    final englishNames = palettesSortedByDisplayName()
+        .map((palette) => palette.label)
+        .toList();
+    final expectedEnglishNames = [...englishNames];
+    expectedEnglishNames.sort(
+      (first, second) => first.toLowerCase().compareTo(second.toLowerCase()),
+    );
+    expect(englishNames, orderedEquals(expectedEnglishNames));
   });
 
   for (final palette in appPalettes) {
@@ -103,12 +160,107 @@ void main() {
     }
   });
 
+  test('paletas claras revisadas usam três cores de identidade', () {
+    const expectedIds = {
+      'aurora-coral',
+      'blush-salvia',
+      'brasa-e-areia',
+      'citrico-eletrico',
+      'citrico-grafite',
+      'cyber-pastel',
+      'frutas-vermelhas',
+      'fucsia-menta',
+      'lagoa-deserto',
+      'menta',
+      'orquidea-neon',
+      'ouro-costeiro',
+      'pessego',
+      'pop-tropical',
+      'prado-nebuloso',
+      'solar-marinho',
+      'terracota-lagoa',
+    };
+    final revised = appPalettes
+        .where((palette) => palette.multicolorLight)
+        .toList();
+
+    expect(revised.map((palette) => palette.id).toSet(), expectedIds);
+    for (final palette in revised) {
+      final scheme = buildTheme(Brightness.light, palette).colorScheme;
+      expect(scheme.secondary, isNot(scheme.primary), reason: palette.label);
+      expect(scheme.tertiary, isNot(scheme.primary), reason: palette.label);
+      expect(scheme.tertiary, isNot(scheme.secondary), reason: palette.label);
+      expect(
+        scheme.surfaceContainerLow,
+        isNot(scheme.surfaceContainerHigh),
+        reason: palette.label,
+      );
+    }
+  });
+
   test('tríade e quadrada preservam o azul da marca', () {
     expect(appPalettes, containsAll([triadPalette, squarePalette]));
     expect(triadPalette.accentGradient, contains(const Color(0xFF60DDB2)));
     expect(squarePalette.accentGradient, contains(const Color(0xFF76A9FF)));
     expect(squarePalette.contentFrame, const Color(0xFF5C9C4B));
     expect(squarePalette.contentText, const Color(0xFF7F2A1A));
+  });
+
+  test('Pitaya e Limão usa a versão clara aprovada sem mudar a escura', () {
+    final light = buildTheme(Brightness.light, pitayaLimePalette).colorScheme;
+    expect(light.primary, const Color(0xFFB84F70));
+    expect(light.tertiary, const Color(0xFF9FCB7A));
+    expect(light.surface, const Color(0xFFFFF9FA));
+    expect(light.surfaceContainer, const Color(0xFFF8E8ED));
+    expect(light.onSurface, const Color(0xFF4C2338));
+    expect(light.outline, const Color(0xFF7B4B61));
+
+    final dark = buildTheme(Brightness.dark, pitayaLimePalette).colorScheme;
+    expect(dark.primary, const Color(0xFFD92B73));
+    expect(dark.tertiary, const Color(0xFFB9F68D));
+    expect(dark.surface, const Color(0xFF201022));
+  });
+
+  test('Pôr do Sol Rosa usa mais azul no claro sem mudar a escura', () {
+    final light = buildTheme(Brightness.light, sunsetRosePalette).colorScheme;
+    expect(light.primary, const Color(0xFFC86578));
+    expect(light.secondary, const Color(0xFF6678A6));
+    expect(light.tertiary, const Color(0xFFD9A441));
+    expect(light.surface, const Color(0xFFFFF9F6));
+    expect(light.surfaceContainerHigh, const Color(0xFFE7EAF4));
+    expect(light.outline, const Color(0xFF6678A6));
+
+    final dark = buildTheme(Brightness.dark, sunsetRosePalette).colorScheme;
+    expect(dark.primary, const Color(0xFFFF7496));
+    expect(dark.tertiary, const Color(0xFFFFC65A));
+    expect(dark.surface, const Color(0xFF11172A));
+  });
+
+  test('Vintage aprovada usa turquesa e vermelho nos dois temas', () {
+    expect(appPalettes, contains(classicTurquoisePalette));
+    expect(classicTurquoisePalette.id, 'turquesa-classica');
+
+    final light = buildTheme(
+      Brightness.light,
+      vintageTurquoisePalette,
+    ).colorScheme;
+    expect(light.primary, const Color(0xFF087F84));
+    expect(light.secondary, const Color(0xFFC55646));
+    expect(light.tertiary, const Color(0xFF9A741C));
+    expect(light.surface, const Color(0xFFF7FCFB));
+    expect(light.surfaceContainer, const Color(0xFFEAF4F2));
+    expect(light.surfaceContainerHighest, const Color(0xFFD8E9E6));
+
+    final dark = buildTheme(
+      Brightness.dark,
+      vintageTurquoisePalette,
+    ).colorScheme;
+    expect(dark.primary, const Color(0xFF49BBC1));
+    expect(dark.secondary, const Color(0xFFC75A4C));
+    expect(dark.tertiary, const Color(0xFFD2B46C));
+    expect(dark.surface, const Color(0xFF121313));
+    expect(dark.surfaceContainer, const Color(0xFF222323));
+    expect(dark.surfaceContainerHighest, const Color(0xFF323436));
   });
 
   test('dália usa as cores extraídas das referências', () {

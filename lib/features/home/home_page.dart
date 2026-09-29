@@ -11,7 +11,7 @@ import '../svg/models/svg_info.dart';
 import '../svg/services/svg_source_fixer.dart';
 import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../app/language_controller.dart';
-import '../../app/theme_controller.dart';
+import '../../core/ui/theme_mode_button.dart';
 import 'widgets/gif_weight_help_sheet.dart';
 import '../collage/collage_page.dart';
 import '../video/editor_page.dart';
@@ -399,24 +399,7 @@ class _HomePageState extends State<HomePage> {
                     icon: const Icon(Icons.help_outline),
                     onPressed: () => showGifWeightHelpSheet(context),
                   ),
-                  ValueListenableBuilder<ThemeMode>(
-                    valueListenable: themeModeNotifier,
-                    builder: (context, mode, _) {
-                      final isDark = mode == ThemeMode.dark;
-                      return IconButton(
-                        tooltip: isDark
-                            ? tr('Ativar modo claro', 'Switch to light mode')
-                            : tr('Ativar modo escuro', 'Switch to dark mode'),
-                        color: theme.colorScheme.secondary,
-                        icon: Icon(
-                          isDark
-                              ? Icons.light_mode_outlined
-                              : Icons.dark_mode_outlined,
-                        ),
-                        onPressed: toggleThemeMode,
-                      );
-                    },
-                  ),
+                  const ThemeModeButton(),
                   IconButton(
                     tooltip: tr('Sobre e licenças', 'About and licenses'),
                     icon: const Icon(Icons.info_outline),

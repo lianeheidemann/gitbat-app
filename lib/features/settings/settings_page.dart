@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/language_controller.dart';
 import '../../core/ui/palette_picker.dart';
+import '../../core/ui/theme_mode_button.dart';
 
 /// Configurações gerais do aplicativo. Começa pequena de propósito e pode
 /// receber novas seções sem sobrecarregar a tela inicial.
@@ -12,7 +13,10 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(tr('Configurações', 'Settings'))),
+      appBar: AppBar(
+        title: Text(tr('Configurações', 'Settings')),
+        actions: const [ThemeModeButton()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

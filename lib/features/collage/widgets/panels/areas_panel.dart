@@ -7,8 +7,9 @@ import '../../models/collage_layout.dart';
 /// Com a foto selecionada na prévia (a primeira, ao abrir a aba), o cartão "Área
 /// selecionada": largura e altura dela em % (da largura disponível e da
 /// altura da coluna dela), "Travar área" (o tamanho dela não muda mais, nem
-/// pelas alças nem empurrado pelas vizinhas), "Redefinir área" e "Tamanhos
-/// iguais".
+/// pelas alças nem empurrado pelas vizinhas), "Ajustar imagens" e "Tamanhos
+/// iguais". "Ajustar imagens" alterna todas as fotos entre preencher e
+/// encaixar.
 class CollageAreasPanel extends StatelessWidget {
   const CollageAreasPanel({
     super.key,
@@ -19,7 +20,7 @@ class CollageAreasPanel extends StatelessWidget {
     required this.onChangeStart,
     required this.onWidthChanged,
     required this.onHeightChanged,
-    required this.onResetArea,
+    required this.onToggleImageFit,
     required this.onReset,
   });
 
@@ -36,7 +37,7 @@ class CollageAreasPanel extends StatelessWidget {
   /// Nova largura/altura, como fração (0 a 1).
   final ValueChanged<double> onWidthChanged;
   final ValueChanged<double> onHeightChanged;
-  final VoidCallback onResetArea;
+  final VoidCallback onToggleImageFit;
   final VoidCallback onReset;
 
   @override
@@ -150,9 +151,9 @@ class CollageAreasPanel extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: lockAspect ? null : onResetArea,
-                icon: const Icon(Icons.restart_alt_rounded, size: 18),
-                label: Text(tr('Redefinir área', 'Reset area')),
+                onPressed: onToggleImageFit,
+                icon: const Icon(Icons.fit_screen_rounded, size: 18),
+                label: Text(tr('Ajustar imagens', 'Fit images')),
               ),
             ),
             const SizedBox(width: 8),

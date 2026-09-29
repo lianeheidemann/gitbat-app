@@ -1399,12 +1399,29 @@ void main() {
     expect(after[0], isNot(before[0]));
     expect(find.text('70%'), findsOneWidget);
 
-    final resetArea = find.text('Redefinir área');
-    await tester.ensureVisible(resetArea);
+    final fitImages = find.text('Ajustar imagens');
+    await tester.ensureVisible(fitImages);
     await tester.pumpAndSettle();
-    await tester.tap(resetArea);
+    await tester.tap(fitImages);
     await tester.pumpAndSettle();
-    expect(sizes(), before);
+    expect(sizes(), after);
+    expect(
+      tester
+          .widgetList<CollageCellView>(find.byType(CollageCellView))
+          .where((view) => view.cell.hasPhoto)
+          .map((view) => view.cell.fitMode),
+      everyElement(CollageCellFitMode.contain),
+    );
+
+    await tester.tap(fitImages);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widgetList<CollageCellView>(find.byType(CollageCellView))
+          .where((view) => view.cell.hasPhoto)
+          .map((view) => view.cell.fitMode),
+      everyElement(CollageCellFitMode.cover),
+    );
   });
 
   testWidgets('"Personalizada": o + cria um espaço novo ao lado e dá para '

@@ -24,6 +24,7 @@ class AppPalette {
     required this.contentFrame,
     required this.contentText,
     this.darkTertiary,
+    this.multicolorLight = false,
     this.refineLight = _generatedPaletteLight,
     this.refineDark = _generatedPaletteDark,
   });
@@ -45,6 +46,10 @@ class AppPalette {
 
   /// Cor de destaque extra no escuro (ex.: o ciano do fone do morceguinho).
   final Color? darkTertiary;
+
+  /// Distribui as cores de identidade da paleta pelo tema claro, em vez de
+  /// derivar todos os papéis cromáticos somente de [seed].
+  final bool multicolorLight;
 
   /// Degradê do botão principal da tela de resultado e a cor do texto dele.
   final List<Color> accentGradient;
@@ -485,6 +490,7 @@ const mintPalette = AppPalette(
   contentFrame: Color(0xFF2F8A66),
   contentText: Color(0xFF13402F),
   darkTertiary: Color(0xFFB7C9FF),
+  multicolorLight: true,
   refineLight: _mintLight,
   refineDark: _mintDark,
 );
@@ -504,6 +510,7 @@ const peachPalette = AppPalette(
   contentFrame: Color(0xFFC0673D),
   contentText: Color(0xFF5A2A14),
   darkTertiary: Color(0xFFD8BCFF),
+  multicolorLight: true,
   refineLight: _peachLight,
   refineDark: _peachDark,
 );
@@ -583,6 +590,7 @@ const auroraCoralPalette = AppPalette(
   darkContainerHighest: Color(0xFF303C52),
   darkChipSelected: Color(0xFF6B3D38),
   darkTertiary: Color(0xFFFFCB45),
+  multicolorLight: true,
   accentGradient: [Color(0xFF17D4E8), Color(0xFFFF6648)],
   onAccent: Color(0xFF10131C),
   contentBackground: Color(0xFFFFE5E4),
@@ -590,9 +598,10 @@ const auroraCoralPalette = AppPalette(
   contentText: Color(0xFF7D2A1F),
 );
 
-const vintageTurquoisePalette = AppPalette(
-  id: 'turquesa-vintage',
-  label: 'Turquesa Vintage',
+/// Primeira versão da paleta turquesa, preservada como opção independente.
+const classicTurquoisePalette = AppPalette(
+  id: 'turquesa-classica',
+  label: 'Turquesa',
   seed: Color(0xFF71BDC4),
   darkBackground: Color(0xFF171516),
   darkCard: Color(0xFF252122),
@@ -605,6 +614,110 @@ const vintageTurquoisePalette = AppPalette(
   contentBackground: Color(0xFFF1EAE4),
   contentFrame: Color(0xFFC93A26),
   contentText: Color(0xFF493E3C),
+);
+
+/// Versão aprovada da Vintage: o turquesa continua dominante e o
+/// vermelho queimado passa a participar dos controles e estados ativos.
+ColorScheme _vintageTurquoiseLight(ColorScheme base) => base.copyWith(
+  primary: const Color(0xFF087F84),
+  onPrimary: Colors.white,
+  primaryContainer: const Color(0xFFD4F0EE),
+  onPrimaryContainer: const Color(0xFF103B3D),
+  secondary: const Color(0xFFC55646),
+  onSecondary: Colors.white,
+  secondaryContainer: const Color(0xFFF4DFDA),
+  onSecondaryContainer: const Color(0xFF55231C),
+  tertiary: const Color(0xFF9A741C),
+  onTertiary: Colors.white,
+  tertiaryContainer: const Color(0xFFF3E6D1),
+  onTertiaryContainer: const Color(0xFF493609),
+  surface: const Color(0xFFF7FCFB),
+  onSurface: const Color(0xFF243537),
+  onSurfaceVariant: const Color(0xFF4E6262),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: const Color(0xFFEFF8F7),
+  surfaceContainer: const Color(0xFFEAF4F2),
+  surfaceContainerHigh: const Color(0xFFE4F0EE),
+  surfaceContainerHighest: const Color(0xFFD8E9E6),
+  outline: const Color(0xFF647A79),
+  outlineVariant: const Color(0xFFB9CFCC),
+  inversePrimary: const Color(0xFF72CDD0),
+  surfaceTint: const Color(0xFF087F84),
+);
+
+ColorScheme _vintageTurquoiseDark(ColorScheme base) => base.copyWith(
+  primary: const Color(0xFF49BBC1),
+  onPrimary: const Color(0xFF102628),
+  primaryContainer: const Color(0xFF234F52),
+  onPrimaryContainer: const Color(0xFFBDECEF),
+  secondary: const Color(0xFFC75A4C),
+  onSecondary: const Color(0xFF2C100C),
+  secondaryContainer: const Color(0xFF57302C),
+  onSecondaryContainer: const Color(0xFFF3D1CB),
+  tertiary: const Color(0xFFD2B46C),
+  onTertiary: const Color(0xFF302606),
+  tertiaryContainer: const Color(0xFF4A4025),
+  onTertiaryContainer: const Color(0xFFF0DCA5),
+  surface: const Color(0xFF121313),
+  onSurface: const Color(0xFFF3F1EE),
+  onSurfaceVariant: const Color(0xFFC9C6C1),
+  surfaceContainerLowest: const Color(0xFF0D0E0E),
+  surfaceContainerLow: const Color(0xFF1D1E1E),
+  surfaceContainer: const Color(0xFF222323),
+  surfaceContainerHigh: const Color(0xFF292B2C),
+  surfaceContainerHighest: const Color(0xFF323436),
+  outline: const Color(0xFF9DA7A5),
+  outlineVariant: const Color(0xFF4D5554),
+  inversePrimary: const Color(0xFF087F84),
+  surfaceTint: const Color(0xFF49BBC1),
+);
+
+const vintageTurquoisePalette = AppPalette(
+  id: 'turquesa-vintage',
+  label: 'Vintage',
+  seed: Color(0xFF49BBC1),
+  darkBackground: Color(0xFF121313),
+  darkCard: Color(0xFF1D1E1E),
+  darkContainerHigh: Color(0xFF292B2C),
+  darkContainerHighest: Color(0xFF323436),
+  darkChipSelected: Color(0xFF57302C),
+  darkTertiary: Color(0xFFD2B46C),
+  accentGradient: [Color(0xFF49BBC1), Color(0xFFC55646)],
+  onAccent: Color(0xFF102628),
+  contentBackground: Color(0xFFF3E6D1),
+  contentFrame: Color(0xFFB94B42),
+  contentText: Color(0xFF263638),
+  refineLight: _vintageTurquoiseLight,
+  refineDark: _vintageTurquoiseDark,
+);
+
+/// Versão clara aprovada da paleta Pôr do Sol Rosa. Coral, azul
+/// crepuscular e dourado aparecem sobre superfícies pêssego suaves.
+ColorScheme _sunsetRoseLight(ColorScheme base) => base.copyWith(
+  primary: const Color(0xFFC86578),
+  onPrimary: Colors.white,
+  primaryContainer: const Color(0xFFF3DDE2),
+  onPrimaryContainer: const Color(0xFF563744),
+  secondary: const Color(0xFF6678A6),
+  onSecondary: Colors.white,
+  secondaryContainer: const Color(0xFFE7EAF4),
+  onSecondaryContainer: const Color(0xFF29375D),
+  tertiary: const Color(0xFFD9A441),
+  onTertiary: const Color(0xFF3C2B08),
+  tertiaryContainer: const Color(0xFFF7EACB),
+  onTertiaryContainer: const Color(0xFF4B350A),
+  surface: const Color(0xFFFFF9F6),
+  onSurface: const Color(0xFF563744),
+  onSurfaceVariant: const Color(0xFF715964),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: const Color(0xFFFBEDE4),
+  surfaceContainer: const Color(0xFFF7E7E8),
+  surfaceContainerHigh: const Color(0xFFE7EAF4),
+  surfaceContainerHighest: const Color(0xFFDDE2F0),
+  outline: const Color(0xFF6678A6),
+  outlineVariant: const Color(0xFFC5CCE0),
+  inversePrimary: const Color(0xFFD998A5),
+  surfaceTint: const Color(0xFFC86578),
 );
 
 const sunsetRosePalette = AppPalette(
@@ -622,6 +735,7 @@ const sunsetRosePalette = AppPalette(
   contentBackground: Color(0xFFF1F2F7),
   contentFrame: Color(0xFF6077A5),
   contentText: Color(0xFF40243A),
+  refineLight: _sunsetRoseLight,
 );
 
 const oceanBreezePalette = AppPalette(
@@ -658,6 +772,35 @@ const lilacCreamPalette = AppPalette(
   contentText: Color(0xFF46377F),
 );
 
+/// Versão clara aprovada da paleta Pitaya e Limão. O tema escuro continua
+/// usando o acabamento compartilhado, sem nenhuma alteração.
+ColorScheme _pitayaLimeLight(ColorScheme base) => base.copyWith(
+  primary: const Color(0xFFB84F70),
+  onPrimary: Colors.white,
+  primaryContainer: const Color(0xFFF2DCE4),
+  onPrimaryContainer: const Color(0xFF5F2944),
+  secondary: const Color(0xFF738E52),
+  onSecondary: Colors.white,
+  secondaryContainer: const Color(0xFFE6F0D8),
+  onSecondaryContainer: const Color(0xFF2D4120),
+  tertiary: const Color(0xFF9FCB7A),
+  onTertiary: const Color(0xFF26331C),
+  tertiaryContainer: const Color(0xFFEAF4DF),
+  onTertiaryContainer: const Color(0xFF2D4120),
+  surface: const Color(0xFFFFF9FA),
+  onSurface: const Color(0xFF4C2338),
+  onSurfaceVariant: const Color(0xFF6D4B5B),
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: const Color(0xFFF9EDF1),
+  surfaceContainer: const Color(0xFFF8E8ED),
+  surfaceContainerHigh: const Color(0xFFF2DCE4),
+  surfaceContainerHighest: const Color(0xFFEBCFD9),
+  outline: const Color(0xFF7B4B61),
+  outlineVariant: const Color(0xFFD9B9C6),
+  inversePrimary: const Color(0xFFD5A0B3),
+  surfaceTint: const Color(0xFFB84F70),
+);
+
 const pitayaLimePalette = AppPalette(
   id: 'pitaya-limao',
   label: 'Pitaya e Limão',
@@ -673,6 +816,7 @@ const pitayaLimePalette = AppPalette(
   contentBackground: Color(0xFFFFF9E7),
   contentFrame: Color(0xFF92228C),
   contentText: Color(0xFF60143F),
+  refineLight: _pitayaLimeLight,
 );
 
 const blushSagePalette = AppPalette(
@@ -685,6 +829,7 @@ const blushSagePalette = AppPalette(
   darkContainerHighest: Color(0xFF3B3234),
   darkChipSelected: Color(0xFF66464F),
   darkTertiary: Color(0xFF9CC6BD),
+  multicolorLight: true,
   accentGradient: [Color(0xFFD97F93), Color(0xFF9CC6BD)],
   onAccent: Color(0xFF321C23),
   contentBackground: Color(0xFFF8E6D2),
@@ -702,6 +847,7 @@ const citrusGraphitePalette = AppPalette(
   darkContainerHighest: Color(0xFF383C43),
   darkChipSelected: Color(0xFF67462D),
   darkTertiary: Color(0xFFE3EDB8),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF872B), Color(0xFFE9343E)],
   onAccent: Color(0xFF2E1708),
   contentBackground: Color(0xFFF0E7D7),
@@ -719,6 +865,7 @@ const mistyMeadowPalette = AppPalette(
   darkContainerHighest: Color(0xFF3B354E),
   darkChipSelected: Color(0xFF5D5270),
   darkTertiary: Color(0xFFBDF1ED),
+  multicolorLight: true,
   accentGradient: [Color(0xFF9A82B4), Color(0xFFBDF1ED)],
   onAccent: Color(0xFF261F35),
   contentBackground: Color(0xFFF4EFCB),
@@ -736,6 +883,7 @@ const neonOrchidPalette = AppPalette(
   darkContainerHighest: Color(0xFF432461),
   darkChipSelected: Color(0xFF68266B),
   darkTertiary: Color(0xFFFFB8DA),
+  multicolorLight: true,
   accentGradient: [Color(0xFF7B2ED0), Color(0xFFD93CB9)],
   onAccent: Color(0xFF240B30),
   contentBackground: Color(0xFFFFD0E3),
@@ -753,6 +901,7 @@ const coastalGoldPalette = AppPalette(
   darkContainerHighest: Color(0xFF2B3D67),
   darkChipSelected: Color(0xFF315B76),
   darkTertiary: Color(0xFFFFC23D),
+  multicolorLight: true,
   accentGradient: [Color(0xFF84D4BE), Color(0xFFFFC23D)],
   onAccent: Color(0xFF13273B),
   contentBackground: Color(0xFFF0F3F2),
@@ -787,6 +936,7 @@ const emberSandPalette = AppPalette(
   darkContainerHighest: Color(0xFF48291E),
   darkChipSelected: Color(0xFF713619),
   darkTertiary: Color(0xFFFFD0A0),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF5B00), Color(0xFFFFB15E)],
   onAccent: Color(0xFF371100),
   contentBackground: Color(0xFFFFD0A0),
@@ -804,6 +954,7 @@ const berryCreamPalette = AppPalette(
   darkContainerHighest: Color(0xFF57283B),
   darkChipSelected: Color(0xFF7A354C),
   darkTertiary: Color(0xFFFFD8C7),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF5A78), Color(0xFFFFA59A)],
   onAccent: Color(0xFF3C1320),
   contentBackground: Color(0xFFFFF9EE),
@@ -821,6 +972,7 @@ const terracottaLagoonPalette = AppPalette(
   darkContainerHighest: Color(0xFF245054),
   darkChipSelected: Color(0xFF35666A),
   darkTertiary: Color(0xFFF08E70),
+  multicolorLight: true,
   accentGradient: [Color(0xFF75C6C0), Color(0xFFF08E70)],
   onAccent: Color(0xFF122A2B),
   contentBackground: Color(0xFFFFDDD2),
@@ -838,6 +990,7 @@ const fuchsiaMintPalette = AppPalette(
   darkContainerHighest: Color(0xFF572756),
   darkChipSelected: Color(0xFF743161),
   darkTertiary: Color(0xFF80F3DF),
+  multicolorLight: true,
   accentGradient: [Color(0xFFC84899), Color(0xFF80F3DF)],
   onAccent: Color(0xFF311329),
   contentBackground: Color(0xFFFFE4B5),
@@ -855,6 +1008,7 @@ const tropicalPopPalette = AppPalette(
   darkContainerHighest: Color(0xFF334159),
   darkChipSelected: Color(0xFF316873),
   darkTertiary: Color(0xFFFFC945),
+  multicolorLight: true,
   accentGradient: [Color(0xFF10D5E8), Color(0xFFFF6545)],
   onAccent: Color(0xFF10252A),
   contentBackground: Color(0xFFFFE6E7),
@@ -906,6 +1060,7 @@ const cyberPastelPalette = AppPalette(
   darkContainerHighest: Color(0xFF412860),
   darkChipSelected: Color(0xFF633477),
   darkTertiary: Color(0xFF76EED0),
+  multicolorLight: true,
   accentGradient: [Color(0xFFCB5AF4), Color(0xFF76EED0)],
   onAccent: Color(0xFF29133A),
   contentBackground: Color(0xFFFFFEE9),
@@ -923,6 +1078,7 @@ const electricCitrusPalette = AppPalette(
   darkContainerHighest: Color(0xFF303C58),
   darkChipSelected: Color(0xFF6C3B48),
   darkTertiary: Color(0xFFE6EC2D),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF6261), Color(0xFFE6EC2D)],
   onAccent: Color(0xFF2D1820),
   contentBackground: Color(0xFFEAF2EF),
@@ -957,28 +1113,12 @@ const desertLagoonPalette = AppPalette(
   darkContainerHighest: Color(0xFF234F55),
   darkChipSelected: Color(0xFF346268),
   darkTertiary: Color(0xFFEC9270),
+  multicolorLight: true,
   accentGradient: [Color(0xFF74C4BE), Color(0xFFEC9270)],
   onAccent: Color(0xFF132C2D),
   contentBackground: Color(0xFFFFDED3),
   contentFrame: Color(0xFF087A80),
   contentText: Color(0xFF35565A),
-);
-
-const blueRaspberryPalette = AppPalette(
-  id: 'framboesa-azul',
-  label: 'Framboesa Azul',
-  seed: Color(0xFF56A0DA),
-  darkBackground: Color(0xFF0C2039),
-  darkCard: Color(0xFF142E4A),
-  darkContainerHigh: Color(0xFF1D3C5C),
-  darkContainerHighest: Color(0xFF274A6D),
-  darkChipSelected: Color(0xFF356380),
-  darkTertiary: Color(0xFFEB5C91),
-  accentGradient: [Color(0xFF78C8F2), Color(0xFFEB5C91)],
-  onAccent: Color(0xFF143147),
-  contentBackground: Color(0xFFF1F7F5),
-  contentFrame: Color(0xFFF0DD64),
-  contentText: Color(0xFF275A81),
 );
 
 const solarNavyPalette = AppPalette(
@@ -991,6 +1131,7 @@ const solarNavyPalette = AppPalette(
   darkContainerHighest: Color(0xFF243B6D),
   darkChipSelected: Color(0xFF3A4D7E),
   darkTertiary: Color(0xFFFFC64D),
+  multicolorLight: true,
   accentGradient: [Color(0xFF7585F8), Color(0xFFFFC64D)],
   onAccent: Color(0xFF17204A),
   contentBackground: Color(0xFFFFEEF2),
@@ -1010,6 +1151,7 @@ const appPalettes = [
   triadPalette,
   squarePalette,
   auroraCoralPalette,
+  classicTurquoisePalette,
   vintageTurquoisePalette,
   sunsetRosePalette,
   oceanBreezePalette,
@@ -1032,7 +1174,6 @@ const appPalettes = [
   electricCitrusPalette,
   rivieraPinkPalette,
   desertLagoonPalette,
-  blueRaspberryPalette,
   solarNavyPalette,
 ];
 
