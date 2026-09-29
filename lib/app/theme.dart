@@ -176,7 +176,7 @@ ColorScheme _multicolorLightScheme(ColorScheme base, AppPalette palette) {
     palette.accentGradient,
   );
   final tertiaryCandidates = <Color>[
-    palette.darkTertiary?,
+    ?palette.darkTertiary,
     palette.contentFrame,
     ...palette.accentGradient,
   ];
