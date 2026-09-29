@@ -24,6 +24,7 @@ class AppPalette {
     required this.contentFrame,
     required this.contentText,
     this.darkTertiary,
+    this.multicolorLight = false,
     this.refineLight = _generatedPaletteLight,
     this.refineDark = _generatedPaletteDark,
   });
@@ -45,6 +46,10 @@ class AppPalette {
 
   /// Cor de destaque extra no escuro (ex.: o ciano do fone do morceguinho).
   final Color? darkTertiary;
+
+  /// Distribui as cores de identidade da paleta pelo tema claro, em vez de
+  /// derivar todos os papéis cromáticos somente de [seed].
+  final bool multicolorLight;
 
   /// Degradê do botão principal da tela de resultado e a cor do texto dele.
   final List<Color> accentGradient;
@@ -485,6 +490,7 @@ const mintPalette = AppPalette(
   contentFrame: Color(0xFF2F8A66),
   contentText: Color(0xFF13402F),
   darkTertiary: Color(0xFFB7C9FF),
+  multicolorLight: true,
   refineLight: _mintLight,
   refineDark: _mintDark,
 );
@@ -504,6 +510,7 @@ const peachPalette = AppPalette(
   contentFrame: Color(0xFFC0673D),
   contentText: Color(0xFF5A2A14),
   darkTertiary: Color(0xFFD8BCFF),
+  multicolorLight: true,
   refineLight: _peachLight,
   refineDark: _peachDark,
 );
@@ -583,6 +590,7 @@ const auroraCoralPalette = AppPalette(
   darkContainerHighest: Color(0xFF303C52),
   darkChipSelected: Color(0xFF6B3D38),
   darkTertiary: Color(0xFFFFCB45),
+  multicolorLight: true,
   accentGradient: [Color(0xFF17D4E8), Color(0xFFFF6648)],
   onAccent: Color(0xFF10131C),
   contentBackground: Color(0xFFFFE5E4),
@@ -821,6 +829,7 @@ const blushSagePalette = AppPalette(
   darkContainerHighest: Color(0xFF3B3234),
   darkChipSelected: Color(0xFF66464F),
   darkTertiary: Color(0xFF9CC6BD),
+  multicolorLight: true,
   accentGradient: [Color(0xFFD97F93), Color(0xFF9CC6BD)],
   onAccent: Color(0xFF321C23),
   contentBackground: Color(0xFFF8E6D2),
@@ -838,6 +847,7 @@ const citrusGraphitePalette = AppPalette(
   darkContainerHighest: Color(0xFF383C43),
   darkChipSelected: Color(0xFF67462D),
   darkTertiary: Color(0xFFE3EDB8),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF872B), Color(0xFFE9343E)],
   onAccent: Color(0xFF2E1708),
   contentBackground: Color(0xFFF0E7D7),
@@ -855,6 +865,7 @@ const mistyMeadowPalette = AppPalette(
   darkContainerHighest: Color(0xFF3B354E),
   darkChipSelected: Color(0xFF5D5270),
   darkTertiary: Color(0xFFBDF1ED),
+  multicolorLight: true,
   accentGradient: [Color(0xFF9A82B4), Color(0xFFBDF1ED)],
   onAccent: Color(0xFF261F35),
   contentBackground: Color(0xFFF4EFCB),
@@ -872,6 +883,7 @@ const neonOrchidPalette = AppPalette(
   darkContainerHighest: Color(0xFF432461),
   darkChipSelected: Color(0xFF68266B),
   darkTertiary: Color(0xFFFFB8DA),
+  multicolorLight: true,
   accentGradient: [Color(0xFF7B2ED0), Color(0xFFD93CB9)],
   onAccent: Color(0xFF240B30),
   contentBackground: Color(0xFFFFD0E3),
@@ -889,6 +901,7 @@ const coastalGoldPalette = AppPalette(
   darkContainerHighest: Color(0xFF2B3D67),
   darkChipSelected: Color(0xFF315B76),
   darkTertiary: Color(0xFFFFC23D),
+  multicolorLight: true,
   accentGradient: [Color(0xFF84D4BE), Color(0xFFFFC23D)],
   onAccent: Color(0xFF13273B),
   contentBackground: Color(0xFFF0F3F2),
@@ -923,6 +936,7 @@ const emberSandPalette = AppPalette(
   darkContainerHighest: Color(0xFF48291E),
   darkChipSelected: Color(0xFF713619),
   darkTertiary: Color(0xFFFFD0A0),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF5B00), Color(0xFFFFB15E)],
   onAccent: Color(0xFF371100),
   contentBackground: Color(0xFFFFD0A0),
@@ -940,6 +954,7 @@ const berryCreamPalette = AppPalette(
   darkContainerHighest: Color(0xFF57283B),
   darkChipSelected: Color(0xFF7A354C),
   darkTertiary: Color(0xFFFFD8C7),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF5A78), Color(0xFFFFA59A)],
   onAccent: Color(0xFF3C1320),
   contentBackground: Color(0xFFFFF9EE),
@@ -957,6 +972,7 @@ const terracottaLagoonPalette = AppPalette(
   darkContainerHighest: Color(0xFF245054),
   darkChipSelected: Color(0xFF35666A),
   darkTertiary: Color(0xFFF08E70),
+  multicolorLight: true,
   accentGradient: [Color(0xFF75C6C0), Color(0xFFF08E70)],
   onAccent: Color(0xFF122A2B),
   contentBackground: Color(0xFFFFDDD2),
@@ -974,6 +990,7 @@ const fuchsiaMintPalette = AppPalette(
   darkContainerHighest: Color(0xFF572756),
   darkChipSelected: Color(0xFF743161),
   darkTertiary: Color(0xFF80F3DF),
+  multicolorLight: true,
   accentGradient: [Color(0xFFC84899), Color(0xFF80F3DF)],
   onAccent: Color(0xFF311329),
   contentBackground: Color(0xFFFFE4B5),
@@ -991,6 +1008,7 @@ const tropicalPopPalette = AppPalette(
   darkContainerHighest: Color(0xFF334159),
   darkChipSelected: Color(0xFF316873),
   darkTertiary: Color(0xFFFFC945),
+  multicolorLight: true,
   accentGradient: [Color(0xFF10D5E8), Color(0xFFFF6545)],
   onAccent: Color(0xFF10252A),
   contentBackground: Color(0xFFFFE6E7),
@@ -1042,6 +1060,7 @@ const cyberPastelPalette = AppPalette(
   darkContainerHighest: Color(0xFF412860),
   darkChipSelected: Color(0xFF633477),
   darkTertiary: Color(0xFF76EED0),
+  multicolorLight: true,
   accentGradient: [Color(0xFFCB5AF4), Color(0xFF76EED0)],
   onAccent: Color(0xFF29133A),
   contentBackground: Color(0xFFFFFEE9),
@@ -1059,6 +1078,7 @@ const electricCitrusPalette = AppPalette(
   darkContainerHighest: Color(0xFF303C58),
   darkChipSelected: Color(0xFF6C3B48),
   darkTertiary: Color(0xFFE6EC2D),
+  multicolorLight: true,
   accentGradient: [Color(0xFFFF6261), Color(0xFFE6EC2D)],
   onAccent: Color(0xFF2D1820),
   contentBackground: Color(0xFFEAF2EF),
@@ -1093,6 +1113,7 @@ const desertLagoonPalette = AppPalette(
   darkContainerHighest: Color(0xFF234F55),
   darkChipSelected: Color(0xFF346268),
   darkTertiary: Color(0xFFEC9270),
+  multicolorLight: true,
   accentGradient: [Color(0xFF74C4BE), Color(0xFFEC9270)],
   onAccent: Color(0xFF132C2D),
   contentBackground: Color(0xFFFFDED3),
@@ -1110,6 +1131,7 @@ const solarNavyPalette = AppPalette(
   darkContainerHighest: Color(0xFF243B6D),
   darkChipSelected: Color(0xFF3A4D7E),
   darkTertiary: Color(0xFFFFC64D),
+  multicolorLight: true,
   accentGradient: [Color(0xFF7585F8), Color(0xFFFFC64D)],
   onAccent: Color(0xFF17204A),
   contentBackground: Color(0xFFFFEEF2),
