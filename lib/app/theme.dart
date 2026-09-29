@@ -171,10 +171,7 @@ ThemeData buildTheme(Brightness brightness, [AppPalette palette = batPalette]) {
 }
 
 ColorScheme _multicolorLightScheme(ColorScheme base, AppPalette palette) {
-  final secondarySource = _furthestColor(
-    palette.seed,
-    palette.accentGradient,
-  );
+  final secondarySource = _furthestColor(palette.seed, palette.accentGradient);
   final tertiaryCandidates = <Color>[
     ?palette.darkTertiary,
     palette.contentFrame,
