@@ -11,7 +11,7 @@ import 'package:gitbat/core/models/photo_info.dart';
 import 'package:gitbat/core/models/photo_placement.dart';
 import 'package:gitbat/features/photo/photo_frame_page.dart';
 import 'package:gitbat/features/photo/services/photo_frame_compositor.dart';
-import 'package:gitbat/features/photo/widgets/photo_placement_view.dart';
+import 'package:gitbat/core/ui/photo_placement_view.dart';
 
 /// PNG 80x40: metade esquerda vermelha, direita azul.
 Future<PhotoInfo> _photo(Directory dir) async {

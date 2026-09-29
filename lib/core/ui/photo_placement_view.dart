@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart'
     show Drag, ImmediateMultiDragGestureRecognizer;
 import 'package:flutter/material.dart';
 
-import '../../../core/models/photo_placement.dart';
+import '../models/photo_placement.dart';
 
 /// Desenha [child] (a foto) na posição de [placement] e, com [enabled],
 /// deixa mudar essa posição com os dedos: um dedo arrasta, dois pinçam e

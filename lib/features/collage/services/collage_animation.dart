@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import '../../quick_convert/services/animated_webp_source.dart'
+import '../../../core/services/animated_webp_source.dart'
     show parseAnimatedWebp;
 import '../models/collage_background.dart';
 import '../models/collage_export.dart';

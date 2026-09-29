@@ -8,7 +8,7 @@ import '../../../../core/ui/color_picker_sheet.dart';
 import '../../../../core/ui/panel_rows.dart';
 import '../../models/background_image.dart';
 import '../../models/collage_background.dart';
-import '../asset_thumbs.dart';
+import '../../../../core/ui/asset_thumbs.dart';
 import '../target_sub_panel.dart';
 
 /// Painel da aba "Fundo": transparente, cor ou imagem, valendo para o alvo

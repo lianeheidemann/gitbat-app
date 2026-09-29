@@ -18,7 +18,7 @@ import '../../core/ui/app_bar_title.dart';
 import 'widgets/source_file_card.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/ui/theme_mode_button.dart';
-import 'services/animated_webp_source.dart';
+import '../../core/services/animated_webp_source.dart';
 
 /// Tela única de "Converter formato": escolher o arquivo e escolher para qual
 /// formato converter acontecem no mesmo lugar.

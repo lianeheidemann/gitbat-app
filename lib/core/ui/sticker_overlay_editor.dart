@@ -5,8 +5,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../features/collage/models/sticker_catalog.dart';
-import '../../features/collage/widgets/panels/stickers_panel.dart';
+import '../models/sticker_catalog.dart';
+import 'stickers_panel.dart';
 import '../models/collage_sticker.dart';
 import '../services/imported_asset_store.dart';
 import '../services/sticker_folder_store.dart';

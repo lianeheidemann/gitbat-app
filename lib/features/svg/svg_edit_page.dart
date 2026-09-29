@@ -25,7 +25,7 @@ import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/ui/frame/border_ring.dart';
-import '../photo/widgets/photo_placement_view.dart';
+import '../../core/ui/photo_placement_view.dart';
 import '../../core/ui/frame/frame_color_row.dart';
 import '../../core/ui/frame/frame_sliders.dart';
 import '../../core/ui/frame/frame_style_picker.dart';

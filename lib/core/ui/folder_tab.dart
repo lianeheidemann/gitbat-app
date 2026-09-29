@@ -1,4 +1,4 @@
-import '../../../app/language_controller.dart';
+import '../../app/language_controller.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

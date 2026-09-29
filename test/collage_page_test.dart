@@ -16,7 +16,7 @@ import 'package:gitbat/features/collage/widgets/panels/areas_panel.dart';
 import 'package:gitbat/features/collage/widgets/collage_cell_view.dart';
 import 'package:gitbat/core/ui/collage_overlay_view.dart';
 import 'package:gitbat/core/ui/color_adjust_controls.dart';
-import 'package:gitbat/features/collage/widgets/folder_tab.dart';
+import 'package:gitbat/core/ui/folder_tab.dart';
 import 'package:gitbat/features/collage/widgets/target_sub_panel.dart';
 
 import 'helpers/animated_gif.dart';
