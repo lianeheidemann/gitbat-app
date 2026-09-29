@@ -21,13 +21,14 @@ import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
 import '../../core/ui/crop/crop_tab.dart';
 import '../../core/ui/frame/content_fit_picker.dart';
+import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/frame/frame_color_row.dart';
-import '../../core/ui/frame/frame_rotate_button.dart';
 import '../../core/ui/panel_rows.dart';
-import '../../core/ui/frame/frame_sliders.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
 import '../../core/ui/frame/frame_thumb_shell.dart';
-import '../../core/ui/frame/image_frame_picker.dart';
+import '../../core/ui/frame/image_frame_panel.dart';
+import '../../core/ui/frame/image_framed_preview.dart';
+import '../../core/ui/frame/imported_frame_library.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
@@ -50,15 +51,6 @@ const _customAspectPreset = AspectPreset(
   labelEn: 'Custom',
 );
 
-/// Opções apresentadas ao usuário. `fit` continua como resultado interno do
-/// ajuste automático quando é preciso preservar o vídeo inteiro, mas não é
-/// exibido como uma escolha duplicada na interface.
-const _selectableContentFitModes = [
-  ContentFitMode.auto,
-  ContentFitMode.fill,
-  ContentFitMode.expand,
-];
-
 /// Tela principal de edição: prévia do vídeo, corte de duração, recorte de
 /// área, velocidade, resolução, FPS/cores e o painel de estimativa de
 /// tamanho que leva à conversão.
@@ -78,17 +70,12 @@ class EditorPage extends StatefulWidget {
 
 class _EditorPageState extends State<EditorPage> {
   final _ffmpeg = FfmpegService();
-  final _importedFrameStore = ImportedFrameStore();
-  final _sectionsScrollController = ScrollController();
-  final _frameStyleAnchorKey = GlobalKey();
-  final _imageFrameAnchorKey = GlobalKey();
-  final _previewAreaKey = GlobalKey();
+  final _frameLibrary = ImportedFrameLibrary();
 
   /// Ancorada no `RepaintBoundary` em volta da prévia —
   /// [_renderPreviewImage] usa isso para rasterizar exatamente o que está
   /// na tela para o conta-gotas do seletor de cor.
   final _colorPreviewKey = GlobalKey();
-  List<ImageFrameAsset> _importedImageFrames = [];
 
   late ConversionSettings _settings = widget.initialSettings;
   late ComplexityProfile _profile = SizeEstimator.profileFromSource(
@@ -155,9 +142,9 @@ class _EditorPageState extends State<EditorPage> {
   /// Carrega as molduras de imagem importadas em sessões anteriores, para
   /// continuarem aparecendo na fileira de miniaturas.
   Future<void> _loadImportedFrames() async {
-    final frames = await _importedFrameStore.loadAll();
+    await _frameLibrary.load();
     if (!mounted) return;
-    setState(() => _importedImageFrames = frames);
+    setState(() {});
   }
 
   /// Inicializa o player de vídeo para a prévia. Se o codec não for
@@ -184,7 +171,6 @@ class _EditorPageState extends State<EditorPage> {
   @override
   void dispose() {
     _player?.dispose();
-    _sectionsScrollController.dispose();
     _cropTab.dispose();
     _textOverlay.dispose();
     _stickerOverlay.dispose();
@@ -467,120 +453,12 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   /// Duração da animação de tamanho da prévia ao trocar de moldura (ver
-  /// [_previewArea]) — também o horizonte de tempo que
-  /// [_updateFrameKeepingAnchorPosition] cobre ao reaplicar a compensação de
-  /// rolagem quadro a quadro.
+  /// [_previewArea]).
   static const _previewTransitionDuration = Duration(milliseconds: 220);
-
-  /// Incrementado a cada [_updateFrameKeepingAnchorPosition], para
-  /// [_correctAnchorScrollUntilSettled] saber se a cadeia de correção que
-  /// está rodando ainda é a mais recente. Sem isso, tocar em várias opções
-  /// de moldura em sequência rápida (antes dos ~220ms da correção anterior
-  /// terminarem) deixava várias cadeias ativas ao mesmo tempo, cada uma
-  /// perseguindo um alvo de rolagem diferente e brigando pela posição —
-  /// visível como a tela "pulando" de forma imprevisível.
-  int _frameTransitionGeneration = 0;
 
   /// Substitui as configurações da moldura, mantendo o resto igual.
   void _updateFrame(FrameSettings next, {bool pushUndo = true}) {
     _update(_settings.copyWith(frame: next), pushUndo: pushUndo);
-  }
-
-  /// Atualiza a moldura compensando a variação de altura da prévia. Assim o
-  /// início das opções permanece na mesma posição da tela quando a troca
-  /// entre moldura procedural e moldura de imagem muda a proporção do vídeo.
-  ///
-  /// A prévia muda de tamanho aos poucos (a [AnimatedSize] de
-  /// [_previewArea]), não de uma vez — então a compensação também precisa
-  /// ser reaplicada quadro a quadro enquanto ela anima, em vez de uma única
-  /// vez. Uma correção única bastava quando a prévia mudava de tamanho
-  /// instantaneamente, mas contra uma mudança gradual ela só corrigia o
-  /// primeiro quadro (quase nenhuma diferença ainda) e deixava a rolagem
-  /// desacompanhar nos quadros seguintes, terminando torta.
-  void _updateFrameKeepingAnchorPosition(
-    FrameSettings next, {
-    required GlobalKey anchorKey,
-  }) {
-    final beforeBox = anchorKey.currentContext?.findRenderObject();
-    final beforeY = beforeBox is RenderBox
-        ? beforeBox.localToGlobal(Offset.zero).dy
-        : null;
-
-    _updateFrame(next);
-    if (beforeY == null) return;
-
-    final generation = ++_frameTransitionGeneration;
-    _correctAnchorScrollUntilSettled(
-      generation,
-      anchorKey,
-      beforeY,
-      _previewTransitionDuration,
-    );
-  }
-
-  /// Reaplica a compensação de rolagem a cada quadro, por [remaining] a
-  /// partir de agora — cobrindo toda a animação de [_previewArea] — para que
-  /// [anchorKey] termine exatamente na posição [targetY] da tela mesmo com a
-  /// prévia mudando de tamanho aos poucos.
-  ///
-  /// [generation] é o valor de [_frameTransitionGeneration] capturado por
-  /// [_updateFrameKeepingAnchorPosition] no momento do toque que iniciou
-  /// esta cadeia. Se um toque mais recente já incrementou o contador, esta
-  /// cadeia parou de corresponder ao estado atual da tela — encerra sem
-  /// corrigir nem se reagendar, deixando a cadeia mais nova (a única com a
-  /// posição "antes" certa) no controle.
-  void _correctAnchorScrollUntilSettled(
-    int generation,
-    GlobalKey anchorKey,
-    double targetY,
-    Duration remaining,
-  ) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (generation != _frameTransitionGeneration) return;
-      if (!mounted || !_sectionsScrollController.hasClients) return;
-      final afterBox = anchorKey.currentContext?.findRenderObject();
-      if (afterBox is RenderBox) {
-        final delta = afterBox.localToGlobal(Offset.zero).dy - targetY;
-        if (delta.abs() >= 0.5) {
-          final position = _sectionsScrollController.position;
-          var target = (_sectionsScrollController.offset + delta)
-              .clamp(position.minScrollExtent, position.maxScrollExtent)
-              .toDouble();
-
-          // Nunca deixa essa compensação empurrar o topo da prévia (com a
-          // borda da moldura) para fora da tela só para manter o cabeçalho
-          // da seção fixo — ver [_previewAreaKey]. Uma moldura bem mais alta
-          // que a anterior pode exigir mais rolagem do que a prévia tem
-          // altura para ceder sem desaparecer; aqui cede o cabeçalho (que
-          // volta a acompanhar a prévia assim que ela terminar de crescer)
-          // em vez da prévia. Só entra em ação com a prévia já visível — uma
-          // rolagem manual da pessoa para longe dela continua intocada.
-          final previewBox = _previewAreaKey.currentContext?.findRenderObject();
-          if (previewBox is RenderBox) {
-            final previewTop = previewBox.localToGlobal(Offset.zero).dy;
-            if (previewTop >= 0) {
-              final maxTarget = _sectionsScrollController.offset + previewTop;
-              if (target > maxTarget) {
-                target = maxTarget.clamp(
-                  position.minScrollExtent,
-                  position.maxScrollExtent,
-                );
-              }
-            }
-          }
-
-          _sectionsScrollController.jumpTo(target);
-        }
-      }
-      if (remaining > Duration.zero) {
-        _correctAnchorScrollUntilSettled(
-          generation,
-          anchorKey,
-          targetY,
-          remaining - const Duration(milliseconds: 16),
-        );
-      }
-    });
   }
 
   /// A prévia da aba atual. Com a aba "Janela" aberta mostra o vídeo
@@ -591,13 +469,9 @@ class _EditorPageState extends State<EditorPage> {
   /// [_framedPreview] (que já corta antes de encaixar no quadro escolhido).
   ///
   /// A [AnimatedSize] existe porque trocar de moldura (ou entre "Borda" e
-  /// "Moldura") quase sempre muda a proporção da prévia — cada
-  /// arte de moldura tem sua própria proporção nativa. Sem ela, a mudança de
-  /// altura empurrava tudo abaixo instantaneamente na mesma rolagem — e a
-  /// correção de [_updateFrameKeepingAnchorPosition], que só reagia depois
-  /// de pronto, aparecia como uma tremida. Com a mudança de tamanho gradual,
-  /// a correção acompanha quadro a quadro e nunca precisa de um salto
-  /// grande.
+  /// "Moldura") quase sempre muda a proporção da prévia — cada arte de
+  /// moldura tem sua própria proporção nativa. Sem ela, a mudança de altura
+  /// acontecia num quadro só, como um salto.
   Widget _previewArea({
     required bool showCropHandles,
     required bool textTabActive,
@@ -805,230 +679,65 @@ class _EditorPageState extends State<EditorPage> {
       ? 1 / _contentAspectRatio
       : _contentAspectRatio;
 
-  /// Prévia ao vivo de uma moldura de imagem: a arte (SVG das prontas do
-  /// app ou importado pelo usuário, ou PNG importado no formato legado)
-  /// sempre desenhada na sua proporção nativa (nunca
-  /// distorcida), com o vídeo já cortado posicionado e ajustado (conforme
-  /// [ContentFitMode]) exatamente dentro da janela de conteúdo
-  /// ([ImageFrameAsset.contentRect]) por baixo dela, e ampliado conforme
-  /// [FrameSettings.contentZoom] — o `Transform.scale` centraliza por
-  /// padrão, mesmo alinhamento do `crop` que a exportação usa para o zoom
-  /// (ver [FfmpegService._imageFramedGraph]), então prévia e GIF final nunca
-  /// divergem.
-  Widget _imageFramedPreview(ImageFrameAsset asset) {
-    final preview = AspectRatio(
-      aspectRatio: asset.nativeAspectRatio,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = constraints.biggest;
-          final rect = Rect.fromLTWH(
-            size.width * asset.contentRect.left,
-            size.height * asset.contentRect.top,
-            size.width * asset.contentRect.width,
-            size.height * asset.contentRect.height,
-          );
-          final fit = resolveContentFit(
-            _settings.frame.contentFit,
-            _turnedContentAspectRatio,
-            rect.width / rect.height,
-          );
-
-          return Stack(
-            children: [
-              Positioned.fromRect(
-                rect: rect,
-                child: _imageFrameContentPreview(fit),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: ImageFrameArtwork(asset: asset, fit: BoxFit.fill),
-                ),
-              ),
-            ],
-          );
-        },
+  /// Prévia ao vivo de uma moldura de imagem, com o vídeo já cortado dentro
+  /// da janela dela (ver [ImageFramedPreview]). O giro da aba "Girar" entra
+  /// aqui, dentro da janela: a moldura em volta fica parada.
+  Widget _imageFramedPreview(ImageFrameAsset asset) => ImageFramedPreview(
+    asset: asset,
+    frame: _settings.frame,
+    contentAspectRatio: _turnedContentAspectRatio,
+    child: applyOutputTransform(
+      _settings.frame.contentTransform,
+      SizedBox(
+        width: 1000,
+        height: 1000 / _contentAspectRatio,
+        child: _croppedPreview(showOutline: false),
       ),
-    );
-    if (_settings.frame.transparentBackground) return preview;
-    return ColoredBox(color: _settings.frame.backgroundColor, child: preview);
-  }
-
-  /// Conteúdo dentro da janela de uma moldura de imagem. Em "Expandir sem
-  /// cortar", a área que não é ocupada pelo vídeo permanece preta, enquanto
-  /// o zoom atua apenas sobre o vídeo nítido central — a mesma composição
-  /// usada pelo FFmpeg na exportação.
-  Widget _imageFrameContentPreview(ContentFitMode fit) {
-    // O giro da aba "Girar" entra aqui, dentro da janela: a moldura em
-    // volta fica parada.
-    Widget video(BoxFit boxFit) => FittedBox(
-      fit: boxFit,
-      child: applyOutputTransform(
-        _settings.frame.contentTransform,
-        SizedBox(
-          width: 1000,
-          height: 1000 / _contentAspectRatio,
-          child: _croppedPreview(showOutline: false),
-        ),
-      ),
-    );
-
-    if (fit != ContentFitMode.expand) {
-      return ColoredBox(
-        color: _settings.frame.expandBackgroundColor,
-        child: ClipRect(
-          child: video(
-            fit == ContentFitMode.fill ? BoxFit.cover : BoxFit.contain,
-          ),
-        ),
-      );
-    }
-
-    return ColoredBox(
-      color: _settings.frame.expandBackgroundColor,
-      child: ClipRect(
-        child: Transform.scale(
-          scale: _settings.frame.effectiveContentZoom,
-          child: video(BoxFit.contain),
-        ),
-      ),
-    );
-  }
-
-  /// Resumo da aba "Moldura": o nome da arte, com o giro dela quando houver.
-  String get _imageFrameLabel {
-    final asset = _settings.frame.imageFrame;
-    if (asset == null) return tr('Sem moldura', 'No frame');
-    final turns = _settings.frame.frameQuarterTurns;
-    return turns == 0 ? asset.label : '${asset.label} · ${turns * 90}°';
-  }
-
-  /// O estilo procedural que a fileira de "Borda" deve marcar. Com uma
-  /// moldura de imagem ativa é sempre "Sem borda": as duas famílias são
-  /// mutuamente exclusivas, então escolher uma tem que deixar a outra
-  /// visivelmente desativada (ver [_selectFrameStyle]/[_selectImageFrame]).
-  FrameStyle get _activeFrameStyle => _settings.frame.imageFrame == null
-      ? _settings.frame.style
-      : FrameStyle.none;
+    ),
+  );
 
   /// Seção "Borda" (moldura procedural): as opções procedurais e, quando uma
   /// delas está ativa, os controles de cor, espessura da borda e
   /// arredondamento dos cantos.
   LabeledSection _frameStyleSection() {
-    final theme = Theme.of(context);
-    final style = _activeFrameStyle;
-
+    final style = _settings.frame.activeStyle;
     return LabeledSection(
       icon: Icons.check_box_outline_blank_rounded,
       title: tr('Borda', 'Border'),
       value: style.label,
       hint: tr('Escolha uma opção', 'Choose an option'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FrameStylePicker(
-            active: _settings.frame.style,
-            onSelected: _selectFrameStyle,
-          ),
-          if (style != FrameStyle.none) ...[
-            const SizedBox(height: 18),
-            SectionCard(
-              children: [
-                PanelColorRow(
-                  label: tr('Cor da borda', 'Border color'),
-                  color: _settings.frame.color,
-                  onTap: _pickFrameColor,
-                ),
-                Divider(
-                  height: 13,
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.45,
-                  ),
-                ),
-                FrameThicknessRow(
-                  frame: _settings.frame,
-                  onChangeStart: _pushUndoCheckpoint,
-                  onChanged: (next) => _updateFrame(next, pushUndo: false),
-                ),
-                Divider(
-                  height: 13,
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.45,
-                  ),
-                ),
-                CornerRadiusRow(
-                  frame: _settings.frame,
-                  onChangeStart: _pushUndoCheckpoint,
-                  onChanged: (next) => _updateFrame(next, pushUndo: false),
-                ),
-              ],
-            ),
-          ],
-        ],
+      child: FrameBorderPanel(
+        frame: _settings.frame,
+        activeStyle: style,
+        onSelectStyle: _selectFrameStyle,
+        onPickColor: _pickFrameColor,
+        onChangeStart: _pushUndoCheckpoint,
+        onChanged: (next) => _updateFrame(next, pushUndo: false),
       ),
     );
   }
 
-  /// Seção "Moldura" (moldura de imagem): as artes prontas do app, as
-  /// importadas pelo usuário e o botão de importar. Fica numa aba própria
-  /// porque é a outra família de moldura — escolher aqui desativa a
-  /// "Borda", e vice-versa.
-  ///
-  /// Com uma arte selecionada ([FrameSettings.hasFixedAspect]), aparecem
-  /// abaixo das miniaturas dois cards independentes — "Ajuste do conteúdo"
-  /// (como o vídeo se encaixa na moldura) e "Resolução da moldura" (o
-  /// tamanho/qualidade do arquivo final) — e, por último, o botão "90°"
-  /// (gira a moldura junto com o vídeo).
+  /// Seção "Moldura" (moldura de imagem) — ver [ImageFramePanel]. Com uma
+  /// arte escolhida, o primeiro card é o "Ajuste do conteúdo" (como o vídeo
+  /// se encaixa na moldura), recolhível.
   LabeledSection _imageFrameSection() {
-    final hasFixedAspect = _settings.frame.hasFixedAspect;
     return LabeledSection(
       icon: Icons.smartphone_rounded,
       title: tr('Moldura', 'Frame'),
-      value: _imageFrameLabel,
+      value: _settings.frame.imageFrameLabel,
       hint: tr('Escolha uma opção', 'Choose an option'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ImageFramePicker(
-            selected: _settings.frame.imageFrame,
-            imported: _importedImageFrames,
-            onSelected: _selectImageFrame,
-            onClear: () =>
-                _updateFrame(_settings.frame.copyWith(clearImageFrame: true)),
-            onImport: _importFrameImage,
-            onRemoveImported: _confirmRemoveImportedFrame,
-          ),
-          if (hasFixedAspect) ...[
-            const SizedBox(height: 18),
-            SectionCard(children: [_contentFitSubsection()]),
-            const SizedBox(height: 18),
-            SectionCard(
-              children: [
-                // Fundo de dentro da janela da moldura, em qualquer ajuste
-                // (antes só em "Expandir sem cortar"; nos outros era preto).
-                PanelColorRow(
-                  key: const ValueKey('frameWindowColorRow'),
-                  label: tr(
-                    'Cor do fundo da moldura',
-                    'Frame background color',
-                  ),
-                  color: _settings.frame.expandBackgroundColor,
-                  onTap: _pickExpandBackgroundColor,
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            SectionCard(children: [_frameResolutionSelector()]),
-            // O giro da moldura fica por último, sozinho: é um botão só.
-            const SizedBox(height: 18),
-            FrameRotateButton(
-              onRotate: () => _updateFrame(
-                _settings.frame.copyWith(
-                  frameQuarterTurns: _settings.frame.frameQuarterTurns + 1,
-                ),
-              ),
-            ),
-          ],
-        ],
+      child: ImageFramePanel(
+        frame: _settings.frame,
+        imported: _frameLibrary.frames,
+        onSelected: _selectImageFrame,
+        onClear: () =>
+            _updateFrame(_settings.frame.copyWith(clearImageFrame: true)),
+        onImport: _importFrameImage,
+        onRemoveImported: _confirmRemoveImportedFrame,
+        onPickWindowColor: _pickExpandBackgroundColor,
+        resolutionFitLabel: tr('Ajustar', 'Fit'),
+        onChanged: _updateFrame,
+        leadingCard: SectionCard(children: [_contentFitSubsection()]),
       ),
     );
   }
@@ -1114,18 +823,14 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   void _selectFrameStyle(FrameStyle style) {
-    _updateFrameKeepingAnchorPosition(
-      frameWithStyle(_settings.frame, style),
-      anchorKey: _frameStyleAnchorKey,
-    );
+    _updateFrame(frameWithStyle(_settings.frame, style));
   }
 
   /// Seleciona uma moldura de imagem, sempre limpando o estilo procedural
   /// (as duas são mutuamente exclusivas).
   void _selectImageFrame(ImageFrameAsset asset) {
-    _updateFrameKeepingAnchorPosition(
+    _updateFrame(
       _settings.frame.copyWith(style: FrameStyle.none, imageFrame: asset),
-      anchorKey: _imageFrameAnchorKey,
     );
   }
 
@@ -1134,9 +839,9 @@ class _EditorPageState extends State<EditorPage> {
   /// seleciona em caso de sucesso.
   Future<void> _importFrameImage() async {
     try {
-      final asset = await _importedFrameStore.importFrame();
+      final asset = await _frameLibrary.import();
       if (!mounted) return;
-      setState(() => _importedImageFrames = [..._importedImageFrames, asset]);
+      setState(() {});
       _selectImageFrame(asset);
     } on ImportedFrameException catch (e) {
       _showMessage(e.message);
@@ -1144,14 +849,9 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   Future<void> _confirmRemoveImportedFrame(ImageFrameAsset asset) async {
-    if (!await confirmRemoveImportedFrame(context, asset)) return;
-
-    await _importedFrameStore.remove(asset.id);
+    if (!await _frameLibrary.remove(context, asset)) return;
     if (!mounted) return;
     setState(() {
-      _importedImageFrames = _importedImageFrames
-          .where((a) => a.id != asset.id)
-          .toList();
       if (_settings.frame.imageFrame?.id == asset.id) {
         _updateFrame(_settings.frame.copyWith(clearImageFrame: true));
       }
@@ -1211,79 +911,18 @@ class _EditorPageState extends State<EditorPage> {
   /// ampliado dentro dela. Mesmo padrão de [_collapsibleSubsection] usado
   /// por "Suavização de cor"/"Paleta" em [_colorSection].
   Widget _contentFitSubsection() {
-    final selected = _settings.frame.contentFit;
     return _collapsibleSubsection(
       label: tr('Ajuste do conteúdo', 'Content fit'),
       expanded: _contentFitExpanded,
       onToggle: () =>
           setState(() => _contentFitExpanded = !_contentFitExpanded),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final mode in _selectableContentFitModes) ...[
-            ContentFitTile(
-              mode: mode,
-              selected: mode == selected,
-              onSelected: (m) =>
-                  _updateFrame(_settings.frame.copyWith(contentFit: m)),
-              expandedOptions: ExpandFitOptions(
-                frame: _settings.frame,
-                onChangeStart: _pushUndoCheckpoint,
-                onChanged: (next) => _updateFrame(next, pushUndo: false),
-                onPickColor: _pickExpandBackgroundColor,
-              ),
-            ),
-            if (mode != _selectableContentFitModes.last)
-              const SizedBox(height: 8),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// Card próprio de "Resolução da moldura": o tamanho/qualidade do GIF
-  /// final, independente de "Ajuste do conteúdo" (como o vídeo se encaixa
-  /// na moldura) — por isso sempre visível, não atrelada ao estado
-  /// recolhido/expandido daquele outro card.
-  Widget _frameResolutionSelector() {
-    final theme = Theme.of(context);
-    final selected = _settings.frame.frameResolutionMode;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            tr('Resolução da moldura', 'Frame resolution'),
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<ImageFrameResolutionMode>(
-            key: const ValueKey('frameResolutionSegmentedButton'),
-            segments: [
-              ButtonSegment(
-                value: ImageFrameResolutionMode.matchAjustar,
-                label: Text(
-                  tr('Ajustar', 'Fit'),
-                  key: ValueKey('frameResolutionSegment_matchAjustar'),
-                ),
-              ),
-              ButtonSegment(
-                value: ImageFrameResolutionMode.nativeMax,
-                label: Text(
-                  tr('Máxima', 'Maximum'),
-                  key: ValueKey('frameResolutionSegment_nativeMax'),
-                ),
-              ),
-            ],
-            selected: {selected},
-            showSelectedIcon: true,
-            expandedInsets: EdgeInsets.zero,
-            onSelectionChanged: (selection) => _updateFrame(
-              _settings.frame.copyWith(frameResolutionMode: selection.single),
-            ),
-          ),
-        ],
+      child: ContentFitOptions(
+        frame: _settings.frame,
+        onSelected: (m) =>
+            _updateFrame(_settings.frame.copyWith(contentFit: m)),
+        onChangeStart: _pushUndoCheckpoint,
+        onChanged: (next) => _updateFrame(next, pushUndo: false),
+        onPickColor: _pickExpandBackgroundColor,
       ),
     );
   }

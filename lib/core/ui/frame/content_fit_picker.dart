@@ -5,6 +5,60 @@ import '../../models/frame_settings.dart';
 import '../panel_rows.dart';
 import 'frame_sliders.dart';
 
+/// Os modos de encaixe oferecidos à pessoa. `fit` continua como resultado
+/// interno do ajuste automático quando é preciso preservar o conteúdo
+/// inteiro, mas não aparece como uma escolha duplicada.
+const selectableContentFitModes = [
+  ContentFitMode.auto,
+  ContentFitMode.fill,
+  ContentFitMode.expand,
+];
+
+/// "Ajuste do conteúdo" de Editar vídeo e Editar imagem: como o conteúdo se
+/// encaixa na janela de uma moldura de imagem com proporção diferente da
+/// dele — um [ContentFitTile] por modo de [selectableContentFitModes].
+class ContentFitOptions extends StatelessWidget {
+  const ContentFitOptions({
+    super.key,
+    required this.frame,
+    required this.onSelected,
+    required this.onChangeStart,
+    required this.onChanged,
+    required this.onPickColor,
+  });
+
+  final FrameSettings frame;
+  final ValueChanged<ContentFitMode> onSelected;
+
+  /// Ver [ExpandFitOptions].
+  final VoidCallback onChangeStart;
+  final ValueChanged<FrameSettings> onChanged;
+  final VoidCallback onPickColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final mode in selectableContentFitModes) ...[
+          ContentFitTile(
+            mode: mode,
+            selected: mode == frame.contentFit,
+            onSelected: onSelected,
+            expandedOptions: ExpandFitOptions(
+              frame: frame,
+              onChangeStart: onChangeStart,
+              onChanged: onChanged,
+              onPickColor: onPickColor,
+            ),
+          ),
+          if (mode != selectableContentFitModes.last) const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
 /// Ladrilho de um modo de encaixe do conteúdo na moldura de imagem. O modo
 /// "Expandir sem cortar" abre as opções dele (zoom e cor do fundo) quando
 /// está selecionado.

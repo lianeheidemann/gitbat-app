@@ -27,11 +27,10 @@ import '../../core/ui/crop/crop_controller.dart';
 import '../../core/ui/crop/crop_tab.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/ui/frame/border_ring.dart';
+import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/photo_placement_view.dart';
 import '../../core/ui/frame/frame_color_row.dart';
-import '../../core/ui/frame/frame_sliders.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
-import '../../core/ui/frame/frame_thumb_shell.dart';
 import '../../core/ui/panel_rows.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
@@ -532,55 +531,21 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// Mesmos controles da aba "Borda" de Editar imagem/vídeo: estilo, cor,
   /// espessura e arredondamento dos cantos.
   Widget _borderSection() {
-    final theme = Theme.of(context);
     final border = _settings.border;
     void set(FrameSettings next, {bool pushUndo = true}) =>
         _update(_settings.copyWith(border: next), pushUndo: pushUndo);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FrameStylePicker(
-          active: border.style,
-          onSelected: (style) => set(frameWithStyle(border, style)),
-        ),
-        if (border.style != FrameStyle.none) ...[
-          const SizedBox(height: 18),
-          SectionCard(
-            children: [
-              PanelColorRow(
-                label: tr('Cor da borda', 'Border color'),
-                color: border.color,
-                onTap: () => _pickColor(
-                  title: tr('Cor da borda', 'Border color'),
-                  selectedColor: border.color,
-                  onSelected: (color) => set(
-                    _settings.border.copyWith(color: color),
-                    pushUndo: false,
-                  ),
-                ),
-              ),
-              Divider(
-                height: 13,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-              FrameThicknessRow(
-                frame: border,
-                onChangeStart: _pushUndoCheckpoint,
-                onChanged: (next) => set(next, pushUndo: false),
-              ),
-              Divider(
-                height: 13,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-              CornerRadiusRow(
-                frame: border,
-                onChangeStart: _pushUndoCheckpoint,
-                onChanged: (next) => set(next, pushUndo: false),
-              ),
-            ],
-          ),
-        ],
-      ],
+    return FrameBorderPanel(
+      frame: border,
+      activeStyle: border.style,
+      onSelectStyle: (style) => set(frameWithStyle(border, style)),
+      onPickColor: () => _pickColor(
+        title: tr('Cor da borda', 'Border color'),
+        selectedColor: border.color,
+        onSelected: (color) =>
+            set(_settings.border.copyWith(color: color), pushUndo: false),
+      ),
+      onChangeStart: _pushUndoCheckpoint,
+      onChanged: (next) => set(next, pushUndo: false),
     );
   }
 

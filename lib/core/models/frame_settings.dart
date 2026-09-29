@@ -8,6 +8,7 @@ import 'default_colors.dart';
 import 'image_frame.dart';
 import 'output_transform.dart';
 import 'photo_placement.dart';
+import '../../app/language_controller.dart';
 import '../../app/translations.dart';
 
 /// Estilo da borda (moldura procedural) desenhada ao redor do GIF/foto. Cada
@@ -260,6 +261,19 @@ class FrameSettings {
   bool get hasFixedAspect => imageFrame != null;
 
   double? get fixedAspectRatio => imageFrame?.nativeAspectRatio;
+
+  /// O estilo procedural que a aba "Borda" marca. Com uma moldura de imagem
+  /// ativa é sempre "Sem borda": as duas famílias são mutuamente
+  /// exclusivas, então escolher uma deixa a outra visivelmente desativada.
+  FrameStyle get activeStyle => imageFrame == null ? style : FrameStyle.none;
+
+  /// Resumo da aba "Moldura": o nome da arte, com o giro dela quando houver.
+  String get imageFrameLabel {
+    final asset = imageFrame;
+    if (asset == null) return tr('Sem moldura', 'No frame');
+    final turns = frameQuarterTurns;
+    return turns == 0 ? asset.label : '${asset.label} · ${turns * 90}°';
+  }
 
   /// Largura de referência (px) usada para normalizar [thicknessAtReference].
   static const referenceWidth = 480.0;

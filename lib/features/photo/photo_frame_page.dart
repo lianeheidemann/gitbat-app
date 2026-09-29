@@ -26,14 +26,14 @@ import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
 import '../../core/ui/crop/crop_tab.dart';
 import '../../core/ui/frame/content_fit_picker.dart';
+import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/frame/border_ring.dart';
 import '../../core/ui/frame/frame_color_row.dart';
-import '../../core/ui/frame/frame_rotate_button.dart';
 import '../../core/ui/panel_rows.dart';
-import '../../core/ui/frame/frame_sliders.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
-import '../../core/ui/frame/frame_thumb_shell.dart';
-import '../../core/ui/frame/image_frame_picker.dart';
+import '../../core/ui/frame/image_frame_panel.dart';
+import '../../core/ui/frame/image_framed_preview.dart';
+import '../../core/ui/frame/imported_frame_library.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
@@ -49,14 +49,6 @@ import '../../core/ui/text_overlay_editor.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/ui/edit_history.dart';
 import '../../app/editor_defaults.dart';
-
-/// Mesmos três modos apresentados ao usuário em `EditorPage` — `fit` só
-/// existe como resultado interno do ajuste automático.
-const _selectableContentFitModes = [
-  ContentFitMode.auto,
-  ContentFitMode.fill,
-  ContentFitMode.expand,
-];
 
 /// Tela dedicada a aplicar uma moldura (procedural ou de imagem) a uma foto
 /// estática. Reaproveita o mesmo modelo ([FrameSettings], [ImageFrameAsset])
@@ -80,7 +72,7 @@ class PhotoFramePage extends StatefulWidget {
 
 class _PhotoFramePageState extends State<PhotoFramePage> {
   static const _output = OutputService();
-  final _importedFrameStore = ImportedFrameStore();
+  final _frameLibrary = ImportedFrameLibrary();
 
   /// Ancorada no `RepaintBoundary` em volta da prévia — [_renderPreviewImage]
   /// usa isso para rasterizar exatamente o que está na tela para o
@@ -88,7 +80,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   final _colorPreviewKey = GlobalKey();
 
   FrameSettings _frame = EditorDefaults.frameSettings();
-  List<ImageFrameAsset> _importedImageFrames = [];
 
   /// A foto em edição. Começa sendo a que chegou pela rota e é **trocada** a
   /// cada apagada da borracha mágica, por um PNG temporário já corrigido. As
@@ -187,9 +178,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   Future<void> _loadImportedFrames() async {
-    final frames = await _importedFrameStore.loadAll();
+    await _frameLibrary.load();
     if (!mounted) return;
-    setState(() => _importedImageFrames = frames);
+    setState(() {});
   }
 
   /// Proporção efetiva da foto depois do recorte da aba "Recorte" — a
@@ -332,20 +323,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     }
   }
 
-  /// Resumo da aba "Moldura": o nome da arte, com o giro dela quando houver.
-  String get _imageFrameLabel {
-    final asset = _frame.imageFrame;
-    if (asset == null) return tr('Sem moldura', 'No frame');
-    final turns = _frame.frameQuarterTurns;
-    return turns == 0 ? asset.label : '${asset.label} · ${turns * 90}°';
-  }
-
-  /// O estilo procedural que a aba "Borda" deve mostrar. Com uma moldura
-  /// de imagem ativa é sempre "Sem borda": as duas famílias são mutuamente
-  /// exclusivas, como no editor de vídeo.
-  FrameStyle get _activeFrameStyle =>
-      _frame.imageFrame == null ? _frame.style : FrameStyle.none;
-
   /// As seções da tela, na ordem em que aparecem na barra de baixo — as
   /// mesmas de antes, só que como abas em vez de cards empilhados numa lista
   /// rolável (mesmo rodapé da tela de montagem).
@@ -377,13 +354,13 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     EditorSection(
       icon: Icons.check_box_outline_blank_rounded,
       title: tr('Borda', 'Border'),
-      value: _activeFrameStyle.label,
+      value: _frame.activeStyle.label,
       builder: (_) => _frameStyleSection(),
     ),
     EditorSection(
       icon: Icons.smartphone_rounded,
       title: tr('Moldura', 'Frame'),
-      value: _imageFrameLabel,
+      value: _frame.imageFrameLabel,
       builder: (_) => _imageFrameSection(),
     ),
     if (_frame.hasFixedAspect)
@@ -567,7 +544,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       ? _rawCropPreviewWithHandles()
       // Sem moldura de imagem, gira o resultado inteiro (aba "Girar"); com
       // ela, só o giro da própria moldura (botão "90°") — o da aba "Girar"
-      // fica por conta de [_imageFrameContentPreview], lá dentro da janela.
+      // fica por conta de [_imageFramedPreview], lá dentro da janela.
       : applyOutputTransform(
           _frame.finalTransform,
           _framedPreview(textTabActive),
@@ -696,89 +673,29 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     return ColoredBox(color: frame.backgroundColor, child: bordered);
   }
 
-  Widget _imageFramedPreview(ImageFrameAsset asset, {required bool gestures}) {
-    final preview = AspectRatio(
-      aspectRatio: asset.nativeAspectRatio,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = constraints.biggest;
-          final rect = Rect.fromLTWH(
-            size.width * asset.contentRect.left,
-            size.height * asset.contentRect.top,
-            size.width * asset.contentRect.width,
-            size.height * asset.contentRect.height,
-          );
-          final fit = resolveContentFit(
-            _frame.contentFit,
-            _contentAspectRatio,
-            rect.width / rect.height,
-          );
-
-          return Stack(
-            children: [
-              Positioned.fromRect(
-                rect: rect,
-                child: _imageFrameContentPreview(fit, gestures: gestures),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: ImageFrameArtwork(asset: asset, fit: BoxFit.fill),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    if (_frame.transparentBackground) return preview;
-    return ColoredBox(color: _frame.backgroundColor, child: preview);
-  }
-
-  Widget _imageFrameContentPreview(
-    ContentFitMode fit, {
-    required bool gestures,
-  }) {
-    // Tamanho de referência qualquer, na proporção certa (a real do recorte
-    // não importa aqui — `FittedBox` só olha para a proporção do filho) —
-    // mesma técnica de `EditorPage._imageFrameContentPreview`. O giro da
-    // aba "Girar" entra aqui, dentro da janela: a moldura em volta fica
-    // parada.
-    Widget photo(BoxFit boxFit) => FittedBox(
-      fit: boxFit,
-      child: _placedPhoto(
-        applyOutputTransform(
-          _frame.contentTransform,
-          SizedBox(
-            width: 1000,
-            height: 1000 / _photoAspectRatio,
-            child: _croppedPhotoPreview(),
+  /// Prévia ao vivo de uma moldura de imagem, com a foto já recortada dentro
+  /// da janela dela (ver [ImageFramedPreview]). O giro da aba "Girar" entra
+  /// aqui, dentro da janela: a moldura em volta fica parada.
+  Widget _imageFramedPreview(ImageFrameAsset asset, {required bool gestures}) =>
+      ImageFramedPreview(
+        asset: asset,
+        frame: _frame,
+        contentAspectRatio: _contentAspectRatio,
+        // Tamanho de referência qualquer, na proporção certa (a real do
+        // recorte não importa aqui — o encaixe só olha para a proporção do
+        // filho), mesma técnica de `EditorPage._imageFramedPreview`.
+        child: _placedPhoto(
+          applyOutputTransform(
+            _frame.contentTransform,
+            SizedBox(
+              width: 1000,
+              height: 1000 / _photoAspectRatio,
+              child: _croppedPhotoPreview(),
+            ),
           ),
-        ),
-        gestures: gestures,
-      ),
-    );
-
-    if (fit != ContentFitMode.expand) {
-      return ColoredBox(
-        color: _frame.expandBackgroundColor,
-        child: ClipRect(
-          child: photo(
-            fit == ContentFitMode.fill ? BoxFit.cover : BoxFit.contain,
-          ),
+          gestures: gestures,
         ),
       );
-    }
-
-    return ColoredBox(
-      color: _frame.expandBackgroundColor,
-      child: ClipRect(
-        child: Transform.scale(
-          scale: _frame.effectiveContentZoom,
-          child: photo(BoxFit.contain),
-        ),
-      ),
-    );
-  }
 
   // ---------------------------------------------------------------------
   // Seção "Recorte"
@@ -975,124 +892,41 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // Seção "Borda" (moldura procedural)
   // ---------------------------------------------------------------------
 
-  Widget _frameStyleSection() {
-    final theme = Theme.of(context);
-    final style = _frame.style;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FrameStylePicker(
-          active: _frame.style,
-          onSelected: (style) => _updateFrame(frameWithStyle(_frame, style)),
-        ),
-        if (style != FrameStyle.none) ...[
-          const SizedBox(height: 18),
-          SectionCard(
-            children: [
-              PanelColorRow(
-                label: tr('Cor da borda', 'Border color'),
-                color: _frame.color,
-                onTap: _pickFrameColor,
-              ),
-              Divider(
-                height: 13,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-              FrameThicknessRow(
-                frame: _frame,
-                onChangeStart: _pushUndoCheckpoint,
-                onChanged: (next) => _updateFrame(next, pushUndo: false),
-              ),
-              Divider(
-                height: 13,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-              CornerRadiusRow(
-                frame: _frame,
-                onChangeStart: _pushUndoCheckpoint,
-                onChanged: (next) => _updateFrame(next, pushUndo: false),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _frameStyleSection() => FrameBorderPanel(
+    frame: _frame,
+    activeStyle: _frame.style,
+    onSelectStyle: (style) => _updateFrame(frameWithStyle(_frame, style)),
+    onPickColor: _pickFrameColor,
+    onChangeStart: _pushUndoCheckpoint,
+    onChanged: (next) => _updateFrame(next, pushUndo: false),
+  );
 
   // ---------------------------------------------------------------------
   // Seção "Moldura" (moldura de imagem)
   // ---------------------------------------------------------------------
 
-  Widget _imageFrameSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ImageFramePicker(
-          selected: _frame.imageFrame,
-          imported: _importedImageFrames,
-          onSelected: _selectImageFrame,
-          onClear: () => _updateFrame(_frame.copyWith(clearImageFrame: true)),
-          onImport: _importFrameImage,
-          onRemoveImported: _confirmRemoveImportedFrame,
-        ),
-        // O giro e a resolução só existem para moldura de imagem — sem uma
-        // escolhida, não há arte para deitar nem canvas próprio para
-        // dimensionar.
-        if (_frame.hasFixedAspect) ...[
-          const SizedBox(height: 18),
-          SectionCard(
-            children: [
-              // Fundo de dentro da janela da moldura, em qualquer ajuste
-              // (antes só em "Expandir sem cortar"; nos outros era preto).
-              PanelColorRow(
-                key: const ValueKey('frameWindowColorRow'),
-                label: tr('Cor do fundo da moldura', 'Frame background color'),
-                color: _frame.expandBackgroundColor,
-                onTap: _pickExpandBackgroundColor,
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          SectionCard(children: [_frameResolutionSelector()]),
-          // O giro da moldura fica por último, sozinho: é um botão só.
-          const SizedBox(height: 18),
-          FrameRotateButton(
-            onRotate: () => _updateFrame(
-              _frame.copyWith(frameQuarterTurns: _frame.frameQuarterTurns + 1),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _imageFrameSection() => ImageFramePanel(
+    frame: _frame,
+    imported: _frameLibrary.frames,
+    onSelected: _selectImageFrame,
+    onClear: () => _updateFrame(_frame.copyWith(clearImageFrame: true)),
+    onImport: _importFrameImage,
+    onRemoveImported: _confirmRemoveImportedFrame,
+    onPickWindowColor: _pickExpandBackgroundColor,
+    resolutionFitLabel: tr('Da foto', 'From photo'),
+    onChanged: _updateFrame,
+  );
 
   /// "Ajuste da foto" virou aba própria (só aparece com moldura de imagem
   /// ativa), então aqui não cabe mais o cabeçalho recolhível que ela tinha
   /// como sub-seção.
-  Widget _contentFitSection() {
-    final selected = _frame.contentFit;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final mode in _selectableContentFitModes) ...[
-          ContentFitTile(
-            mode: mode,
-            selected: mode == selected,
-            onSelected: (m) => _updateFrame(_frame.copyWith(contentFit: m)),
-            expandedOptions: ExpandFitOptions(
-              frame: _frame,
-              onChangeStart: _pushUndoCheckpoint,
-              onChanged: (next) => _updateFrame(next, pushUndo: false),
-              onPickColor: _pickExpandBackgroundColor,
-            ),
-          ),
-          if (mode != _selectableContentFitModes.last)
-            const SizedBox(height: 8),
-        ],
-      ],
-    );
-  }
+  Widget _contentFitSection() => ContentFitOptions(
+    frame: _frame,
+    onSelected: (m) => _updateFrame(_frame.copyWith(contentFit: m)),
+    onChangeStart: _pushUndoCheckpoint,
+    onChanged: (next) => _updateFrame(next, pushUndo: false),
+    onPickColor: _pickExpandBackgroundColor,
+  );
 
   void _selectImageFrame(ImageFrameAsset asset) {
     _updateFrame(_frame.copyWith(style: FrameStyle.none, imageFrame: asset));
@@ -1100,9 +934,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   Future<void> _importFrameImage() async {
     try {
-      final asset = await _importedFrameStore.importFrame();
+      final asset = await _frameLibrary.import();
       if (!mounted) return;
-      setState(() => _importedImageFrames = [..._importedImageFrames, asset]);
+      setState(() {});
       _selectImageFrame(asset);
     } on ImportedFrameException catch (e) {
       _message(e.message);
@@ -1110,14 +944,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   Future<void> _confirmRemoveImportedFrame(ImageFrameAsset asset) async {
-    if (!await confirmRemoveImportedFrame(context, asset)) return;
-
-    await _importedFrameStore.remove(asset.id);
+    if (!await _frameLibrary.remove(context, asset)) return;
     if (!mounted) return;
     setState(() {
-      _importedImageFrames = _importedImageFrames
-          .where((a) => a.id != asset.id)
-          .toList();
       if (_frame.imageFrame?.id == asset.id) {
         _updateFrame(_frame.copyWith(clearImageFrame: true));
       }
@@ -1180,49 +1009,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // ---------------------------------------------------------------------
   // "Ajuste do conteúdo" / "Resolução da moldura"
   // ---------------------------------------------------------------------
-
-  Widget _frameResolutionSelector() {
-    final theme = Theme.of(context);
-    final selected = _frame.frameResolutionMode;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            tr('Resolução da moldura', 'Frame resolution'),
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<ImageFrameResolutionMode>(
-            key: const ValueKey('frameResolutionSegmentedButton'),
-            segments: [
-              ButtonSegment(
-                value: ImageFrameResolutionMode.matchAjustar,
-                label: Text(
-                  tr('Da foto', 'From photo'),
-                  key: ValueKey('frameResolutionSegment_matchAjustar'),
-                ),
-              ),
-              ButtonSegment(
-                value: ImageFrameResolutionMode.nativeMax,
-                label: Text(
-                  tr('Máxima', 'Maximum'),
-                  key: ValueKey('frameResolutionSegment_nativeMax'),
-                ),
-              ),
-            ],
-            selected: {selected},
-            showSelectedIcon: true,
-            expandedInsets: EdgeInsets.zero,
-            onSelectionChanged: (selection) => _updateFrame(
-              _frame.copyWith(frameResolutionMode: selection.single),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ---------------------------------------------------------------------
   // "Fundo transparente"
