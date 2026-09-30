@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="160" src="assets/readme/gitbat-logo.png" alt="GitBat"/>
+<img width="140" src="assets/readme/gitbat-logo.png" alt="GitBat"/>
 
 # GitBat
 
