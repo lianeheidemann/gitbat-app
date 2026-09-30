@@ -26,7 +26,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 ICONE_FONTE = RAIZ / 'assets/icon/icon-v2/morceguinho-icone-simples.png'
 
 # Cores da identidade do morceguinho (as mesmas da paleta oficial em
-# lib/app/app_palette.dart).
+# lib/app/palettes/bat_palette.dart).
 AZUL_NOITE = (17, 25, 41)  # fundo do ícone, #111929
 AZUL_MARINHO = (12, 72, 168)  # contorno do mascote, #0C48A8
 AZUL_GELO = (176, 221, 252)  # corpo do mascote, #B0DCFC

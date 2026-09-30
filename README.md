@@ -232,7 +232,7 @@ CI checks this on every push.
 | README logo | `assets/readme/gitbat-logo.png` |
 | Tech badges | `assets/badge/gitbat-badges-adaptive-v10.svg` |
 | Home screen logo | `recursos/marca/gitbat-logo.png` — a stable copy of the README logo |
-| Official palette | *Morceguinho* in `lib/app/app_palette.dart` |
+| Official palette | *Morceguinho* in `lib/app/palettes/bat_palette.dart` |
 | Previous identity | `assets/icon/icon-v1/` |
 
 ## License

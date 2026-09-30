@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Azul-noite do fundo do ícone do morceguinho (lib/app/app_palette.dart). -->
+    <!-- Azul-noite do fundo do ícone do morceguinho (lib/app/palettes/bat_palette.dart). -->
     <color name="ic_launcher_background">#111929</color>
 </resources>
