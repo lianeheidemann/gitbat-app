@@ -98,9 +98,8 @@ class TextOverlayController extends ChangeNotifier {
   }
 }
 
-/// Caixa colorida atrás de um texto — mesmo desenho de
-/// `CollagePage._TextBackgroundBox`, reexposto aqui via [paintCollageTextBackground]
-/// (já compartilhado com a exportação).
+/// Caixa colorida atrás de um texto, desenhada por
+/// [paintCollageTextBackground] — o mesmo desenho da exportação.
 class TextOverlayBackgroundBox extends StatelessWidget {
   const TextOverlayBackgroundBox({
     super.key,

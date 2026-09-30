@@ -39,7 +39,7 @@ into this — and the way out is to use Android's hardware encoder
 ## What the LGPL requires of you
 
 1. **State that you use FFmpeg and under which license.**
-   Already done: `lib/licenses.dart` registers the notice, which shows up
+   Already done: `lib/app/licenses.dart` registers the notice, which shows up
    under *About → View licenses* inside the app.
 
 2. **Point to where to get FFmpeg's source code.**

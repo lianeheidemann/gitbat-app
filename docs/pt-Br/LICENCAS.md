@@ -39,7 +39,7 @@ x264.
 ## O que a LGPL exige de você
 
 1. **Dizer que usa FFmpeg e sob qual licença.**
-   Já está feito: `lib/licenses.dart` registra o aviso, que aparece em
+   Já está feito: `lib/app/licenses.dart` registra o aviso, que aparece em
    *Sobre → Ver licenças* dentro do app.
 
 2. **Apontar onde obter o código-fonte do FFmpeg.**

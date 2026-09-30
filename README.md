@@ -116,7 +116,7 @@ FFmpeg — the app has **no internet permission**.
   shadows, saturation, hue and temperature — identical in preview and export
 - **Configurações** tab with dark theme, preview checkerboard and **color
   palettes** — the official *Morceguinho* (the GitBat bat's blues and cyan)
-  plus Lavanda, Menta, Pêssego and Rosa, each in light and dark; the chosen
+  plus 30+ others, each in light and dark; the chosen
   one is remembered and also sets the default background, border and text
   colors of the editors
 - Confirmation pop-up on every save to the gallery; everything is saved to
@@ -212,7 +212,7 @@ CI checks this on every push.
 
 ## Quality
 
-- **610+ automated tests** — size model, FFmpeg arguments, crop and frame
+- **700+ automated tests** — size model, FFmpeg arguments, crop and frame
   geometry, collage layout and compositing (golden pixels), animation
   timeline, SVG export and editor interactions
 - `tool/medir_precisao.py` measures the size model against real FFmpeg
