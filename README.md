@@ -212,7 +212,7 @@ CI checks this on every push.
 
 ## Quality
 
-- **610+ automated tests** — size model, FFmpeg arguments, crop and frame
+- **700+ automated tests** — size model, FFmpeg arguments, crop and frame
   geometry, collage layout and compositing (golden pixels), animation
   timeline, SVG export and editor interactions
 - `tool/medir_precisao.py` measures the size model against real FFmpeg

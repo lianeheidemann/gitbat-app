@@ -100,7 +100,7 @@ class CollageStickersPanel extends StatelessWidget {
               if (customIndex < customFolders.length) {
                 final folder = customFolders[customIndex];
                 // A pasta recém-criada rola até ficar visível sozinha (ver
-                // [_createStickerFolder]) — igual ao ícone de ajuste
+                // `StickerLibraryPanel`) — igual ao ícone de ajuste
                 // selecionado em [ColorAdjustPanel], um `Builder` dá a este
                 // item específico o próprio `BuildContext`, que
                 // `Scrollable.ensureVisible` usa para centralizar exatamente

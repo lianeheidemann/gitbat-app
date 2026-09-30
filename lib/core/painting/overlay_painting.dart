@@ -11,8 +11,8 @@ import '../models/collage_text.dart';
 /// própria caixa (mesma unidade proporcional das outras razões de canto do
 /// app), então o arredondamento parece o mesmo em qualquer tamanho de fonte
 /// e em qualquer resolução de saída. Compartilhado entre a prévia
-/// (`_TextBackgroundPainter`) e a exportação (`_TextOverlay.paint`), para as
-/// duas nunca divergirem.
+/// (`TextOverlayBackgroundBox`) e a exportação (`_TextOverlay.paint` da
+/// montagem, `paintCollageTextItem`), para as duas nunca divergirem.
 void paintCollageTextBackground(
   Canvas canvas,
   Rect rect,

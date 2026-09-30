@@ -620,7 +620,7 @@ class _EditorPageState extends State<EditorPage> {
   /// Gira e espelha a prévia como o arquivo final vai sair — a linha do
   /// tempo fica de fora, por ser um controle da tela e não parte do vídeo.
   /// Com moldura de imagem, o giro aqui é só o da própria moldura (botão
-  /// "90°"); o da aba "Girar" entra em [_imageFrameContentPreview], dentro
+  /// "90°"); o da aba "Girar" entra em [_imageFramedPreview], dentro
   /// da janela — ver [FrameSettings.finalTransform].
   Widget _rotatedForOutput(Widget preview) =>
       applyOutputTransform(_settings.finalTransform, preview);
