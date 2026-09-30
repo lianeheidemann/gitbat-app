@@ -45,7 +45,7 @@ FFmpeg — the app has **no internet permission**.
 
 | Tool | Purpose |
 |---|---|
-| **Video → GIF / WebP** | Converts MP4, MOV, AVI, MKV, WebM and 3GP into GIF or animated WebP, and **estimates the GIF size before converting**. |
+| **Video → GIF / WebP / MP4** | Converts MP4, MOV, AVI, MKV, WebM and 3GP into GIF, animated WebP or an edited MP4, and **estimates the GIF size before converting**. |
 | **Edit image** | Frames a single photo (border or phone mockup), adjusts color and removes objects with a **magic eraser**. |
 | **Edit SVG** | Crops, rotates, recolors and decorates an SVG, and saves it **as a vector**. |
 | **Photo collage** | Combines photos into one composition — grids, custom layouts, stickers and text. Exports animated when any photo is animated. |
@@ -55,10 +55,11 @@ FFmpeg — the app has **no internet permission**.
 |---|---|
 | **GIF** | Maximum compatibility; includes size estimation and destination limits. |
 | **Animated WebP** | Better color, real transparency and smaller files; has its own quality slider. |
+| **MP4** | Posting the same edit outside GitHub (social media, messaging apps); no sound, and a transparent background comes out in the chosen background color. |
 
 ## Features
 
-### Video → GIF / WebP
+### Video → GIF / WebP / MP4
 
 - Timeline preview, trim and crop (presets or free)
 - Rotate in 90° steps and mirror

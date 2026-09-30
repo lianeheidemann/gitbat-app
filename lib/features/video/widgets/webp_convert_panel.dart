@@ -1,17 +1,24 @@
 import '../../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 
-/// Painel final do editor quando o formato escolhido é WebP — equivalente
-/// ao [SizePanel] usado para GIF, mas sem a estimativa calibrada: o modelo
-/// de tamanho em `size_estimator.dart` é específico da paleta/LZW do GIF e
-/// não se aplica ao encoder `libwebp` (cor cheia, sem paleta). Em vez de
+/// Painel final do editor quando o formato escolhido é WebP ou MP4 —
+/// equivalente ao [SizePanel] usado para GIF, mas sem a estimativa
+/// calibrada: o modelo de tamanho em `size_estimator.dart` é específico da
+/// paleta/LZW do GIF e não se aplica aos encoders de cor cheia. Em vez de
 /// mostrar um número que seria só um palpite do modelo errado, o painel
 /// avisa que a estimativa não está disponível. Converter é feito pelo botão
 /// de download na AppBar — este painel não duplica mais essa ação.
 class WebpConvertPanel extends StatelessWidget {
-  const WebpConvertPanel({super.key, required this.summary});
+  const WebpConvertPanel({
+    super.key,
+    required this.summary,
+    this.formatLabel = 'WebP',
+  });
 
   final String summary;
+
+  /// Nome curto do formato no aviso ("WebP", "MP4").
+  final String formatLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -65,8 +72,8 @@ class WebpConvertPanel extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   tr(
-                    'A estimativa de tamanho ainda não está disponível para WebP nesta versão — o peso final aparece na tela de resultado, logo após a conversão.',
-                    'The size estimate is not available for WebP in this version yet — the final size shows on the result screen right after converting.',
+                    'A estimativa de tamanho ainda não está disponível para $formatLabel nesta versão — o peso final aparece na tela de resultado, logo após a conversão.',
+                    'The size estimate is not available for $formatLabel in this version yet — the final size shows on the result screen right after converting.',
                   ),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,

@@ -261,7 +261,8 @@ class _EditorPageState extends State<EditorPage> {
   /// "Ajustar/Frame" que existia em cima saiu: uma barra só, que rola na
   /// horizontal, é o mesmo padrão da tela de montagem.
   List<EditorSection> _sections() {
-    final isWebp = _settings.format == OutputFormat.webp;
+    final format = _settings.format;
+    final isGif = format == OutputFormat.gif;
     final (width, height) = _settings.outputDimensions(_video);
     final baseSummary =
         '$width×$height px · ${_settings.fps} FPS · '
@@ -288,12 +289,13 @@ class _EditorPageState extends State<EditorPage> {
         _resolutionSection(),
         label: tr('Resolução', 'Resolution'),
       ),
-      if (isWebp)
+      // O MP4 não tem nenhuma das duas: nem paleta, nem `-quality`.
+      if (format == OutputFormat.webp)
         EditorSection.fromLabeled(
           _webpQualitySection(),
           label: tr('Qualidade', 'Quality'),
         )
-      else
+      else if (isGif)
         EditorSection.fromLabeled(
           _colorSection(),
           label: tr('Cores', 'Colors'),
@@ -323,7 +325,7 @@ class _EditorPageState extends State<EditorPage> {
       EditorSection(
         icon: Icons.wallpaper_rounded,
         title: tr('Fundo', 'Background'),
-        value: _settings.frame.transparentBackground
+        value: _settings.outputFrame.transparentBackground
             ? tr('Transparente', 'Transparent')
             : tr('Cor', 'Color'),
         builder: (_) => _backgroundSection(),
@@ -356,13 +358,16 @@ class _EditorPageState extends State<EditorPage> {
         icon: Icons.data_usage_rounded,
         title: tr('Estimativa de tamanho', 'Size estimate'),
         label: tr('Tamanho', 'Size'),
-        value: isWebp ? null : _estimate.formatted,
-        builder: (_) => isWebp
+        value: isGif ? _estimate.formatted : null,
+        builder: (_) => !isGif
             ? WebpConvertPanel(
-                summary: tr(
-                  '$baseSummary · qualidade ${_settings.webpQuality}',
-                  '$baseSummary · quality ${_settings.webpQuality}',
-                ),
+                formatLabel: format.shortLabel,
+                summary: format == OutputFormat.webp
+                    ? tr(
+                        '$baseSummary · qualidade ${_settings.webpQuality}',
+                        '$baseSummary · quality ${_settings.webpQuality}',
+                      )
+                    : baseSummary,
               )
             : SizePanel(
                 estimate: _estimate,
@@ -565,7 +570,7 @@ class _EditorPageState extends State<EditorPage> {
   /// Envolve o vídeo já cortado ([_croppedPreview]) com a moldura
   /// selecionada.
   Widget _framedPreview(bool textTabActive) {
-    final frame = _settings.frame;
+    final frame = _settings.outputFrame;
     final Widget framedVideo;
 
     if (frame.imageFrame != null) {
@@ -662,7 +667,7 @@ class _EditorPageState extends State<EditorPage> {
   /// aqui, dentro da janela: a moldura em volta fica parada.
   Widget _imageFramedPreview(ImageFrameAsset asset) => ImageFramedPreview(
     asset: asset,
-    frame: _settings.frame,
+    frame: _settings.outputFrame,
     contentAspectRatio: _turnedContentAspectRatio,
     child: applyOutputTransform(
       _settings.frame.contentTransform,
@@ -763,6 +768,7 @@ class _EditorPageState extends State<EditorPage> {
 
   Widget _backgroundSection() {
     final frame = _settings.frame;
+    final opaqueOutput = !_settings.format.supportsTransparency;
     return Padding(
       // Mesma folga inferior dos Cards de [LabeledSection], já que aqui a
       // caixa é um item da lista, não o conteúdo de uma seção.
@@ -773,11 +779,19 @@ class _EditorPageState extends State<EditorPage> {
             key: const ValueKey('transparentBackgroundSwitch'),
             contentPadding: EdgeInsets.zero,
             title: Text(tr('Fundo transparente', 'Transparent background')),
+            subtitle: opaqueOutput && frame.transparentBackground
+                ? Text(
+                    tr(
+                      'O MP4 não tem transparência: o fundo sai com a cor abaixo.',
+                      'MP4 has no transparency: the background uses the color below.',
+                    ),
+                  )
+                : null,
             value: frame.transparentBackground,
             onChanged: (v) =>
                 _updateFrame(frame.copyWith(transparentBackground: v)),
           ),
-          if (!frame.transparentBackground) ...[
+          if (!frame.transparentBackground || opaqueOutput) ...[
             const Divider(height: 1),
             PanelColorRow(
               key: const ValueKey('backgroundColorRow'),
@@ -1509,8 +1523,8 @@ class _EditorPageState extends State<EditorPage> {
       title: tr('Formato de saída', 'Output format'),
       value: _settings.format.label,
       hint: tr(
-        'GIF é compatível com quase tudo; WebP costuma gerar arquivos bem menores com qualidade parecida, mas alguns apps mais antigos não abrem.',
-        'GIF works almost everywhere; WebP usually makes much smaller files with similar quality, but some older apps cannot open it.',
+        'GIF é compatível com quase tudo; WebP costuma gerar arquivos bem menores com qualidade parecida, mas alguns apps mais antigos não abrem. MP4 é vídeo comum, para publicar em redes e apps de mensagem (sem som e sem transparência).',
+        'GIF works almost everywhere; WebP usually makes much smaller files with similar quality, but some older apps cannot open it. MP4 is a regular video for social media and messaging apps (no sound, no transparency).',
       ),
       child: OptionChips<OutputFormat>(
         options: OutputFormat.values,

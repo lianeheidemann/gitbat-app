@@ -242,7 +242,7 @@ class FfmpegService {
     final layerPath = '${dir.path}/texto_$stamp.png';
     await File(layerPath).writeAsBytes(layerBytes);
 
-    final isWebp = settings.format == OutputFormat.webp;
+    final format = settings.format;
     final mergedPath =
         '${dir.path}/texto_merge_$stamp.${settings.format.extension}';
     // Só existe transparência de verdade a preservar com uma moldura
@@ -255,7 +255,7 @@ class FfmpegService {
             settings.frame.style != FrameStyle.none);
 
     try {
-      final args = isWebp
+      final args = format != OutputFormat.gif
           ? [
               '-y',
               '-i',
@@ -267,21 +267,7 @@ class FfmpegService {
               '-lavfi',
               '[0:v]format=rgba[base];'
                   '[base][1:v]overlay=0:0:shortest=1[out]',
-              '-map',
-              '[out]',
-              '-c:v',
-              'libwebp',
-              '-quality',
-              '${settings.webpQuality}',
-              '-compression_level',
-              '2',
-              '-pix_fmt',
-              transparent ? 'yuva420p' : 'yuv420p',
-              '-loop',
-              settings.loop ? '0' : '1',
-              '-an',
-              '-f',
-              'webp',
+              ...streamEncodeArgs(settings, video, hasAlpha: transparent),
               mergedPath,
             ]
           : [
@@ -417,11 +403,16 @@ class FfmpegService {
   }) async {
     _cancelled = false;
     final stopwatch = Stopwatch()..start();
+    // No MP4, "Fundo transparente" sai com a cor do fundo — daqui em diante
+    // a conversão só vê a moldura como ela vai para o arquivo.
+    settings = settings.forOutput;
 
     final dir = await getTemporaryDirectory();
     final stamp = DateTime.now().millisecondsSinceEpoch;
     final palettePath = '${dir.path}/paleta_$stamp.png';
-    final isWebp = settings.format == OutputFormat.webp;
+    // WebP e MP4: cor cheia, sem paleta — mesma composição, só o encoder
+    // muda (ver `webp_args.dart`).
+    final fullColor = settings.format != OutputFormat.gif;
     final outputPath =
         '${dir.path}/${settings.format.extension}_$stamp.${settings.format.extension}';
 
@@ -438,7 +429,7 @@ class FfmpegService {
           stamp: '$stamp',
         );
         await _run(
-          isWebp
+          fullColor
               ? webpImageFramedArgs(
                   video: video,
                   settings: settings,
@@ -495,7 +486,7 @@ class FfmpegService {
         stamp: '$stamp',
       );
 
-      if (isWebp) {
+      if (fullColor) {
         await _run(
           webpArgs(
             video: video,
@@ -504,7 +495,10 @@ class FfmpegService {
             maskPath: maskPath,
           ),
           onTimeMs: (ms) => onProgress?.call(_ratio(ms, totalMs)),
-          step: tr('montagem do WebP', 'WebP assembly'),
+          step: tr(
+            'montagem do ${settings.format.shortLabel}',
+            '${settings.format.shortLabel} assembly',
+          ),
         );
       } else if (maskPath != null && settings.frame.transparentBackground) {
         await _run(
@@ -1029,7 +1023,7 @@ class FfmpegService {
     // e a UI já não chama calibrate() para WebP (ver editor_page.dart). Essa
     // guarda evita rodar a amostragem em GIF por engano caso algum caminho
     // esquecido chame calibrate() com um formato WebP.
-    if (settings.format == OutputFormat.webp) {
+    if (settings.format != OutputFormat.gif) {
       return SizeEstimator.profileFromSource(video);
     }
 
