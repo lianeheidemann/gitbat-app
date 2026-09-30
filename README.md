@@ -116,11 +116,11 @@ FFmpeg — the app has **no internet permission**.
   transparent margins)
 - Shared color adjustment — brightness, exposure, contrast, highlights,
   shadows, saturation, hue and temperature — identical in preview and export
-- **Configurações** tab with dark theme, preview checkerboard and **color
-  palettes** — the official *Morceguinho* (the GitBat bat's blues and cyan)
-  plus Lavanda, Menta, Pêssego and Rosa, each in light and dark; the chosen
-  one is remembered and also sets the default background, border and text
-  colors of the editors
+- **Configurações** tab with dark theme, preview checkerboard and **33 color
+  palettes**, each with coordinated light and dark versions — including the
+  official *Morceguinho* palette based on the GitBat mascot; the selected
+  palette is remembered and also defines interface accents plus the default
+  background, border and text colors used by the editors
 - Confirmation pop-up on every save to the gallery; everything is saved to
   the **GitBat** album and named `GitBat_YYYYMMDD_HHMMSS`
 
