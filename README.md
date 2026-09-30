@@ -25,18 +25,16 @@ directly on Android — animated, transparent, high-resolution and offline.**
   <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro-v3.webp">
 </picture><br><br>
 
-
-
 </div>
 
 ## Overview
 
 GitBat started as a simple app to convert videos into GIFs. It kept gaining
 features and grew into an app for **creating content for GitHub READMEs**:
-banners, demos, badges, collages and illustrations in **GIF, animated WebP, SVG and PNG**.
+demos, badges, collages and illustrations in **GIF, animated WebP, SVG and PNG**.
 
 - **Transparency everywhere** — every editing screen supports a transparent
-  background, so the result sits cleanly on GitHub's light and dark themes.
+  background.
 - **Animated or still** — videos, GIFs and animated WebPs stay animated
   through frames, collages, stickers and text.
 - **High resolution** — exports keep the original resolution by default;
@@ -175,11 +173,12 @@ published version.
 ```
 lib/
 ├── main.dart
-├── app/          # theme, color palettes, licenses, app-wide controllers
+├── app/          # theme, color palettes (palettes/), licenses,
+│                 # app-wide controllers
 ├── core/         # shared code: ffmpeg, models, painting, services, ui
 └── features/     # one folder per tool
-    ├── collage/  ├── home/  ├── photo/
-    ├── quick_convert/  ├── svg/  └── video/
+    ├── collage/  ├── home/  ├── photo/  ├── quick_convert/
+    ├── settings/  ├── svg/  └── video/
 test/             # unit, widget and golden-pixel tests
 tool/             # icon generation, accuracy script, asset-list sync
 recursos/         # stable copies of brand art used inside the app
@@ -192,6 +191,13 @@ The layout is **feature-first**: code owned by one tool stays in
 `features/<tool>`, and only reusable code lives in `core`. Preview and
 export share the same painters and FFmpeg argument builders, so what is
 shown is what gets saved.
+
+Dependencies point one way: `core/` and `app/` never import `features/`,
+and a tool never imports another one — only `home`, which opens them all.
+`test/architecture_test.dart` fails the build if that changes. The four
+editors share their building blocks from `core/ui`: undo history, app
+bar actions, tabs footer, crop tab, frame tabs, and the sticker and text
+layers with their handles.
 
 ### Adding bundled art
 
@@ -232,7 +238,7 @@ CI checks this on every push.
 | README logo | `assets/readme/gitbat-logo.png` |
 | Tech badges | `assets/badge/gitbat-badges-adaptive-v10.svg` |
 | Home screen logo | `recursos/marca/gitbat-logo.png` — a stable copy of the README logo |
-| Official palette | *Morceguinho* in `lib/app/app_palette.dart` |
+| Official palette | *Morceguinho* in `lib/app/palettes/bat_palette.dart` |
 | Previous identity | `assets/icon/icon-v1/` |
 
 ## License

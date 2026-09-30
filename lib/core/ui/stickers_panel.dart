@@ -1,13 +1,13 @@
-import '../../../../app/language_controller.dart';
+import '../../app/language_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../../core/services/imported_asset_store.dart';
-import '../../../../core/services/sticker_folder_store.dart';
-import '../../models/sticker_catalog.dart';
-import '../asset_thumbs.dart';
-import '../folder_tab.dart';
+import '../services/imported_asset_store.dart';
+import '../services/sticker_folder_store.dart';
+import '../models/sticker_catalog.dart';
+import 'asset_thumbs.dart';
+import 'folder_tab.dart';
 
 /// Painel da aba "Stickers": a fileira de pastas (as embutidas, as criadas
 /// pela pessoa e o botão de criar) e, embaixo, a arte da pasta aberta —

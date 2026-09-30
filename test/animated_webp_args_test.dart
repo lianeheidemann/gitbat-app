@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitbat/core/ffmpeg/ffmpeg_service.dart';
-import 'package:gitbat/features/quick_convert/services/animated_webp_source.dart';
+import 'package:gitbat/core/services/animated_webp_source.dart';
 
 // WebP animado em "Converter formato": o FFmpeg do app não decodifica, então
 // os quadros saem crus pelo Flutter e o FFmpeg os junta num .mov com PNG

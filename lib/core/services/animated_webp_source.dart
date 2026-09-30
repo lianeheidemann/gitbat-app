@@ -1,12 +1,12 @@
-import '../../../app/language_controller.dart';
+import '../../app/language_controller.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:path_provider/path_provider.dart';
 
-import '../../../core/ffmpeg/ffmpeg_service.dart';
-import '../../../core/models/video_info.dart';
+import '../ffmpeg/ffmpeg_service.dart';
+import '../models/video_info.dart';
 
 /// WebP animado como origem de "Converter formato".
 ///

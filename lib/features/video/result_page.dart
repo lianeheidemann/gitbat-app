@@ -6,6 +6,7 @@ import '../../core/models/size_estimate.dart';
 import '../../core/models/video_info.dart';
 import '../../core/ffmpeg/ffmpeg_service.dart';
 import '../../core/services/output_service.dart';
+import '../../core/ui/app_message.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../app/theme.dart';
 import '../../app/app_palette.dart';
@@ -58,11 +59,7 @@ class _ResultPageState extends State<ResultPage> {
     }
   }
 
-  void _message(String text) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text)));
-  }
+  void _message(String text) => showAppMessage(context, text);
 
   @override
   Widget build(BuildContext context) {

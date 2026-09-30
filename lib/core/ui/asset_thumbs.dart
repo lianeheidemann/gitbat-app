@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../core/services/imported_asset_store.dart';
+import '../services/imported_asset_store.dart';
 
 /// Ladrilho de "importar" das fileiras de assets — abas "Fundo" e
 /// "Stickers".

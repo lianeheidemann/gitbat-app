@@ -5,7 +5,6 @@ import 'package:flutter/material.dart' hide Image;
 import '../models/collage_background.dart';
 import '../models/collage_cell.dart';
 import '../models/collage_settings.dart';
-import '../../../core/models/collage_text.dart';
 
 /// Geometria de uma montagem já calculada para um [Size] específico: raio de
 /// canto externo, espessura da borda em pixels e o retângulo de cada célula
@@ -289,85 +288,6 @@ void paintCollageCell(
       }
   }
   canvas.restore();
-}
-
-/// Caixa colorida atrás de um texto da montagem. O raio sai do menor lado da
-/// própria caixa (mesma unidade proporcional das outras razões de canto do
-/// app), então o arredondamento parece o mesmo em qualquer tamanho de fonte
-/// e em qualquer resolução de saída. Compartilhado entre a prévia
-/// (`_TextBackgroundPainter`) e a exportação (`_TextOverlay.paint`), para as
-/// duas nunca divergirem.
-void paintCollageTextBackground(
-  Canvas canvas,
-  Rect rect,
-  Color color,
-  double cornerRatio,
-) {
-  if (rect.isEmpty) return;
-  final radius =
-      rect.shortestSide *
-      cornerRatio.clamp(0.0, CollageTextItem.maxBackgroundCornerRatio);
-  canvas.drawRRect(
-    RRect.fromRectAndRadius(rect, Radius.circular(radius)),
-    Paint()..color = color,
-  );
-}
-
-/// Desenha um [CollageTextItem] completo (fundo, se houver, e o texto por
-/// cima) centrado e rotacionado em [canvasSize] — o mesmo desenho que
-/// `_TextOverlay.paint` (`collage_compositor.dart`) usa na exportação da
-/// montagem, reexposto aqui para a moldura de foto e o editor de vídeo/GIF
-/// reaproveitarem sem duplicar a conta de tamanho de fonte/respiro/rotação.
-void paintCollageTextItem(
-  Canvas canvas,
-  Size canvasSize,
-  CollageTextItem item,
-) {
-  final fontSize = canvasSize.shortestSide * item.fontSizeRatio * item.scale;
-  final center = Offset(
-    item.centerX * canvasSize.width,
-    item.centerY * canvasSize.height,
-  );
-
-  final painter = TextPainter(
-    text: TextSpan(
-      text: item.text,
-      style: TextStyle(
-        color: item.color,
-        fontSize: fontSize,
-        fontFamily: item.fontFamily,
-        fontWeight: item.bold ? FontWeight.w700 : FontWeight.w400,
-      ),
-    ),
-    textDirection: TextDirection.ltr,
-    textAlign: TextAlign.center,
-  )..layout();
-
-  try {
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(item.rotation);
-
-    final background = item.backgroundColor;
-    if (background != null) {
-      final (padH, padV) = CollageTextItem.backgroundPaddingFor(fontSize);
-      paintCollageTextBackground(
-        canvas,
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: painter.width + padH * 2,
-          height: painter.height + padV * 2,
-        ),
-        background,
-        item.backgroundCornerRatio,
-      );
-    }
-
-    painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
-    canvas.restore();
-  } finally {
-    painter.dispose();
-  }
 }
 
 /// Retângulo de origem que, desenhado no destino `dstW`×`dstH`, cobre todo o

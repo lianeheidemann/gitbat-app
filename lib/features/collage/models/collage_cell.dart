@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'collage_background.dart';
+import '../../../core/models/collage_color_adjustment.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/default_colors.dart';
 import '../../../core/models/crop_rect.dart';
@@ -479,4 +480,32 @@ class CollageCellSettings {
     flipHorizontal: false,
     flipVertical: false,
   );
+}
+
+/// Leitura e escrita de um [CollageColorAdjustment] direto numa célula da
+/// montagem — cada foto guarda os próprios ajustes, enquanto as outras telas
+/// usam um [ColorAdjustments] só (ver [CollageColorAdjustment.valueIn]).
+extension CollageCellColorAdjustment on CollageColorAdjustment {
+  double valueOf(CollageCellSettings cell) => switch (this) {
+    CollageColorAdjustment.brightness => cell.brightness,
+    CollageColorAdjustment.exposure => cell.exposure,
+    CollageColorAdjustment.contrast => cell.contrast,
+    CollageColorAdjustment.highlights => cell.highlights,
+    CollageColorAdjustment.shadows => cell.shadows,
+    CollageColorAdjustment.saturation => cell.saturation,
+    CollageColorAdjustment.hue => cell.hue,
+    CollageColorAdjustment.temperature => cell.temperature,
+  };
+
+  CollageCellSettings apply(CollageCellSettings cell, double value) =>
+      switch (this) {
+        CollageColorAdjustment.brightness => cell.copyWith(brightness: value),
+        CollageColorAdjustment.exposure => cell.copyWith(exposure: value),
+        CollageColorAdjustment.contrast => cell.copyWith(contrast: value),
+        CollageColorAdjustment.highlights => cell.copyWith(highlights: value),
+        CollageColorAdjustment.shadows => cell.copyWith(shadows: value),
+        CollageColorAdjustment.saturation => cell.copyWith(saturation: value),
+        CollageColorAdjustment.hue => cell.copyWith(hue: value),
+        CollageColorAdjustment.temperature => cell.copyWith(temperature: value),
+      };
 }

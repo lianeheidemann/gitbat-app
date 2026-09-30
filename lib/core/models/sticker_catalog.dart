@@ -1,6 +1,6 @@
-import '../../../app/language_controller.dart';
-import '../../../core/services/bundled_assets.dart';
-import '../../../core/services/bundled_sticker_store.dart';
+import '../../app/language_controller.dart';
+import '../services/bundled_assets.dart';
+import '../services/bundled_sticker_store.dart';
 
 /// Pastas da seção "Stickers": as temáticas com os stickers embutidos do
 /// app, mais "Importados" para os que o usuário trouxe do aparelho.

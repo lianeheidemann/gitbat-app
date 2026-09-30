@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/aspect_preset.dart';
-import '../../core/models/color_adjustments.dart';
 import '../../core/models/crop_rect.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/models/image_frame.dart';
@@ -20,57 +19,36 @@ import 'services/magic_eraser.dart';
 import '../../core/services/opaque_bounds.dart';
 import 'services/photo_frame_compositor.dart';
 import '../../core/ui/app_bar_title.dart';
+import '../../core/ui/app_message.dart';
 import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
+import '../../core/ui/crop/crop_tab.dart';
 import '../../core/ui/frame/content_fit_picker.dart';
+import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/frame/border_ring.dart';
 import '../../core/ui/frame/frame_color_row.dart';
-import '../../core/ui/frame/frame_rotate_button.dart';
-import '../../core/ui/panel_rows.dart';
-import '../../core/ui/frame/frame_sliders.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
-import '../../core/ui/frame/frame_thumb_shell.dart';
-import '../../core/ui/frame/image_frame_picker.dart';
+import '../../core/ui/frame/image_frame_panel.dart';
+import '../../core/ui/frame/image_framed_preview.dart';
+import '../../core/ui/frame/imported_frame_library.dart';
 import '../../core/ui/crop/crop_overlay.dart';
-import '../../core/ui/crop/crop_size_fields.dart';
 import '../../core/ui/crop/cropped_view.dart';
+import '../../core/ui/editor_app_bar_actions.dart';
+import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
-import '../collage/widgets/export_progress_dialog.dart';
+import '../../core/ui/export_progress_dialog.dart';
 import 'widgets/eraser_mask_overlay.dart';
 import 'widgets/eraser_option_button.dart';
-import 'widgets/photo_placement_view.dart';
-import '../../core/ui/labeled_section.dart';
+import '../../core/ui/photo_placement_view.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
 import '../../core/ui/sticker_overlay_editor.dart';
 import '../../core/ui/text_overlay_editor.dart';
+import '../../core/ui/transparent_background_panel.dart';
 import '../../core/ui/saved_dialog.dart';
+import '../../core/ui/edit_history.dart';
 import '../../app/editor_defaults.dart';
-
-/// Mesmos três modos apresentados ao usuário em `EditorPage` — `fit` só
-/// existe como resultado interno do ajuste automático.
-const _selectableContentFitModes = [
-  ContentFitMode.auto,
-  ContentFitMode.fill,
-  ContentFitMode.expand,
-];
-
-/// Mesma ideia de `_customAspectPreset` em `editor_page.dart`/
-/// `svg_edit_page.dart`: não é uma proporção de verdade (o -1 nunca é usado
-/// como razão), só marca "livre" — cada alça mexe só no seu lado/canto, sem
-/// travar largura/altura entre si.
-const _customAspectPreset = AspectPreset(
-  'Personalizado',
-  -1,
-  labelEn: 'Custom',
-);
-
-/// "Ajustar": também não é uma proporção (o -2 nunca vira razão).
-/// Tocar nele encosta o recorte nos pixels visíveis, cortando só a margem
-/// totalmente transparente (ver `opaque_bounds.dart`); depois disso o recorte
-/// fica livre como em "Personalizado", para a pessoa refinar se quiser.
-const _trimAspectPreset = AspectPreset('Ajustar', -2, labelEn: 'Fit');
 
 /// Tela dedicada a aplicar uma moldura (procedural ou de imagem) a uma foto
 /// estática. Reaproveita o mesmo modelo ([FrameSettings], [ImageFrameAsset])
@@ -94,7 +72,7 @@ class PhotoFramePage extends StatefulWidget {
 
 class _PhotoFramePageState extends State<PhotoFramePage> {
   static const _output = OutputService();
-  final _importedFrameStore = ImportedFrameStore();
+  final _frameLibrary = ImportedFrameLibrary();
 
   /// Ancorada no `RepaintBoundary` em volta da prévia — [_renderPreviewImage]
   /// usa isso para rasterizar exatamente o que está na tela para o
@@ -102,7 +80,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   final _colorPreviewKey = GlobalKey();
 
   FrameSettings _frame = EditorDefaults.frameSettings();
-  List<ImageFrameAsset> _importedImageFrames = [];
 
   /// A foto em edição. Começa sendo a que chegou pela rota e é **trocada** a
   /// cada apagada da borracha mágica, por um PNG temporário já corrigido. As
@@ -143,22 +120,18 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   final _eraserCanvasKey = GlobalKey<EraserCanvasState>();
 
-  /// Preset travado na aba "Recorte" — guardado à parte de `_frame.crop`
-  /// porque "Personalizado" e um preset podem cair no mesmo retângulo (ex.:
-  /// ao digitar largura/altura que batem com 1:1), e o chip marcado tem que
-  /// continuar sendo o que foi tocado. Mesma ideia de `SvgEditPage._aspect`.
-  AspectPreset _aspect = AspectPreset.presets.first;
-
-  /// Regras de recorte compartilhadas com as telas de vídeo e SVG.
-  late final _crop = CropController(
-    sourceWidth: _photo.width,
-    sourceHeight: _photo.height,
+  /// Aba "Recorte", com as regras compartilhadas com as telas de vídeo e
+  /// SVG.
+  late final _cropTab = CropTabController(
+    rules: CropController(
+      sourceWidth: _photo.width,
+      sourceHeight: _photo.height,
+    ),
+    customPreset: AspectPreset.custom,
+    trimPreset: AspectPreset.trim,
   );
 
-  final _widthController = TextEditingController();
-  final _heightController = TextEditingController();
-  final _widthFocus = FocusNode();
-  final _heightFocus = FocusNode();
+  CropController get _crop => _cropTab.rules;
 
   final _textOverlay = TextOverlayController();
   final _stickerOverlay = StickerOverlayController();
@@ -171,13 +144,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   int? _activeSection = 0;
 
   /// Histórico de desfazer/refazer da moldura, no mesmo formato da tela de
-  /// montagem: pilhas do próprio [FrameSettings], com os arrastes contínuos
+  /// montagem: estados do próprio [FrameSettings], com os arrastes contínuos
   /// (sliders) empilhando um checkpoint só no início do gesto.
   /// Guarda também qual foto estava em uso: antes da borracha bastava a
   /// moldura, mas apagar algo troca o arquivo, e desfazer tem que voltar os
   /// dois juntos.
-  final List<_EditStep> _undoStack = [];
-  final List<_EditStep> _redoStack = [];
+  final _history = EditHistory<_EditStep>();
 
   bool _saving = false;
   bool _sharing = false;
@@ -194,10 +166,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   @override
   void dispose() {
-    _widthController.dispose();
-    _heightController.dispose();
-    _widthFocus.dispose();
-    _heightFocus.dispose();
+    _cropTab.dispose();
     _textOverlay.dispose();
     _stickerOverlay.dispose();
     // Os PNGs da borracha só existem para esta edição: quem quis guardar já
@@ -209,9 +178,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   Future<void> _loadImportedFrames() async {
-    final frames = await _importedFrameStore.loadAll();
+    await _frameLibrary.load();
     if (!mounted) return;
-    setState(() => _importedImageFrames = frames);
+    setState(() {});
   }
 
   /// Proporção efetiva da foto depois do recorte da aba "Recorte" — a
@@ -270,45 +239,33 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   _EditStep get _currentStep => (frame: _frame, photo: _photo);
 
   void _updateFrame(FrameSettings frame, {bool pushUndo = true}) {
-    if (pushUndo) {
-      _undoStack.add(_currentStep);
-      _redoStack.clear();
-    }
+    if (pushUndo) _history.push(_currentStep);
     setState(() => _frame = frame);
   }
 
   /// Empilha o estado atual antes de um gesto contínuo (slider), para o
   /// arrasto inteiro virar UM passo de desfazer em vez de um por quadro.
-  void _pushUndoCheckpoint() {
-    _undoStack.add(_currentStep);
-    _redoStack.clear();
-  }
+  void _pushUndoCheckpoint() => _history.push(_currentStep);
 
   void _undo() {
-    if (_undoStack.isEmpty) return;
-    final previous = _undoStack.removeLast();
+    final previous = _history.undo(_currentStep);
+    if (previous == null) return;
     setState(() {
-      _redoStack.add(_currentStep);
       _frame = previous.frame;
       _photo = previous.photo;
     });
   }
 
   void _redo() {
-    if (_redoStack.isEmpty) return;
-    final next = _redoStack.removeLast();
+    final next = _history.redo(_currentStep);
+    if (next == null) return;
     setState(() {
-      _undoStack.add(_currentStep);
       _frame = next.frame;
       _photo = next.photo;
     });
   }
 
-  void _message(String text) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text)));
-  }
+  void _message(String text) => showAppMessage(context, text);
 
   Future<File> _writeTempPng(Uint8List bytes) async {
     final dir = await getTemporaryDirectory();
@@ -366,20 +323,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     }
   }
 
-  /// Resumo da aba "Moldura": o nome da arte, com o giro dela quando houver.
-  String get _imageFrameLabel {
-    final asset = _frame.imageFrame;
-    if (asset == null) return tr('Sem moldura', 'No frame');
-    final turns = _frame.frameQuarterTurns;
-    return turns == 0 ? asset.label : '${asset.label} · ${turns * 90}°';
-  }
-
-  /// O estilo procedural que a aba "Borda" deve mostrar. Com uma moldura
-  /// de imagem ativa é sempre "Sem borda": as duas famílias são mutuamente
-  /// exclusivas, como no editor de vídeo.
-  FrameStyle get _activeFrameStyle =>
-      _frame.imageFrame == null ? _frame.style : FrameStyle.none;
-
   /// As seções da tela, na ordem em que aparecem na barra de baixo — as
   /// mesmas de antes, só que como abas em vez de cards empilhados numa lista
   /// rolável (mesmo rodapé da tela de montagem).
@@ -411,13 +354,13 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     EditorSection(
       icon: Icons.check_box_outline_blank_rounded,
       title: tr('Borda', 'Border'),
-      value: _activeFrameStyle.label,
+      value: _frame.activeStyle.label,
       builder: (_) => _frameStyleSection(),
     ),
     EditorSection(
       icon: Icons.smartphone_rounded,
       title: tr('Moldura', 'Frame'),
-      value: _imageFrameLabel,
+      value: _frame.imageFrameLabel,
       builder: (_) => _imageFrameSection(),
     ),
     if (_frame.hasFixedAspect)
@@ -492,41 +435,25 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       appBar: AppBar(
         title: AppBarTitle(tr('Editar imagem', 'Edit image')),
         actions: [
-          IconButton(
-            tooltip: tr('Desfazer', 'Undo'),
-            onPressed: _undoStack.isEmpty ? null : _undo,
-            icon: const Icon(Icons.undo_rounded),
+          ...undoRedoActions(
+            canUndo: _history.canUndo,
+            canRedo: _history.canRedo,
+            onUndo: _undo,
+            onRedo: _redo,
           ),
-          IconButton(
-            tooltip: tr('Refazer', 'Redo'),
-            onPressed: _redoStack.isEmpty ? null : _redo,
-            icon: const Icon(Icons.redo_rounded),
-          ),
-          IconButton(
-            tooltip: _saving
-                ? tr('Salvando…', 'Saving…')
-                : tr('Salvar na galeria', 'Save to gallery'),
+          BusyIconButton(
+            busy: _saving,
+            tooltip: tr('Salvar na galeria', 'Save to gallery'),
+            busyTooltip: tr('Salvando…', 'Saving…'),
             onPressed: busy ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.download_rounded),
+            icon: const Icon(Icons.download_rounded),
           ),
-          IconButton(
-            tooltip: _sharing
-                ? tr('Preparando…', 'Preparing…')
-                : tr('Compartilhar', 'Share'),
+          BusyIconButton(
+            busy: _sharing,
+            tooltip: tr('Compartilhar', 'Share'),
+            busyTooltip: tr('Preparando…', 'Preparing…'),
             onPressed: busy ? null : _share,
-            icon: _sharing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.share_outlined),
+            icon: const Icon(Icons.share_outlined),
           ),
         ],
       ),
@@ -617,7 +544,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       ? _rawCropPreviewWithHandles()
       // Sem moldura de imagem, gira o resultado inteiro (aba "Girar"); com
       // ela, só o giro da própria moldura (botão "90°") — o da aba "Girar"
-      // fica por conta de [_imageFrameContentPreview], lá dentro da janela.
+      // fica por conta de [_imageFramedPreview], lá dentro da janela.
       : applyOutputTransform(
           _frame.finalTransform,
           _framedPreview(textTabActive),
@@ -646,7 +573,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               crop: _frame.crop,
               onResize: _resizeCropFromHandle,
               onMove: _moveCropFromHandle,
-              freeform: _isFreeformAspect,
+              freeform: _cropTab.isFreeform,
               onPinchStart: () {
                 final crop = _frame.crop;
                 if (crop != null) _crop.pinchStart(crop);
@@ -681,34 +608,20 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
     return AspectRatio(
       aspectRatio: aspect,
-      child: LayoutBuilder(
-        builder: (context, constraints) => Stack(
-          fit: StackFit.expand,
-          children: [
-            content,
-            // Stickers por baixo dos textos.
-            StickerOverlayStack(
-              controller: _stickerOverlay,
-              stickers: _frame.stickers,
-              onChanged: (stickers) => _updateFrame(
-                _frame.copyWith(stickers: stickers),
-                pushUndo: false,
-              ),
-              canvasSize: constraints.biggest,
-              interactive: _stickersTabActive,
-              onGestureStart: _pushUndoCheckpoint,
-            ),
-            TextOverlayStack(
-              controller: _textOverlay,
-              texts: _frame.texts,
-              onChanged: (texts) =>
-                  _updateFrame(_frame.copyWith(texts: texts), pushUndo: false),
-              canvasSize: constraints.biggest,
-              interactive: textTabActive,
-              onGestureStart: _pushUndoCheckpoint,
-            ),
-          ],
-        ),
+      child: EditorOverlayLayers(
+        fit: StackFit.expand,
+        content: content,
+        stickerController: _stickerOverlay,
+        stickers: _frame.stickers,
+        onStickersChanged: (stickers) =>
+            _updateFrame(_frame.copyWith(stickers: stickers), pushUndo: false),
+        stickersInteractive: _stickersTabActive,
+        textController: _textOverlay,
+        texts: _frame.texts,
+        onTextsChanged: (texts) =>
+            _updateFrame(_frame.copyWith(texts: texts), pushUndo: false),
+        textsInteractive: textTabActive,
+        onGestureStart: _pushUndoCheckpoint,
       ),
     );
   }
@@ -746,189 +659,68 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     return ColoredBox(color: frame.backgroundColor, child: bordered);
   }
 
-  Widget _imageFramedPreview(ImageFrameAsset asset, {required bool gestures}) {
-    final preview = AspectRatio(
-      aspectRatio: asset.nativeAspectRatio,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = constraints.biggest;
-          final rect = Rect.fromLTWH(
-            size.width * asset.contentRect.left,
-            size.height * asset.contentRect.top,
-            size.width * asset.contentRect.width,
-            size.height * asset.contentRect.height,
-          );
-          final fit = resolveContentFit(
-            _frame.contentFit,
-            _contentAspectRatio,
-            rect.width / rect.height,
-          );
-
-          return Stack(
-            children: [
-              Positioned.fromRect(
-                rect: rect,
-                child: _imageFrameContentPreview(fit, gestures: gestures),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: ImageFrameArtwork(asset: asset, fit: BoxFit.fill),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    if (_frame.transparentBackground) return preview;
-    return ColoredBox(color: _frame.backgroundColor, child: preview);
-  }
-
-  Widget _imageFrameContentPreview(
-    ContentFitMode fit, {
-    required bool gestures,
-  }) {
-    // Tamanho de referência qualquer, na proporção certa (a real do recorte
-    // não importa aqui — `FittedBox` só olha para a proporção do filho) —
-    // mesma técnica de `EditorPage._imageFrameContentPreview`. O giro da
-    // aba "Girar" entra aqui, dentro da janela: a moldura em volta fica
-    // parada.
-    Widget photo(BoxFit boxFit) => FittedBox(
-      fit: boxFit,
-      child: _placedPhoto(
-        applyOutputTransform(
-          _frame.contentTransform,
-          SizedBox(
-            width: 1000,
-            height: 1000 / _photoAspectRatio,
-            child: _croppedPhotoPreview(),
+  /// Prévia ao vivo de uma moldura de imagem, com a foto já recortada dentro
+  /// da janela dela (ver [ImageFramedPreview]). O giro da aba "Girar" entra
+  /// aqui, dentro da janela: a moldura em volta fica parada.
+  Widget _imageFramedPreview(ImageFrameAsset asset, {required bool gestures}) =>
+      ImageFramedPreview(
+        asset: asset,
+        frame: _frame,
+        contentAspectRatio: _contentAspectRatio,
+        // Tamanho de referência qualquer, na proporção certa (a real do
+        // recorte não importa aqui — o encaixe só olha para a proporção do
+        // filho), mesma técnica de `EditorPage._imageFramedPreview`.
+        child: _placedPhoto(
+          applyOutputTransform(
+            _frame.contentTransform,
+            SizedBox(
+              width: 1000,
+              height: 1000 / _photoAspectRatio,
+              child: _croppedPhotoPreview(),
+            ),
           ),
-        ),
-        gestures: gestures,
-      ),
-    );
-
-    if (fit != ContentFitMode.expand) {
-      return ColoredBox(
-        color: _frame.expandBackgroundColor,
-        child: ClipRect(
-          child: photo(
-            fit == ContentFitMode.fill ? BoxFit.cover : BoxFit.contain,
-          ),
+          gestures: gestures,
         ),
       );
-    }
-
-    return ColoredBox(
-      color: _frame.expandBackgroundColor,
-      child: ClipRect(
-        child: Transform.scale(
-          scale: _frame.effectiveContentZoom,
-          child: photo(BoxFit.contain),
-        ),
-      ),
-    );
-  }
 
   // ---------------------------------------------------------------------
   // Seção "Recorte"
   // ---------------------------------------------------------------------
 
-  String get _cropLabel => _aspect.ratio == null
+  String get _cropLabel => _cropTab.aspect.ratio == null
       ? '${_photo.width}×${_photo.height}'
-      : _aspect.label;
+      : _cropTab.aspect.label;
 
-  Widget _cropSection() {
-    final crop = _frame.crop;
-    final visiblePresets = <AspectPreset>[
-      AspectPreset.presets.first,
-      _trimAspectPreset,
-      ...AspectPreset.presets.skip(1),
-      _customAspectPreset,
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        OptionChips<AspectPreset>(
-          options: visiblePresets,
-          selected: visiblePresets.contains(_aspect)
-              ? _aspect
-              : visiblePresets.first,
-          labelBuilder: (preset) => preset.label,
-          onSelected: _selectAspectPreset,
-        ),
-        if (crop != null) ...[
-          const SizedBox(height: 18),
-          if (_isFreeformAspect) ...[
-            CropSizeSummary(crop: crop),
-            const SizedBox(height: 12),
-            CropSizeInputs(
-              crop: crop,
-              widthController: _widthController,
-              heightController: _heightController,
-              widthFocus: _widthFocus,
-              heightFocus: _heightFocus,
-              onSubmitWidth: _applyCropWidth,
-              onSubmitHeight: _applyCropHeight,
-            ),
-            const SizedBox(height: 12),
-          ],
-          CropSizeSlider(
-            percent: _crop.sizePercentOf(crop),
-            onChangeStart: _pushUndoCheckpoint,
-            onChanged: (percent) => _updateFrame(
-              _frame.copyWith(crop: _crop.scaledTo(percent, crop: crop)),
-              pushUndo: false,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _centerCurrentCrop,
-              icon: const Icon(Icons.center_focus_strong_rounded),
-              label: Text(tr('Centralizar', 'Center')),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _cropSection() => CropTabPanel(
+    tab: _cropTab,
+    crop: _frame.crop,
+    onSelectPreset: _selectAspectPreset,
+    onSubmitWidth: _applyCropWidth,
+    onSubmitHeight: _applyCropHeight,
+    onResizeStart: _pushUndoCheckpoint,
+    onResized: (crop) =>
+        _updateFrame(_frame.copyWith(crop: crop), pushUndo: false),
+    onCenter: _centerCurrentCrop,
+  );
 
   /// Aplica o preset de proporção escolhido: cria um recorte customizado,
   /// remove o recorte ("Original") ou centraliza um recorte na proporção
   /// fixa selecionada.
   void _selectAspectPreset(AspectPreset preset) {
-    if (preset == _trimAspectPreset) {
+    if (preset == AspectPreset.trim) {
       unawaited(_trimTransparentEdges());
       return;
     }
     setState(() {
-      _aspect = preset;
-
-      if (preset == _customAspectPreset) {
-        _frame = _frame.copyWith(
-          crop: _frame.crop ?? _crop.defaultCustomCrop(),
-        );
-        return;
-      }
-
-      if (preset.ratio == null) {
-        _frame = _frame.copyWith(clearCrop: true);
-        return;
-      }
-
-      _frame = _frame.copyWith(crop: _crop.forRatio(preset.ratio!));
+      final crop = _cropTab.select(preset, _frame.crop);
+      _frame = crop == null
+          ? _frame.copyWith(clearCrop: true)
+          : _frame.copyWith(crop: crop);
     });
   }
 
-  /// Recorte sem proporção travada: "Personalizado" e "Ajustar".
-  bool get _isFreeformAspect =>
-      _aspect == _customAspectPreset || _aspect == _trimAspectPreset;
-
   /// Proporção travada pelo preset atual, ou `null` num recorte livre.
-  double? get _lockedRatio => _isFreeformAspect ? null : _aspect.ratio;
+  double? get _lockedRatio => _cropTab.lockedRatio;
 
   /// Encosta o recorte nos pixels visíveis da foto atual — já com o que a
   /// borracha apagou, porque lê `_photo` e não a foto que abriu a tela.
@@ -977,7 +769,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       );
       return;
     }
-    _aspect = _trimAspectPreset;
+    _cropTab.aspect = AspectPreset.trim;
     _updateFrame(_frame.copyWith(crop: bounds));
   }
 
@@ -1044,16 +836,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     Offset displayDelta,
     Size previewSize,
   ) {
-    final crop = _frame.crop;
-    if (crop == null || previewSize.width <= 0 || previewSize.height <= 0) {
-      return;
-    }
-
-    final next = _crop.resizeBy(
-      crop: crop,
-      handle: handle,
-      sourceDelta: _toSourceDelta(displayDelta, previewSize),
-      ratio: _lockedRatio,
+    final next = _cropTab.resizeFromDisplay(
+      _frame.crop,
+      handle,
+      displayDelta,
+      previewSize,
     );
     if (next == null) return;
     _updateFrame(_frame.copyWith(crop: next));
@@ -1062,19 +849,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// Mesma conversão de [_resizeCropFromHandle], para o botão de mover a
   /// janela inteira.
   void _moveCropFromHandle(Offset displayDelta, Size previewSize) {
-    final crop = _frame.crop;
-    if (crop == null || previewSize.width <= 0 || previewSize.height <= 0) {
-      return;
-    }
-
-    final next = _crop.moveBy(
-      crop: crop,
-      sourceDelta: _toSourceDelta(displayDelta, previewSize),
+    final next = _cropTab.moveFromDisplay(
+      _frame.crop,
+      displayDelta,
+      previewSize,
       // Trava no centro a até ~10 px (na tela) dele.
-      snapDistance: _toSourceDelta(
-        const Offset(_centerSnapDistance, _centerSnapDistance),
-        previewSize,
-      ),
+      centerSnap: _centerSnapDistance,
     );
     if (next == null) return;
     _updateFrame(_frame.copyWith(crop: next));
@@ -1094,134 +874,45 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     _updateFrame(_frame.copyWith(crop: next));
   }
 
-  /// Converte um arraste em pixels da prévia exibida para pixels da foto.
-  Offset _toSourceDelta(Offset displayDelta, Size previewSize) => Offset(
-    displayDelta.dx * _photo.width / previewSize.width,
-    displayDelta.dy * _photo.height / previewSize.height,
-  );
-
   // ---------------------------------------------------------------------
   // Seção "Borda" (moldura procedural)
   // ---------------------------------------------------------------------
 
-  Widget _frameStyleSection() {
-    final theme = Theme.of(context);
-    final style = _frame.style;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FrameStylePicker(
-          active: _frame.style,
-          onSelected: (style) => _updateFrame(frameWithStyle(_frame, style)),
-        ),
-        if (style != FrameStyle.none) ...[
-          const SizedBox(height: 18),
-          SectionCard(
-            children: [
-              PanelColorRow(
-                label: tr('Cor da borda', 'Border color'),
-                color: _frame.color,
-                onTap: _pickFrameColor,
-              ),
-              Divider(
-                height: 13,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-              FrameThicknessRow(
-                frame: _frame,
-                onChangeStart: _pushUndoCheckpoint,
-                onChanged: (next) => _updateFrame(next, pushUndo: false),
-              ),
-              Divider(
-                height: 13,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-              CornerRadiusRow(
-                frame: _frame,
-                onChangeStart: _pushUndoCheckpoint,
-                onChanged: (next) => _updateFrame(next, pushUndo: false),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _frameStyleSection() => FrameBorderPanel(
+    frame: _frame,
+    activeStyle: _frame.style,
+    onSelectStyle: (style) => _updateFrame(frameWithStyle(_frame, style)),
+    onPickColor: _pickFrameColor,
+    onChangeStart: _pushUndoCheckpoint,
+    onChanged: (next) => _updateFrame(next, pushUndo: false),
+  );
 
   // ---------------------------------------------------------------------
   // Seção "Moldura" (moldura de imagem)
   // ---------------------------------------------------------------------
 
-  Widget _imageFrameSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ImageFramePicker(
-          selected: _frame.imageFrame,
-          imported: _importedImageFrames,
-          onSelected: _selectImageFrame,
-          onClear: () => _updateFrame(_frame.copyWith(clearImageFrame: true)),
-          onImport: _importFrameImage,
-          onRemoveImported: _confirmRemoveImportedFrame,
-        ),
-        // O giro e a resolução só existem para moldura de imagem — sem uma
-        // escolhida, não há arte para deitar nem canvas próprio para
-        // dimensionar.
-        if (_frame.hasFixedAspect) ...[
-          const SizedBox(height: 18),
-          SectionCard(
-            children: [
-              // Fundo de dentro da janela da moldura, em qualquer ajuste
-              // (antes só em "Expandir sem cortar"; nos outros era preto).
-              PanelColorRow(
-                key: const ValueKey('frameWindowColorRow'),
-                label: tr('Cor do fundo da moldura', 'Frame background color'),
-                color: _frame.expandBackgroundColor,
-                onTap: _pickExpandBackgroundColor,
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          SectionCard(children: [_frameResolutionSelector()]),
-          // O giro da moldura fica por último, sozinho: é um botão só.
-          const SizedBox(height: 18),
-          FrameRotateButton(
-            onRotate: () => _updateFrame(
-              _frame.copyWith(frameQuarterTurns: _frame.frameQuarterTurns + 1),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _imageFrameSection() => ImageFramePanel(
+    frame: _frame,
+    imported: _frameLibrary.frames,
+    onSelected: _selectImageFrame,
+    onClear: () => _updateFrame(_frame.copyWith(clearImageFrame: true)),
+    onImport: _importFrameImage,
+    onRemoveImported: _confirmRemoveImportedFrame,
+    onPickWindowColor: _pickExpandBackgroundColor,
+    resolutionFitLabel: tr('Da foto', 'From photo'),
+    onChanged: _updateFrame,
+  );
 
   /// "Ajuste da foto" virou aba própria (só aparece com moldura de imagem
   /// ativa), então aqui não cabe mais o cabeçalho recolhível que ela tinha
   /// como sub-seção.
-  Widget _contentFitSection() {
-    final selected = _frame.contentFit;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final mode in _selectableContentFitModes) ...[
-          ContentFitTile(
-            mode: mode,
-            selected: mode == selected,
-            onSelected: (m) => _updateFrame(_frame.copyWith(contentFit: m)),
-            expandedOptions: ExpandFitOptions(
-              frame: _frame,
-              onChangeStart: _pushUndoCheckpoint,
-              onChanged: (next) => _updateFrame(next, pushUndo: false),
-              onPickColor: _pickExpandBackgroundColor,
-            ),
-          ),
-          if (mode != _selectableContentFitModes.last)
-            const SizedBox(height: 8),
-        ],
-      ],
-    );
-  }
+  Widget _contentFitSection() => ContentFitOptions(
+    frame: _frame,
+    onSelected: (m) => _updateFrame(_frame.copyWith(contentFit: m)),
+    onChangeStart: _pushUndoCheckpoint,
+    onChanged: (next) => _updateFrame(next, pushUndo: false),
+    onPickColor: _pickExpandBackgroundColor,
+  );
 
   void _selectImageFrame(ImageFrameAsset asset) {
     _updateFrame(_frame.copyWith(style: FrameStyle.none, imageFrame: asset));
@@ -1229,9 +920,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   Future<void> _importFrameImage() async {
     try {
-      final asset = await _importedFrameStore.importFrame();
+      final asset = await _frameLibrary.import();
       if (!mounted) return;
-      setState(() => _importedImageFrames = [..._importedImageFrames, asset]);
+      setState(() {});
       _selectImageFrame(asset);
     } on ImportedFrameException catch (e) {
       _message(e.message);
@@ -1239,14 +930,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   Future<void> _confirmRemoveImportedFrame(ImageFrameAsset asset) async {
-    if (!await confirmRemoveImportedFrame(context, asset)) return;
-
-    await _importedFrameStore.remove(asset.id);
+    if (!await _frameLibrary.remove(context, asset)) return;
     if (!mounted) return;
     setState(() {
-      _importedImageFrames = _importedImageFrames
-          .where((a) => a.id != asset.id)
-          .toList();
       if (_frame.imageFrame?.id == asset.id) {
         _updateFrame(_frame.copyWith(clearImageFrame: true));
       }
@@ -1309,49 +995,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // ---------------------------------------------------------------------
   // "Ajuste do conteúdo" / "Resolução da moldura"
   // ---------------------------------------------------------------------
-
-  Widget _frameResolutionSelector() {
-    final theme = Theme.of(context);
-    final selected = _frame.frameResolutionMode;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            tr('Resolução da moldura', 'Frame resolution'),
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<ImageFrameResolutionMode>(
-            key: const ValueKey('frameResolutionSegmentedButton'),
-            segments: [
-              ButtonSegment(
-                value: ImageFrameResolutionMode.matchAjustar,
-                label: Text(
-                  tr('Da foto', 'From photo'),
-                  key: ValueKey('frameResolutionSegment_matchAjustar'),
-                ),
-              ),
-              ButtonSegment(
-                value: ImageFrameResolutionMode.nativeMax,
-                label: Text(
-                  tr('Máxima', 'Maximum'),
-                  key: ValueKey('frameResolutionSegment_nativeMax'),
-                ),
-              ),
-            ],
-            selected: {selected},
-            showSelectedIcon: true,
-            expandedInsets: EdgeInsets.zero,
-            onSelectionChanged: (selection) => _updateFrame(
-              _frame.copyWith(frameResolutionMode: selection.single),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ---------------------------------------------------------------------
   // "Fundo transparente"
@@ -1686,8 +1329,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       _erasedFiles.add(file.path);
       if (!mounted) return;
       setState(() {
-        _undoStack.add(before);
-        _redoStack.clear();
+        _history.push(before);
         _photo = erased;
         _eraserMask = EraserMask.empty;
         _lastErased = mask;
@@ -1717,22 +1359,13 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   }
 
   Widget _colorAdjustSection() {
-    final adjustments = _frame.adjustments;
-    return ColorAdjustPanel(
-      hasAdjustments: adjustments.hasAdjustments,
-      valueOf: (adjustment) => adjustment.valueIn(adjustments),
+    return ColorAdjustmentsPanel(
+      adjustments: _frame.adjustments,
       onChangeStart: _pushUndoCheckpoint,
-      onChanged: (adjustment, value) => _updateFrame(
-        _frame.copyWith(adjustments: adjustment.applyIn(adjustments, value)),
+      onChanged: (adjustments) => _updateFrame(
+        _frame.copyWith(adjustments: adjustments),
         pushUndo: false,
       ),
-      onReset: () {
-        _pushUndoCheckpoint();
-        _updateFrame(
-          _frame.copyWith(adjustments: ColorAdjustments.neutral),
-          pushUndo: false,
-        );
-      },
     );
   }
 
@@ -1759,39 +1392,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   Widget _backgroundSection() {
     final frame = _frame;
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          key: const ValueKey('transparentBackgroundSwitch'),
-          children: [
-            Expanded(
-              child: Text(
-                tr('Fundo transparente', 'Transparent background'),
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-            Switch(
-              value: frame.transparentBackground,
-              onChanged: (v) =>
-                  _updateFrame(frame.copyWith(transparentBackground: v)),
-            ),
-          ],
-        ),
-        if (!frame.transparentBackground) ...[
-          Divider(
-            height: 13,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
-          ),
-          PanelColorRow(
-            key: const ValueKey('backgroundColorRow'),
-            label: tr('Cor do fundo', 'Background color'),
-            color: _frame.backgroundColor,
-            onTap: _pickBackgroundColor,
-          ),
-        ],
-      ],
+    return TransparentBackgroundPanel(
+      transparent: frame.transparentBackground,
+      color: frame.backgroundColor,
+      onTransparentChanged: (v) =>
+          _updateFrame(frame.copyWith(transparentBackground: v)),
+      onPickColor: _pickBackgroundColor,
     );
   }
 

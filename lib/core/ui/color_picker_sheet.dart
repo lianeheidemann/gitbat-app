@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'app_message.dart';
 import 'dialog_title.dart';
 import '../../app/editor_defaults.dart';
 
@@ -103,18 +104,13 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
         // Sem isso o erro virava uma exceção assíncrona sem dono e o botão
         // simplesmente não fazia nada, sem explicação nenhuma.
         if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  tr(
-                    'Não foi possível preparar a prévia para o conta-gotas.',
-                    'Could not prepare the preview for the eyedropper.',
-                  ),
-                ),
-              ),
-            );
+          showAppMessage(
+            context,
+            tr(
+              'Não foi possível preparar a prévia para o conta-gotas.',
+              'Could not prepare the preview for the eyedropper.',
+            ),
+          );
         }
         return;
       }

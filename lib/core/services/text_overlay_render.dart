@@ -5,9 +5,7 @@ import 'package:flutter/material.dart' hide Image;
 
 import '../models/collage_sticker.dart';
 import '../models/collage_text.dart';
-import '../../features/collage/services/collage_compositor.dart'
-    show paintCollageSticker;
-import '../../features/collage/painting/collage_painter.dart';
+import '../painting/overlay_painting.dart';
 
 /// Rasteriza só os textos (`CollageTextItem`) num PNG transparente do
 /// tamanho exato [width]x[height] — usado pela exportação de vídeo/GIF, que

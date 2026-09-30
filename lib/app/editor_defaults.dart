@@ -1,8 +1,6 @@
 import 'dart:ui' show Color;
 
 import '../core/models/frame_settings.dart';
-import '../features/collage/models/collage_background.dart';
-import '../features/collage/models/collage_cell.dart';
 import 'app_palette.dart';
 import 'theme_controller.dart';
 
@@ -20,11 +18,4 @@ abstract final class EditorDefaults {
   /// Moldura do vídeo, da foto e do SVG, ainda desligada.
   static FrameSettings frameSettings() =>
       FrameSettings(color: frame, backgroundColor: background);
-
-  static CollageBackground collageBackground() =>
-      CollageBackground(color: background);
-
-  /// Estilo de uma área nova da montagem.
-  static CollageCellSettings collageCell() =>
-      CollageCellSettings(borderColor: frame, background: collageBackground());
 }

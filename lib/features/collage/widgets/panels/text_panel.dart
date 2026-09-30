@@ -1,12 +1,9 @@
-import '../../../../app/language_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/collage_text.dart';
-import '../../../../core/ui/color_picker_sheet.dart';
-import '../../../../core/ui/panel_rows.dart';
-import '../../../../app/editor_defaults.dart';
+import '../../../../core/ui/text_style_controls.dart';
 
 /// Painel da aba "Texto": o campo de escrever (que também edita a caixa
 /// trazida pelo lápis da barra de seleção) e, com uma caixa selecionada, cor,
@@ -61,231 +58,25 @@ class CollageTextPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _textComposer(context),
+        TextComposerField(
+          controller: textController,
+          focusNode: textFocus,
+          editing: editingTextId != null,
+          onSubmit: onSubmit,
+          onCancelEdit: onCancelEdit,
+        ),
         // Os controles de estilo só fazem sentido com um texto selecionado —
         // eles mexem naquele texto, não em todos.
-        if (selected != null) ...[
-          const SizedBox(height: 8),
-          PanelColorRow(
-            label: tr('Cor do texto', 'Text color'),
-            color: selected.color,
-            onTap: () => _pickTextColor(context, selected.id),
-          ),
-          TextFontSizeRow(
+        if (selected != null)
+          ...textStyleControls(
+            context,
             item: selected,
+            latest: () => findText(selected.id),
             onChangeStart: onPushUndoCheckpoint,
-            onChanged: (points) => onReplaceText(
-              selected.id,
-              selected.withFontSizePoints(points),
-              pushUndo: false,
-            ),
+            onChanged: (item) => onReplaceText(item.id, item, pushUndo: false),
+            onCommit: (item) => onReplaceText(item.id, item),
+            previewImageBuilder: previewImageBuilder,
           ),
-          PanelSwitchRow(
-            label: tr('Fundo do texto', 'Text background'),
-            value: selected.hasBackground,
-            onChanged: (on) => _toggleTextBackground(selected.id, on),
-          ),
-          if (selected.hasBackground) ...[
-            const SizedBox(height: 4),
-            _textBackgroundGroup(context, selected),
-          ],
-        ],
-      ],
-    );
-  }
-
-  /// Cor/opacidade/arredondamento do fundo do texto, agrupados numa caixa com
-  /// destaque à esquerda — deixa claro que os três são sub-opções de "Fundo
-  /// do texto" logo acima, então os rótulos aqui dentro não repetem "do
-  /// fundo" (a folha de cor, mais longe desse contexto, continua dizendo
-  /// "Cor do fundo do texto").
-  Widget _textBackgroundGroup(BuildContext context, CollageTextItem selected) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(10),
-        border: Border(
-          left: BorderSide(color: theme.colorScheme.primary, width: 3),
-        ),
-      ),
-      child: Column(
-        children: [
-          PanelColorRow(
-            label: tr('Cor', 'Color'),
-            color: selected.backgroundColor!,
-            onTap: () => _pickTextBackgroundColor(context, selected.id),
-          ),
-          const SizedBox(height: 4),
-          PanelSliderRow(
-            onChangeStart: onPushUndoCheckpoint,
-            label: tr('Opacidade', 'Opacity'),
-            value: selected.backgroundColor!.a,
-            min: 0,
-            max: 1,
-            valueLabel: '${(selected.backgroundColor!.a * 100).round()}%',
-            onChanged: (v) => onReplaceText(
-              selected.id,
-              selected.copyWith(
-                backgroundColor: selected.backgroundColor!.withValues(alpha: v),
-              ),
-              pushUndo: false,
-            ),
-          ),
-          const SizedBox(height: 4),
-          PanelSliderRow(
-            onChangeStart: onPushUndoCheckpoint,
-            label: tr('Arredondamento', 'Rounding'),
-            value: selected.backgroundCornerRatio,
-            min: 0,
-            max: CollageTextItem.maxBackgroundCornerRatio,
-            valueLabel:
-                '${(selected.backgroundCornerRatio / CollageTextItem.maxBackgroundCornerRatio * 100).round()}%',
-            onChanged: (v) => onReplaceText(
-              selected.id,
-              selected.copyWith(backgroundCornerRatio: v),
-              pushUndo: false,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _toggleTextBackground(String id, bool on) {
-    final item = findText(id);
-    if (item == null) return;
-    onReplaceText(
-      id,
-      on
-          ? item.copyWith(
-              backgroundColor:
-                  item.backgroundColor ?? EditorDefaults.background,
-            )
-          : item.copyWith(clearBackgroundColor: true),
-    );
-  }
-
-  void _pickTextColor(BuildContext context, String id) => _pickOverlayTextColor(
-    context,
-    id: id,
-    title: tr('Cor do texto', 'Text color'),
-    current: (item) => item.color,
-    apply: (item, color) => item.copyWith(color: color),
-  );
-
-  void _pickTextBackgroundColor(BuildContext context, String id) =>
-      _pickOverlayTextColor(
-        context,
-        id: id,
-        title: tr('Cor do fundo do texto', 'Text background color'),
-        current: (item) => item.backgroundColor ?? EditorDefaults.background,
-        apply: (item, color) => item.copyWith(backgroundColor: color),
-      );
-
-  /// Mesma folha de cor do resto da montagem (com conta-gotas na prévia),
-  /// servindo tanto à cor do texto quanto à do fundo dele — [current]/[apply]
-  /// são o que muda entre as duas, no mesmo espírito de [_pickBorderColor].
-  void _pickOverlayTextColor(
-    BuildContext context, {
-    required String id,
-    required String title,
-    required Color Function(CollageTextItem item) current,
-    required CollageTextItem Function(CollageTextItem item, Color color) apply,
-  }) {
-    final item = findText(id);
-    if (item == null) return;
-    var checkpointPushed = false;
-    showCollageColorPickerSheet(
-      context: context,
-      title: title,
-      initialColor: current(item),
-      onColorSelected: (color) {
-        final latest = findText(id);
-        if (latest == null) return;
-        if (!checkpointPushed) {
-          checkpointPushed = true;
-          onPushUndoCheckpoint();
-        }
-        onReplaceText(id, apply(latest, color), pushUndo: false);
-      },
-      previewImageBuilder: previewImageBuilder,
-    );
-  }
-
-  /// Campo de escrever texto do painel: o botão da ponta cria a caixa (ou
-  /// confirma a edição, quando o lápis carregou uma aqui). Escrever direto no
-  /// painel evita a janela que existia só para digitar uma frase.
-  Widget _textComposer(BuildContext context) {
-    final theme = Theme.of(context);
-    final editing = editingTextId != null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (editing) ...[
-          Row(
-            children: [
-              Text(
-                tr('Editar texto', 'Edit text'),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: onCancelEdit,
-                child: Text(tr('Cancelar', 'Cancel')),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-        ],
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: textController,
-          builder: (context, value, _) {
-            final canSubmit = value.text.trim().isNotEmpty;
-            return TextField(
-              controller: textController,
-              focusNode: textFocus,
-              minLines: 1,
-              // Até 3 linhas, o mesmo que o diálogo antigo aceitava — com
-              // `TextInputType.multiline` o Enter quebra linha e quem
-              // confirma é o botão da ponta.
-              maxLines: 3,
-              keyboardType: TextInputType.multiline,
-              textCapitalization: TextCapitalization.sentences,
-              onSubmitted: (_) => onSubmit(),
-              decoration: InputDecoration(
-                hintText: tr('Digite seu texto...', 'Type your text...'),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                contentPadding: const EdgeInsets.fromLTRB(18, 12, 4, 12),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: IconButton(
-                    tooltip: editing
-                        ? tr('Salvar texto', 'Save text')
-                        : tr('Adicionar texto', 'Add text'),
-                    onPressed: canSubmit ? onSubmit : null,
-                    icon: Icon(
-                      editing ? Icons.check_rounded : Icons.add_rounded,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: canSubmit
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.surfaceContainerHighest,
-                      foregroundColor: canSubmit
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
       ],
     );
   }

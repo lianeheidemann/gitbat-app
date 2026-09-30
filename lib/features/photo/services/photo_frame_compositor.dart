@@ -11,10 +11,8 @@ import '../../../core/models/frame_settings.dart';
 import '../../../core/models/image_frame.dart';
 import '../../../core/models/output_transform.dart';
 import '../../../core/models/photo_info.dart';
-import '../../collage/painting/collage_painter.dart' show paintCollageTextItem;
 import '../../../core/painting/frame_painter.dart';
-import '../../collage/services/collage_compositor.dart'
-    show paintCollageSticker;
+import '../../../core/painting/overlay_painting.dart';
 
 /// Compõe uma [PhotoInfo] com a [FrameSettings] escolhida (moldura
 /// procedural ou moldura de imagem) num PNG final, com `dart:ui`/[Canvas]

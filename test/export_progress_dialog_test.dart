@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gitbat/features/collage/widgets/export_progress_dialog.dart';
+import 'package:gitbat/core/ui/export_progress_dialog.dart';
 
 Widget _harness(ValueNotifier<ExportProgress> progress, VoidCallback onCancel) {
   return MaterialApp(

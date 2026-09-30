@@ -1,6 +1,6 @@
 // `ValueListenable` vem de foundation: material reexporta o
 // ValueListenableBuilder, mas não o tipo em si.
-import '../../../app/language_controller.dart';
+import '../../app/language_controller.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 

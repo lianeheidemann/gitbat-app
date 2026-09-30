@@ -16,7 +16,7 @@ import 'package:gitbat/features/collage/widgets/panels/areas_panel.dart';
 import 'package:gitbat/features/collage/widgets/collage_cell_view.dart';
 import 'package:gitbat/core/ui/collage_overlay_view.dart';
 import 'package:gitbat/core/ui/color_adjust_controls.dart';
-import 'package:gitbat/features/collage/widgets/folder_tab.dart';
+import 'package:gitbat/core/ui/folder_tab.dart';
 import 'package:gitbat/features/collage/widgets/target_sub_panel.dart';
 
 import 'helpers/animated_gif.dart';
@@ -1007,7 +1007,7 @@ void main() {
     await tester.drag(find.byType(SvgPicture).last, const Offset(0, 200));
     await tester.pumpAndSettle();
     await tester.fling(
-      find.byKey(const ValueKey('collagePanelHandle')),
+      find.byKey(const ValueKey('editorPanelHandle')),
       const Offset(0, 60),
       800,
     );
@@ -1021,7 +1021,7 @@ void main() {
 
     // Puxar de volta para cima traz os controles.
     await tester.fling(
-      find.byKey(const ValueKey('collagePanelHandle')),
+      find.byKey(const ValueKey('editorPanelHandle')),
       const Offset(0, -60),
       800,
     );

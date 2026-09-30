@@ -1,8 +1,6 @@
 import '../../app/language_controller.dart';
-import '../../app/translations.dart';
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -11,8 +9,8 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'models/collage_background.dart';
-import 'models/sticker_catalog.dart';
 import 'models/collage_cell.dart';
+import 'models/collage_defaults.dart';
 import 'models/collage_export.dart';
 import 'models/collage_layout.dart';
 import 'models/collage_settings.dart';
@@ -29,30 +27,33 @@ import '../../core/services/imported_font_store.dart';
 import '../../core/services/output_service.dart';
 import '../../core/services/sticker_folder_store.dart';
 import '../../core/ui/app_bar_title.dart';
+import '../../core/ui/app_message.dart';
 import 'widgets/background_image_view.dart';
 import '../../core/ui/checkerboard_background.dart';
 import 'widgets/collage_cell_view.dart';
 import '../../core/ui/collage_overlay_view.dart';
+import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_tabs_footer.dart';
+import '../../core/ui/overlay_handles.dart';
+import '../../core/ui/sticker_library.dart';
 import '../../core/ui/text_overlay_editor.dart';
 import 'painting/collage_painter.dart';
-import 'widgets/export_progress_dialog.dart';
+import '../../core/ui/export_progress_dialog.dart';
 import 'widgets/cell_actions.dart';
-import 'widgets/font_thumb.dart';
+import '../../core/ui/font_picker_sheet.dart';
 import 'widgets/panels/collage_panel_actions.dart';
 import 'widgets/panels/aspect_panel.dart';
 import 'widgets/panels/background_panel.dart';
 import 'widgets/panels/border_panel.dart';
 import 'widgets/panels/color_panel.dart';
 import 'widgets/panels/margin_panel.dart';
-import 'widgets/panels/stickers_panel.dart';
 import 'widgets/panels/text_panel.dart';
-import '../../core/ui/text_input_dialog.dart';
 import 'widgets/panels/layout_panel.dart';
 import 'widgets/panels/areas_panel.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/saved_dialog.dart';
 import '../../core/ui/dialog_title.dart';
+import '../../core/ui/edit_history.dart';
 import '../../app/editor_defaults.dart';
 
 /// Geometria do sticker/texto selecionado, na medida necessária para
@@ -134,18 +135,19 @@ class _CollagePageState extends State<CollagePage> {
   static const _folderStore = StickerFolderStore();
   static const _fontStore = ImportedFontStore();
 
-  /// Id da pasta recém-criada que ainda precisa ficar visível na fileira —
-  /// ver [_createStickerFolder]. `null` quando não há rolagem pendente.
-  String? _pendingFolderScrollId;
+  /// Pastas e stickers importados da aba "Stickers" — a mesma biblioteca dos
+  /// outros editores, carregada aqui junto com os fundos e as fontes (ver
+  /// [_loadImportedAssets]).
+  final _stickerLibrary = StickerLibrary();
 
   late CollageSettings _settings =
       CollageSettings.forLayout(
         _defaultLayoutFor(widget.photos.length),
         widget.photos,
-        cellStyle: EditorDefaults.collageCell(),
+        cellStyle: CollageDefaults.cell(),
       ).copyWith(
         borderColor: EditorDefaults.frame,
-        background: EditorDefaults.collageBackground(),
+        background: CollageDefaults.background(),
       );
 
   /// Valor próprio da linha "Tudo" da aba "Margem" — só muda quando ELA é
@@ -157,7 +159,6 @@ class _CollagePageState extends State<CollagePage> {
   late double _marginAllValue =
       (_settings.outerMarginRatio + _settings.innerMarginRatio) / 2;
 
-  List<ImportedAsset> _importedStickers = [];
   List<ImportedAsset> _importedBackgrounds = [];
 
   /// Fontes próprias do usuário, já registradas no engine por
@@ -165,8 +166,7 @@ class _CollagePageState extends State<CollagePage> {
   /// embutidas.
   List<ImportedFont> _importedFonts = [];
 
-  final List<CollageSettings> _undoStack = [];
-  final List<CollageSettings> _redoStack = [];
+  final _history = EditHistory<CollageSettings>();
 
   String? _selectedOverlayId;
 
@@ -214,25 +214,11 @@ class _CollagePageState extends State<CollagePage> {
   /// fundo da montagem inteira, `true` = o fundo de dentro de cada foto.
   bool _backgroundTargetsPhotos = false;
 
-  /// `true` com o painel do rodapé encolhido para só a alça — recolher NÃO é
-  /// fechar: a aba continua sendo a aba aberta, então sticker e texto seguem
-  /// selecionáveis e moviméis na prévia enquanto os controles deles estão
-  /// fora da tela.
-  bool _panelCollapsed = false;
-
   /// `true` quando o chip "x:y" da aba "Proporção" está escolhido — é ele que
   /// mostra os campos de largura e altura. Fica ligado sozinho quando a
   /// proporção atual não bate com nenhum chip pronto (arrastar o slider, por
   /// exemplo): nesse caso a proporção é customizada de fato.
   bool _customAspectSelected = false;
-
-  /// Pasta aberta na aba "Stickers": id de uma embutida ([BundledStickerFolder.id])
-  /// ou de uma criada pelo usuário ([BundledStickerFolder.id]).
-  String _stickerFolderId = BundledStickerFolder.reactions.id;
-
-  /// Pastas criadas pelo usuário, carregadas junto com os stickers
-  /// importados — ver [StickerFolderStore].
-  List<StickerFolder> _customFolders = [];
 
   bool _saving = false;
   bool _sharing = false;
@@ -263,6 +249,7 @@ class _CollagePageState extends State<CollagePage> {
     _textController.dispose();
     _textFocus.dispose();
     _export.dispose();
+    _stickerLibrary.dispose();
     super.dispose();
   }
 
@@ -316,22 +303,13 @@ class _CollagePageState extends State<CollagePage> {
     final fonts = await _fontStore.loadAll();
     if (!mounted) return;
     setState(() {
-      _importedStickers = stickers;
+      _stickerLibrary
+        ..importedStickers = stickers
+        ..customFolders = folders
+        ..dropFolderIfGone();
       _importedBackgrounds = backgrounds;
-      _customFolders = folders;
       _importedFonts = fonts;
-      _dropStickerFolderIfGone();
     });
-  }
-
-  /// Volta para "Importados" quando a pasta aberta não existe mais — só
-  /// acontece se ela for apagada, mas deixa a barra sempre com alguma pasta
-  /// marcada em vez de nenhuma.
-  void _dropStickerFolderIfGone() {
-    final exists =
-        BundledStickerFolder.values.any((f) => f.id == _stickerFolderId) ||
-        _customFolders.any((f) => f.id == _stickerFolderId);
-    if (!exists) _stickerFolderId = BundledStickerFolder.imported.id;
   }
 
   // ---------------------------------------------------------------------
@@ -343,10 +321,7 @@ class _CollagePageState extends State<CollagePage> {
   /// contínuas (arrastar, sliders) já precedidas por [_pushUndoCheckpoint]
   /// no início do gesto, para não empilhar um estado por quadro.
   void _update(CollageSettings settings, {bool pushUndo = true}) {
-    if (pushUndo) {
-      _undoStack.add(_settings);
-      _redoStack.clear();
-    }
+    if (pushUndo) _history.push(_settings);
     setState(() {
       // Espaço tirado ou layout trocado: os índices mudam de foto.
       if (settings.cells.length != _settings.cells.length) {
@@ -389,26 +364,21 @@ class _CollagePageState extends State<CollagePage> {
     message: _message,
   );
 
-  void _pushUndoCheckpoint() {
-    _undoStack.add(_settings);
-    _redoStack.clear();
-  }
+  void _pushUndoCheckpoint() => _history.push(_settings);
 
   void _undo() {
-    if (_undoStack.isEmpty) return;
-    final previous = _undoStack.removeLast();
+    final previous = _history.undo(_settings);
+    if (previous == null) return;
     setState(() {
-      _redoStack.add(_settings);
       _settings = previous;
       _dropSelectionIfGone();
     });
   }
 
   void _redo() {
-    if (_redoStack.isEmpty) return;
-    final next = _redoStack.removeLast();
+    final next = _history.redo(_settings);
+    if (next == null) return;
     setState(() {
-      _undoStack.add(_settings);
       _settings = next;
       _dropSelectionIfGone();
     });
@@ -451,11 +421,7 @@ class _CollagePageState extends State<CollagePage> {
     };
   }
 
-  void _message(String text) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text)));
-  }
+  void _message(String text) => showAppMessage(context, text);
 
   // ---------------------------------------------------------------------
   // Build
@@ -469,41 +435,25 @@ class _CollagePageState extends State<CollagePage> {
       appBar: AppBar(
         title: AppBarTitle(tr('Montagem', 'Collage')),
         actions: [
-          IconButton(
-            tooltip: tr('Desfazer', 'Undo'),
-            onPressed: _undoStack.isEmpty ? null : _undo,
-            icon: const Icon(Icons.undo_rounded),
+          ...undoRedoActions(
+            canUndo: _history.canUndo,
+            canRedo: _history.canRedo,
+            onUndo: _undo,
+            onRedo: _redo,
           ),
-          IconButton(
-            tooltip: tr('Refazer', 'Redo'),
-            onPressed: _redoStack.isEmpty ? null : _redo,
-            icon: const Icon(Icons.redo_rounded),
-          ),
-          IconButton(
-            tooltip: _saving
-                ? tr('Salvando…', 'Saving…')
-                : tr('Salvar na galeria', 'Save to gallery'),
+          BusyIconButton(
+            busy: _saving,
+            tooltip: tr('Salvar na galeria', 'Save to gallery'),
+            busyTooltip: tr('Salvando…', 'Saving…'),
             onPressed: busy ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.download_rounded),
+            icon: const Icon(Icons.download_rounded),
           ),
-          IconButton(
-            tooltip: _sharing
-                ? tr('Preparando…', 'Preparing…')
-                : tr('Compartilhar', 'Share'),
+          BusyIconButton(
+            busy: _sharing,
+            tooltip: tr('Compartilhar', 'Share'),
+            busyTooltip: tr('Preparando…', 'Preparing…'),
             onPressed: busy ? null : _share,
-            icon: _sharing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.share_outlined),
+            icon: const Icon(Icons.share_outlined),
           ),
         ],
       ),
@@ -528,8 +478,18 @@ class _CollagePageState extends State<CollagePage> {
               ),
             ),
             ?toolbar,
-            collapsibleEditorPanel(child: _activeTabPanel()),
-            _footerTabs(),
+            // Recolher o painel pela alça não é fechar: a aba continua
+            // aberta, então sticker e texto seguem selecionáveis e móveis na
+            // prévia enquanto os controles deles estão fora da tela.
+            EditorTabsFooter(
+              sections: _sections,
+              activeIndex: _activeTab?.index,
+              onSelected: (index) => setState(
+                () => _activeTab = index == null
+                    ? null
+                    : _CollageTab.values[index],
+              ),
+            ),
           ],
         ),
       ),
@@ -540,78 +500,15 @@ class _CollagePageState extends State<CollagePage> {
   // Rodapé de abas
   // ---------------------------------------------------------------------
 
-  /// Painel da aba aberta: altura limitada com rolagem própria (seções mais
-  /// longas, como Fundo, não estouram a tela).
-  ///
-  /// Devolve `null` sem aba aberta — quem dá movimento a abrir e fechar é o
-  /// [collapsibleEditorPanel] em volta, no `build`.
-  Widget? _activeTabPanel() {
-    final tab = _activeTab;
-    if (tab == null) return null;
-    final theme = Theme.of(context);
-    return AnimatedSize(
-      // Recolher pela alça e trocar de aba: o painel continua montado e só
-      // muda de altura.
-      duration: editorPanelMotionDuration,
-      curve: editorPanelMotionCurve,
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        // Mesmo teto do rodapé das outras telas (ver
-        // `EditorTabsFooter.maxPanelHeight`): o painel cobre a prévia, e o
-        // que passar daqui continua acessível pela rolagem que ele já tem.
-        constraints: const BoxConstraints(maxHeight: 200),
-        decoration: BoxDecoration(
-          color: _panelCollapsed
-              ? theme.colorScheme.surface
-              : theme.colorScheme.surfaceContainerLow,
-          border: Border(top: _footerTopLine(theme)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _panelDragHandle(),
-            if (!_panelCollapsed)
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-                  child: _panelContentFor(tab),
-                ),
-              ),
-          ],
-        ),
+  /// As abas na ordem de [_CollageTab], sem valor de resumo no painel.
+  List<EditorSection> get _sections => [
+    for (final tab in _CollageTab.values)
+      EditorSection(
+        icon: _tabIcon(tab),
+        title: _tabLabel(tab),
+        builder: (_) => _panelContentFor(tab),
       ),
-    );
-  }
-
-  /// Alça no topo do painel: puxar para baixo encolhe o painel até só ela,
-  /// puxar para cima traz os controles de volta, e tocar alterna os dois.
-  /// Encolher deixa a prévia com quase toda a tela sem perder a aba aberta —
-  /// dá para arrastar o sticker ou o texto e depois voltar aos controles de
-  /// onde parou. Para fechar mesmo, é tocar de novo na aba do rodapé.
-  Widget _panelDragHandle() {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      key: const ValueKey('collagePanelHandle'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () => setState(() => _panelCollapsed = !_panelCollapsed),
-      onVerticalDragEnd: (details) {
-        final velocity = details.primaryVelocity;
-        if (velocity == null || velocity == 0) return;
-        setState(() => _panelCollapsed = velocity > 0);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Container(
-          width: 36,
-          height: 4,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.outlineVariant,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
-  }
+  ];
 
   Widget _panelContentFor(_CollageTab tab) => switch (tab) {
     _CollageTab.layout => CollageLayoutPanel(
@@ -681,21 +578,13 @@ class _CollagePageState extends State<CollagePage> {
       settings: _settings,
       actions: _panelActions,
     ),
-    _CollageTab.stickers => CollageStickersPanel(
-      stickerFolderId: _stickerFolderId,
-      customFolders: _customFolders,
-      importedStickers: _importedStickers,
-      pendingFolderScrollId: _pendingFolderScrollId,
-      // Atribuição simples de propósito: quem consome é o `Builder` da
-      // fileira, durante o build, e `setState` ali lançaria exceção.
-      onPendingScrollConsumed: () => _pendingFolderScrollId = null,
-      onFolderSelected: (id) => setState(() => _stickerFolderId = id),
-      onOpenFolderMenu: _openFolderMenu,
-      onCreateFolder: _createStickerFolder,
-      onAddBundledSticker: _addBundledSticker,
-      onAddImportedSticker: _addStickerFromAsset,
-      onRemoveSticker: _confirmRemoveSticker,
-      onImportSticker: _importSticker,
+    _CollageTab.stickers => StickerLibraryPanel(
+      library: _stickerLibrary,
+      placed: _settings.stickers,
+      usedIn: (pt: 'da montagem', en: 'from the collage'),
+      onAddBundled: _addBundledSticker,
+      onAddImported: _addStickerFromAsset,
+      onRemovePlaced: _removePlacedStickers,
     ),
     _CollageTab.text => CollageTextPanel(
       selectedText: _selectedOverlayId == null
@@ -714,75 +603,6 @@ class _CollagePageState extends State<CollagePage> {
     ),
     _CollageTab.settings => const PreviewSettingsPanel(),
   };
-
-  Widget _footerTabs() {
-    final theme = Theme.of(context);
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        // Recolhido, quem desenha a linha de cima é a tira da alça.
-        border: _panelCollapsed && _activeTab != null
-            ? null
-            : Border(top: _footerTopLine(theme)),
-      ),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        children: [for (final tab in _CollageTab.values) _footerTabButton(tab)],
-      ),
-    );
-  }
-
-  /// A linha que separa o rodapé da prévia. Só uma por vez desenha: com o
-  /// painel recolhido ela é da tira da alça, senão é da barra.
-  ///
-  /// Antes cada uma trazia a sua, e recolhido isso desenhava duas linhas
-  /// paralelas a 17px uma da outra, com uma faixa de outro tom entre elas —
-  /// lia-se como falha de renderização, não como parte do controle.
-  BorderSide _footerTopLine(ThemeData theme) => BorderSide(
-    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-  );
-
-  Widget _footerTabButton(_CollageTab tab) {
-    final theme = Theme.of(context);
-    final selected = _activeTab == tab;
-    final color = selected
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurfaceVariant;
-    return InkWell(
-      onTap: () => setState(() {
-        _activeTab = selected ? null : tab;
-        // Abrir (ou trocar de) aba sempre mostra o conteúdo: recolhido é um
-        // estado do painel aberto, não algo que a aba herda.
-        _panelCollapsed = false;
-      }),
-      // Pelo menos 60 de largura, crescendo para rótulos mais longos
-      // ("Configurações") em vez de cortá-los.
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 60),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_tabIcon(tab), size: 20, color: color),
-              const SizedBox(height: 4),
-              Text(
-                _tabLabel(tab),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   IconData _tabIcon(_CollageTab tab) => switch (tab) {
     _CollageTab.layout => Icons.grid_view_outlined,
@@ -988,7 +808,7 @@ class _CollagePageState extends State<CollagePage> {
         layout: layout,
         cells: [
           ..._settings.cells,
-          _settings.withSharedCellStyle(EditorDefaults.collageCell()),
+          _settings.withSharedCellStyle(CollageDefaults.cell()),
         ],
       ),
     );
@@ -1388,93 +1208,8 @@ class _CollagePageState extends State<CollagePage> {
     return null;
   }
 
-  bool _resizeHandleCheckpointPushed = false;
-  bool _rotateHandleCheckpointPushed = false;
-
-  /// Posição (em pixels locais do canvas) que a camada acumula a partir de
-  /// [event.delta] durante um arrasto da alça de girar — não há RenderBox
-  /// para medir o dedo direto, então a posição vem de somar os deltas a
-  /// partir de onde a alça estava no toque inicial. Reiniciada em
-  /// [_onRotateHandlePointerDown].
-  Offset? _rotatePointerPos;
-  double? _lastRotateAngle;
-
-  /// Mesma conta de [CollageOverlayView] (removida de lá): desfaz a rotação
-  /// atual do vetor de arrasto e soma as duas componentes locais — arrastar
-  /// para longe do centro (direita/baixo, sem girar) cresce; para perto,
-  /// encolhe — como fração de [canvasSize].shortestSide.
-  void _onResizeHandlePointerMove(
-    PointerMoveEvent event,
-    _SelectedOverlayGeometry geometry,
-    Size canvasSize,
-  ) {
-    final reference = canvasSize.shortestSide;
-    if (reference <= 0) return;
-    final cosA = math.cos(geometry.rotation);
-    final sinA = math.sin(geometry.rotation);
-    final local = Offset(
-      event.delta.dx * cosA + event.delta.dy * sinA,
-      -event.delta.dx * sinA + event.delta.dy * cosA,
-    );
-    final scaleDelta = (local.dx + local.dy) / reference;
-    if (scaleDelta == 0) return;
-    final newScale = (geometry.scale + geometry.scale * scaleDelta).clamp(
-      geometry.minScale,
-      geometry.maxScale,
-    );
-    if (newScale == geometry.scale) return;
-    if (!_resizeHandleCheckpointPushed) {
-      _resizeHandleCheckpointPushed = true;
-      _pushUndoCheckpoint();
-    }
-    geometry.apply(
-      geometry.centerX,
-      geometry.centerY,
-      newScale,
-      geometry.rotation,
-    );
-  }
-
-  void _onRotateHandlePointerDown(Offset handleCenter) {
-    _rotateHandleCheckpointPushed = false;
-    _rotatePointerPos = handleCenter;
-    _lastRotateAngle = null;
-  }
-
-  void _onRotateHandlePointerMove(
-    PointerMoveEvent event,
-    _SelectedOverlayGeometry geometry,
-    Offset center,
-  ) {
-    final pos = (_rotatePointerPos ?? center) + event.delta;
-    _rotatePointerPos = pos;
-    final vector = pos - center;
-    if (vector.distance < 1) return;
-    final angle = math.atan2(vector.dy, vector.dx);
-    final last = _lastRotateAngle;
-    _lastRotateAngle = angle;
-    if (last == null) return;
-    var delta = angle - last;
-    // Normaliza a virada de -pi/pi, senão passar por trás do overlay daria
-    // um giro de volta inteira num quadro só.
-    while (delta > math.pi) {
-      delta -= 2 * math.pi;
-    }
-    while (delta < -math.pi) {
-      delta += 2 * math.pi;
-    }
-    if (delta == 0) return;
-    if (!_rotateHandleCheckpointPushed) {
-      _rotateHandleCheckpointPushed = true;
-      _pushUndoCheckpoint();
-    }
-    geometry.apply(
-      geometry.centerX,
-      geometry.centerY,
-      geometry.scale,
-      geometry.rotation + delta,
-    );
-  }
+  /// Gesto em andamento das alças de redimensionar/girar.
+  final _handleDrag = OverlayHandleDrag();
 
   /// As duas alças do item selecionado, sempre por cima de tudo — ver o doc
   /// de `CollageOverlayView` para o porquê de não morarem mais dentro dele.
@@ -1482,82 +1217,62 @@ class _CollagePageState extends State<CollagePage> {
     final geometry = _selectedOverlayGeometry(canvasSize);
     if (geometry == null) return const [];
 
-    final center = Offset(
-      geometry.centerX * canvasSize.width,
-      geometry.centerY * canvasSize.height,
+    final points = overlayHandlePoints(
+      centerX: geometry.centerX,
+      centerY: geometry.centerY,
+      naturalSize: geometry.naturalSize,
+      scale: geometry.scale,
+      rotation: geometry.rotation,
+      canvasSize: canvasSize,
     );
-    final halfW = geometry.naturalSize.width * geometry.scale / 2;
-    final halfH = geometry.naturalSize.height * geometry.scale / 2;
-    final cosR = math.cos(geometry.rotation);
-    final sinR = math.sin(geometry.rotation);
-    Offset rotate(Offset local) => Offset(
-      local.dx * cosR - local.dy * sinR,
-      local.dx * sinR + local.dy * cosR,
-    );
-
-    final resizeCenter = center + rotate(Offset(halfW, halfH));
-    final rotateCenter = center + rotate(Offset(halfW, -halfH));
 
     return [
-      _handleCircle(
-        center: resizeCenter,
+      OverlayHandle(
+        center: points.bottomRight,
         icon: Icons.open_in_full_rounded,
-        onPointerDown: (_) => _resizeHandleCheckpointPushed = false,
-        onPointerMove: (event) =>
-            _onResizeHandlePointerMove(event, geometry, canvasSize),
+        iconSize: 12,
+        onPointerDown: (_) => _handleDrag.startResize(),
+        onPointerMove: (event) {
+          final scale = _handleDrag.resize(
+            event,
+            scale: geometry.scale,
+            rotation: geometry.rotation,
+            minScale: geometry.minScale,
+            maxScale: geometry.maxScale,
+            canvasSize: canvasSize,
+            onFirstChange: _pushUndoCheckpoint,
+          );
+          if (scale == null) return;
+          geometry.apply(
+            geometry.centerX,
+            geometry.centerY,
+            scale,
+            geometry.rotation,
+          );
+        },
       ),
-      _handleCircle(
-        center: rotateCenter,
+      OverlayHandle(
+        center: points.topRight,
         icon: Icons.rotate_right_rounded,
-        onPointerDown: (_) => _onRotateHandlePointerDown(rotateCenter),
-        onPointerMove: (event) =>
-            _onRotateHandlePointerMove(event, geometry, center),
+        iconSize: 14,
+        onPointerDown: (_) => _handleDrag.startRotate(points.topRight),
+        onPointerMove: (event) {
+          final rotation = _handleDrag.rotate(
+            event,
+            center: points.center,
+            rotation: geometry.rotation,
+            onFirstChange: _pushUndoCheckpoint,
+          );
+          if (rotation == null) return;
+          geometry.apply(
+            geometry.centerX,
+            geometry.centerY,
+            geometry.scale,
+            rotation,
+          );
+        },
       ),
     ];
-  }
-
-  Widget _handleCircle({
-    required Offset center,
-    required IconData icon,
-    required void Function(PointerDownEvent) onPointerDown,
-    required void Function(PointerMoveEvent) onPointerMove,
-  }) {
-    final theme = Theme.of(context);
-    const diameter = 24.0;
-    // A área de toque é maior que o círculo visual (48dp, o mínimo
-    // recomendado) para não ficar difícil de acertar a alça em telas
-    // pequenas ou com dedos maiores — o círculo continua do mesmo tamanho e
-    // no mesmo ponto de antes, só centralizado numa área de toque maior.
-    const tapSize = 48.0;
-    return Positioned(
-      left: center.dx - tapSize / 2,
-      top: center.dy - tapSize / 2,
-      child: Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: onPointerDown,
-        onPointerMove: onPointerMove,
-        child: SizedBox(
-          width: tapSize,
-          height: tapSize,
-          child: Center(
-            child: Container(
-              width: diameter,
-              height: diameter,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: theme.colorScheme.surface, width: 2),
-              ),
-              child: Icon(
-                icon,
-                size: icon == Icons.rotate_right_rounded ? 14 : 12,
-                color: theme.colorScheme.onPrimary,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget? _selectionToolbar() {
@@ -1652,7 +1367,7 @@ class _CollagePageState extends State<CollagePage> {
       layout.cellCount,
       (i) => i < oldCells.length
           ? oldCells[i]
-          : _settings.withSharedCellStyle(EditorDefaults.collageCell()),
+          : _settings.withSharedCellStyle(CollageDefaults.cell()),
     );
     _selectedAreaCell = null;
     _lockedAreaCells.clear();
@@ -1681,7 +1396,7 @@ class _CollagePageState extends State<CollagePage> {
   /// então a primeira célula representa bem todas — mesma lógica de
   /// [CollageBorderPanel].
   CollageBackground get _targetBackground => _backgroundTargetsPhotos
-      ? (_firstCell?.background ?? EditorDefaults.collageBackground())
+      ? (_firstCell?.background ?? CollageDefaults.background())
       : _settings.background;
 
   void _applyBackground(CollageBackground background, {bool pushUndo = true}) {
@@ -1792,150 +1507,6 @@ class _CollagePageState extends State<CollagePage> {
   // Seção "Stickers" / "Texto"
   // ---------------------------------------------------------------------
 
-  Future<void> _createStickerFolder() async {
-    final name = await _promptTextInput(
-      initial: '',
-      title: tr('Nova pasta', 'New folder'),
-      maxLines: 1,
-    );
-    if (name == null) return; // Cancelado — nada a avisar.
-    if (name.trim().isEmpty) {
-      // Sem isto, um nome que não chegou a registrar (ex.: o teclado ainda
-      // compondo o texto no instante do toque) fazia "Nova pasta" parecer
-      // não fazer nada.
-      _message(
-        tr('Digite um nome para a pasta.', 'Type a name for the folder.'),
-      );
-      return;
-    }
-    try {
-      final folder = await _folderStore.create(name);
-      if (!mounted) return;
-      setState(() {
-        _customFolders = [..._customFolders, folder];
-        _stickerFolderId = folder.id;
-        // A pasta nova nasce perto do fim da fileira (antes só de "Nova
-        // pasta"), fora da parte já visível se houver muitas pastas — o
-        // item dela mesma, ao entrar na árvore, pede pra rolar até si (ver
-        // o `Builder` em [CollageStickersPanel]).
-        _pendingFolderScrollId = folder.id;
-      });
-    } catch (e) {
-      // Uma pasta que falha ao salvar não pode desaparecer em silêncio —
-      // sem isto, tocar "Nova pasta" simplesmente não fazia nada visível.
-      if (!mounted) return;
-      _message(
-        tr('Não deu para criar a pasta: $e', 'Could not create the folder: $e'),
-      );
-    }
-  }
-
-  /// Menu de segurar uma pasta criada — as embutidas não passam
-  /// `onLongPress`, então não chegam aqui.
-  void _openFolderMenu(StickerFolder folder) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.drive_file_rename_outline),
-              title: Text(tr('Renomear', 'Rename')),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _renameStickerFolder(folder);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: Text(tr('Apagar', 'Delete')),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _confirmRemoveStickerFolder(folder);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _renameStickerFolder(StickerFolder folder) async {
-    final name = await _promptTextInput(
-      initial: folder.name,
-      title: tr('Renomear pasta', 'Rename folder'),
-      maxLines: 1,
-    );
-    if (name == null || name.trim().isEmpty) return;
-    await _folderStore.rename(folder.id, name);
-    if (!mounted) return;
-    setState(() {
-      _customFolders = [
-        for (final f in _customFolders)
-          f.id == folder.id ? StickerFolder(id: f.id, name: name.trim()) : f,
-      ];
-    });
-  }
-
-  /// Apagar a pasta não apaga o que o usuário importou para ela: os stickers
-  /// voltam para "Importados" (`moveFolderToRoot`), e o diálogo diz isso
-  /// antes de confirmar.
-  Future<void> _confirmRemoveStickerFolder(StickerFolder folder) async {
-    final inFolder = _importedStickers
-        .where((a) => a.folderId == folder.id)
-        .length;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: DialogTitle(tr('Apagar pasta?', 'Delete folder?')),
-        content: Text(
-          inFolder == 0
-              ? tr(
-                  '"${folder.name}" vai ser apagada.',
-                  '"${folder.name}" will be deleted.',
-                )
-              : tr(
-                  '"${folder.name}" vai ser apagada. '
-                      '${inFolder == 1 ? 'O sticker que está' : 'Os $inFolder stickers que estão'} '
-                      'nela ${inFolder == 1 ? 'volta' : 'voltam'} para "Importados".',
-                  '"${folder.name}" will be deleted. '
-                      '${inFolder == 1 ? 'The sticker in it goes' : 'The $inFolder stickers in it go'} '
-                      'back to "Imported".',
-                ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(tr('Apagar', 'Delete')),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await _stickerStore.moveFolderToRoot(folder.id);
-    await _folderStore.remove(folder.id);
-    if (!mounted) return;
-    setState(() {
-      _customFolders = _customFolders.where((f) => f.id != folder.id).toList();
-      _importedStickers = [
-        for (final asset in _importedStickers)
-          asset.folderId == folder.id
-              ? ImportedAsset(
-                  id: asset.id,
-                  label: asset.label,
-                  filePath: asset.filePath,
-                  isVector: asset.isVector,
-                  nativeAspectRatio: asset.nativeAspectRatio,
-                )
-              : asset,
-      ];
-      _dropStickerFolderIfGone();
-    });
-  }
-
   void _addBundledSticker((String path, String label) sticker) {
     final item = CollageSticker(
       id: 's_${DateTime.now().microsecondsSinceEpoch}',
@@ -1948,17 +1519,6 @@ class _CollagePageState extends State<CollagePage> {
     );
     _update(_settings.addingSticker(item));
     setState(() => _selectedOverlayId = item.id);
-  }
-
-  Future<void> _importSticker({String? folderId}) async {
-    try {
-      final asset = await _stickerStore.import(folderId: folderId);
-      if (!mounted) return;
-      setState(() => _importedStickers = [..._importedStickers, asset]);
-      _addStickerFromAsset(asset);
-    } on ImportedAssetException catch (e) {
-      _message(e.message);
-    }
   }
 
   void _addStickerFromAsset(ImportedAsset asset) {
@@ -1977,50 +1537,10 @@ class _CollagePageState extends State<CollagePage> {
     setState(() => _selectedOverlayId = sticker.id);
   }
 
-  Future<void> _confirmRemoveSticker(ImportedAsset asset) async {
-    final inUse = _settings.stickers
-        .where((s) => s.imageFilePath == asset.filePath)
-        .toList();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: DialogTitle(tr('Remover sticker?', 'Remove sticker?')),
-        content: Text(
-          inUse.isEmpty
-              ? tr(
-                  '"${asset.label}" vai ser removido da lista.',
-                  '"${asset.label}" will be removed from the list.',
-                )
-              : tr(
-                  '"${asset.label}" vai ser removido da lista e também da '
-                      'montagem, onde está usado ${inUse.length} '
-                      '${inUse.length == 1 ? 'vez' : 'vezes'}.',
-                  '"${asset.label}" will be removed from the list and also '
-                      'from the collage, where it is used ${inUse.length} '
-                      '${inUse.length == 1 ? 'time' : 'times'}.',
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(tr('Remover', 'Remove')),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    await _stickerStore.remove(asset.id);
-    if (!mounted) return;
-    setState(
-      () => _importedStickers = _importedStickers
-          .where((a) => a.id != asset.id)
-          .toList(),
-    );
-    if (inUse.isEmpty) return;
-    // O arquivo acabou de ser apagado do aparelho: deixar as cópias já
-    // colocadas na montagem apontando para ele quebrava a prévia e fazia a
-    // exportação inteira falhar com "Não foi possível gerar a imagem".
+  /// O arquivo acabou de ser apagado do aparelho: deixar as cópias já
+  /// colocadas na montagem apontando para ele quebrava a prévia e fazia a
+  /// exportação inteira falhar com "Não foi possível gerar a imagem".
+  void _removePlacedStickers(List<CollageSticker> inUse) {
     var updated = _settings;
     for (final sticker in inUse) {
       updated = updated.removingSticker(sticker.id);
@@ -2080,87 +1600,20 @@ class _CollagePageState extends State<CollagePage> {
     _textFocus.requestFocus();
   }
 
-  Future<String?> _promptTextInput({
-    required String initial,
-    String? title,
-    int maxLines = 3,
-  }) => showDialog<String>(
-    context: context,
-    builder: (dialogContext) => TextInputDialog(
-      initial: initial,
-      title: title ?? tr('Texto', 'Text'),
-      maxLines: maxLines,
-    ),
-  );
-
   /// Folha com as [bundledCollageFonts] em miniaturas "Aa", cada uma
   /// renderizada na própria fonte — mesmo padrão visual dos outros sheets
   /// de escolha (`showModalBottomSheet` + `Wrap`).
   void _pickTextFont(String id) {
     final item = _findText(id);
     if (item == null) return;
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tr('Fonte', 'Font'),
-                style: Theme.of(sheetContext).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final font in bundledCollageFonts)
-                    CollageFontThumb(
-                      family: font.$1,
-                      label: trKey(font.$2),
-                      selected: item.fontFamily == font.$1,
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        _applyTextFont(id, font.$1);
-                      },
-                    ),
-                  // As importadas ficam na mesma grade das embutidas —
-                  // segurar remove.
-                  for (final font in _importedFonts)
-                    CollageFontThumb(
-                      family: font.family,
-                      label: font.label,
-                      selected: item.fontFamily == font.family,
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        _applyTextFont(id, font.family);
-                      },
-                      onLongPress: () {
-                        Navigator.of(sheetContext).pop();
-                        _confirmRemoveFont(font);
-                      },
-                    ),
-                  CollageFontThumb(
-                    family: null,
-                    label: tr('Importar', 'Import'),
-                    selected: false,
-                    icon: Icons.font_download_outlined,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _importFont(id);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    showFontPickerSheet(
+      context,
+      selectedFamily: item.fontFamily,
+      importedFonts: _importedFonts,
+      onSelected: (family) => _applyTextFont(id, family),
+      onImport: () => _importFont(id),
+      // As importadas ficam na mesma grade das embutidas — segurar remove.
+      onRemoveImported: _confirmRemoveFont,
     );
   }
 

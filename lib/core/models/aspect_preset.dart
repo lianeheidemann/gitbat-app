@@ -37,4 +37,15 @@ class AspectPreset {
     AspectPreset('2:1', 2.0),
     AspectPreset('1:2', 0.5),
   ];
+
+  /// "Personalizado", o recorte livre de Editar imagem e Editar SVG: não é
+  /// uma proporção de verdade (o -1 nunca vira razão), só marca que cada
+  /// alça mexe no seu lado/canto sem travar largura e altura entre si.
+  static const custom = AspectPreset('Personalizado', -1, labelEn: 'Custom');
+
+  /// "Ajustar": também não é uma proporção (o -2 nunca vira razão). Tocar
+  /// nele encosta o recorte nos pixels visíveis, cortando só a margem
+  /// totalmente transparente (ver `opaque_bounds.dart`); depois disso o
+  /// recorte fica livre como em [custom], para a pessoa refinar se quiser.
+  static const trim = AspectPreset('Ajustar', -2, labelEn: 'Fit');
 }

@@ -11,9 +11,9 @@ import '../../../core/ui/color_adjust_controls.dart';
 import '../../../core/ui/crop/photo_crop_page.dart';
 import '../models/collage_layout.dart';
 import '../models/collage_cell.dart';
+import '../models/collage_defaults.dart';
 import '../models/collage_settings.dart';
 import 'panels/collage_panel_actions.dart';
-import '../../../app/editor_defaults.dart';
 
 /// Ações de uma célula da montagem: o menu de contexto e o que cada item
 /// dele faz — substituir a foto, trocar com outra célula, recortar, ajustar
@@ -478,7 +478,7 @@ void removeCellPhoto(
   actions.update(
     current.replacingCell(
       index,
-      current.withSharedCellStyle(EditorDefaults.collageCell()),
+      current.withSharedCellStyle(CollageDefaults.cell()),
     ),
   );
 }

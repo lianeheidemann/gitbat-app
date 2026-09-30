@@ -11,7 +11,7 @@ import '../../../core/services/export_diagnostics.dart';
 import '../models/collage_export.dart';
 import '../models/collage_settings.dart';
 import '../painting/collage_painter.dart';
-import '../widgets/export_progress_dialog.dart';
+import '../../../core/ui/export_progress_dialog.dart';
 import 'collage_animation.dart';
 import 'collage_compositor.dart';
 

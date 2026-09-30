@@ -5,6 +5,7 @@ import 'package:gitbat/app/theme_controller.dart';
 import 'package:gitbat/core/ui/color_picker_sheet.dart';
 import 'package:gitbat/features/collage/models/collage_background.dart';
 import 'package:gitbat/features/collage/models/collage_cell.dart';
+import 'package:gitbat/features/collage/models/collage_defaults.dart';
 import 'package:gitbat/features/collage/models/collage_layout.dart';
 import 'package:gitbat/features/collage/models/collage_settings.dart';
 import 'package:gitbat/core/models/default_colors.dart';
@@ -59,7 +60,7 @@ void main() {
         final collage = CollageSettings.forLayout(
           const CollageLayout(kind: CollageLayoutKind.grid2x2),
           const [],
-          cellStyle: EditorDefaults.collageCell(),
+          cellStyle: CollageDefaults.cell(),
         );
         for (final cell in collage.cells) {
           expect(cell.borderColor, palette.contentFrame);
