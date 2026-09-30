@@ -230,17 +230,6 @@ CI checks this on every push.
 | Files and output | `file_picker`, `gal`, `share_plus` |
 | Magic eraser | Plain Dart PatchMatch in an `Isolate` |
 
-## Brand
-
-| Item | Where |
-|---|---|
-| App icon (master) | `assets/icon/icon-v2/morceguinho-icone-simples.png` — regenerate every size with `python3 tool/gerar_icones.py` |
-| README logo | `assets/readme/gitbat-logo.png` |
-| Tech badges | `assets/badge/gitbat-badges-adaptive-v10.svg` |
-| Home screen logo | `recursos/marca/gitbat-logo.png` — a stable copy of the README logo |
-| Official palette | *Morceguinho* in `lib/app/palettes/bat_palette.dart` |
-| Previous identity | `assets/icon/icon-v1/` |
-
 ## License
 
 App code: proprietary — all rights reserved ([LICENSE](LICENSE)).
