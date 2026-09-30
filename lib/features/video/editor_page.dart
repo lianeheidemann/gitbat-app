@@ -16,10 +16,10 @@ import 'converting_page.dart';
 import '../../core/ui/app_bar_title.dart';
 import '../../core/ui/app_message.dart';
 import '../../core/ui/checkerboard_background.dart';
+import '../../core/ui/collapsible_subsection.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
 import '../../core/ui/crop/crop_tab.dart';
-import '../../core/ui/frame/content_fit_picker.dart';
 import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/frame/frame_color_row.dart';
 import '../../core/ui/panel_rows.dart';
@@ -720,7 +720,11 @@ class _EditorPageState extends State<EditorPage> {
         onPickWindowColor: _pickExpandBackgroundColor,
         resolutionFitLabel: tr('Ajustar', 'Fit'),
         onChanged: _updateFrame,
-        leadingCard: SectionCard(children: [_contentFitSubsection()]),
+        contentFitExpanded: _contentFitExpanded,
+        onToggleContentFit: () =>
+            setState(() => _contentFitExpanded = !_contentFitExpanded),
+        onChangeStart: _pushUndoCheckpoint,
+        onChangedContinuous: (next) => _updateFrame(next, pushUndo: false),
       ),
     );
   }
@@ -887,28 +891,6 @@ class _EditorPageState extends State<EditorPage> {
   /// da folha de cor poder amostrar um pixel dela.
   Future<ui.Image> _renderPreviewImage() =>
       renderPreviewImage(context, _colorPreviewKey);
-
-  /// Subseção recolhível "Ajuste do conteúdo", aninhada dentro da aba
-  /// "Moldura" (moldura de imagem): como o vídeo se encaixa quando a proporção da
-  /// moldura escolhida é diferente da do recorte, mais o quanto ele é
-  /// ampliado dentro dela. Mesmo padrão de [_collapsibleSubsection] usado
-  /// por "Suavização de cor"/"Paleta" em [_colorSection].
-  Widget _contentFitSubsection() {
-    return _collapsibleSubsection(
-      label: tr('Ajuste do conteúdo', 'Content fit'),
-      expanded: _contentFitExpanded,
-      onToggle: () =>
-          setState(() => _contentFitExpanded = !_contentFitExpanded),
-      child: ContentFitOptions(
-        frame: _settings.frame,
-        onSelected: (m) =>
-            _updateFrame(_settings.frame.copyWith(contentFit: m)),
-        onChangeStart: _pushUndoCheckpoint,
-        onChanged: (next) => _updateFrame(next, pushUndo: false),
-        onPickColor: _pickExpandBackgroundColor,
-      ),
-    );
-  }
 
   /// Prévia da aba "Ajustar": o vídeo inteiro com o overlay de recorte
   /// arrastável. A linha do tempo é adicionada depois, por [_timelined],
@@ -1623,7 +1605,7 @@ class _EditorPageState extends State<EditorPage> {
           const SizedBox(height: 12),
           SectionCard(
             children: [
-              _collapsibleSubsection(
+              CollapsibleSubsection(
                 label: tr('Suavização de cor', 'Color smoothing'),
                 subtitle: _settings.dither.label,
                 expanded: _ditherExpanded,
@@ -1640,7 +1622,7 @@ class _EditorPageState extends State<EditorPage> {
                 height: 13,
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
               ),
-              _collapsibleSubsection(
+              CollapsibleSubsection(
                 label: tr('Paleta', 'Palette'),
                 subtitle: _settings.palette.label,
                 expanded: _paletteExpanded,
@@ -1710,59 +1692,6 @@ class _EditorPageState extends State<EditorPage> {
           ),
         ],
       ),
-    );
-  }
-
-  /// Cabeçalho recolhível de uma subseção (usado em "Suavização de cor" e
-  /// "Paleta", dentro de "Qualidade das cores"): toca no rótulo para
-  /// mostrar ou esconder o conteúdo abaixo, que começa recolhido. O
-  /// [subtitle] mostra a opção selecionada mesmo com a subseção fechada.
-  Widget _collapsibleSubsection({
-    required String label,
-    String? subtitle,
-    required bool expanded,
-    required VoidCallback onToggle,
-    required Widget child,
-  }) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: onToggle,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(label, style: theme.textTheme.bodySmall),
-                      if (subtitle != null)
-                        Text(
-                          subtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  expanded
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
-                  size: 20,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (expanded) ...[const SizedBox(height: 8), child],
-      ],
     );
   }
 

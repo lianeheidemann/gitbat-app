@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../../models/frame_settings.dart';
 import '../../models/image_frame.dart';
+import '../collapsible_subsection.dart';
 import '../panel_rows.dart';
+import 'content_fit_picker.dart';
 import 'frame_rotate_button.dart';
 import 'frame_thumb_shell.dart';
 import 'image_frame_picker.dart';
@@ -13,8 +15,9 @@ import 'image_frame_picker.dart';
 /// moldura — escolher aqui desativa a "Borda", e vice-versa.
 ///
 /// Com uma arte escolhida ([FrameSettings.hasFixedAspect]), aparecem abaixo
-/// das miniaturas os cards da cor de dentro da janela e da resolução do
-/// arquivo final e, por último, o botão "90°" (gira a moldura).
+/// das miniaturas o "Ajuste do conteúdo" (recolhível: como o conteúdo se
+/// encaixa na janela), os cards da cor de dentro da janela e da resolução
+/// do arquivo final e, por último, o botão "90°" (gira a moldura).
 class ImageFramePanel extends StatelessWidget {
   const ImageFramePanel({
     super.key,
@@ -27,7 +30,10 @@ class ImageFramePanel extends StatelessWidget {
     required this.onPickWindowColor,
     required this.resolutionFitLabel,
     required this.onChanged,
-    this.leadingCard,
+    required this.contentFitExpanded,
+    required this.onToggleContentFit,
+    required this.onChangeStart,
+    required this.onChangedContinuous,
   });
 
   final FrameSettings frame;
@@ -41,12 +47,20 @@ class ImageFramePanel extends StatelessWidget {
   /// Ver [FrameResolutionSelector.fitLabel].
   final String resolutionFitLabel;
 
-  /// Resolução e giro da moldura — mudanças de um toque só.
+  /// Mudanças de um toque só: modo de encaixe, resolução e giro.
   final ValueChanged<FrameSettings> onChanged;
 
-  /// Card extra antes dos outros, com uma arte escolhida (o "Ajuste do
-  /// conteúdo" recolhível do vídeo; na foto ele é uma aba própria).
-  final Widget? leadingCard;
+  /// "Ajuste do conteúdo" aberto — guardado pela tela, para sobreviver à
+  /// troca de abas.
+  final bool contentFitExpanded;
+  final VoidCallback onToggleContentFit;
+
+  /// Começo do arrasto do zoom de "Expandir sem cortar" — o ponto de
+  /// desfazer.
+  final VoidCallback onChangeStart;
+
+  /// O zoom a cada passo do arrasto.
+  final ValueChanged<FrameSettings> onChangedContinuous;
 
   @override
   Widget build(BuildContext context) {
@@ -65,10 +79,24 @@ class ImageFramePanel extends StatelessWidget {
         // imagem — sem uma escolhida, não há arte para deitar nem canvas
         // próprio para dimensionar.
         if (frame.hasFixedAspect) ...[
-          if (leadingCard case final card?) ...[
-            const SizedBox(height: 18),
-            card,
-          ],
+          const SizedBox(height: 18),
+          SectionCard(
+            children: [
+              CollapsibleSubsection(
+                label: tr('Ajuste do conteúdo', 'Content fit'),
+                expanded: contentFitExpanded,
+                onToggle: onToggleContentFit,
+                child: ContentFitOptions(
+                  frame: frame,
+                  onSelected: (mode) =>
+                      onChanged(frame.copyWith(contentFit: mode)),
+                  onChangeStart: onChangeStart,
+                  onChanged: onChangedContinuous,
+                  onPickColor: onPickWindowColor,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           SectionCard(
             children: [
