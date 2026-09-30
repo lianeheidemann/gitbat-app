@@ -63,10 +63,12 @@ enum PaletteMode {
 /// O GIF usa a paleta de 256 cores clássica (ver [DitherMode]/[PaletteMode]);
 /// o WebP animado, via `libwebp`, suporta cor cheia e transparência real em
 /// 8 bits, então não usa paleta nem pontilhado — só a qualidade em
-/// [ConversionSettings.webpQuality].
+/// [ConversionSettings.webpQuality]. O MP4 (H.264) é vídeo comum, para
+/// publicar fora do GitHub: cor cheia, sem som e sem transparência.
 enum OutputFormat {
   gif('gif', 'image/gif', 'GIF', 'GIF'),
-  webp('webp', 'image/webp', 'WebP animado', 'WebP');
+  webp('webp', 'image/webp', 'WebP animado', 'WebP'),
+  mp4('mp4', 'video/mp4', 'Vídeo MP4', 'MP4');
 
   const OutputFormat(
     this.extension,
@@ -87,6 +89,14 @@ enum OutputFormat {
 
   /// Texto curto, usado em mensagens ("GIF salvo...", "WebP pronto").
   final String shortLabel;
+
+  /// Se o arquivo guarda transparência. O H.264 do MP4 não tem canal alfa:
+  /// nele, "Fundo transparente" sai com a cor do fundo (ver
+  /// [ConversionSettings.outputFrame]).
+  bool get supportsTransparency => this != OutputFormat.mp4;
+
+  /// Se o arquivo é um vídeo (salvo na galeria como vídeo, não como imagem).
+  bool get isVideo => this == OutputFormat.mp4;
 }
 
 /// Todos os parâmetros que o usuário controla antes de converter.
@@ -182,6 +192,18 @@ class ConversionSettings {
 
   /// Duração final do GIF, já considerando a velocidade escolhida.
   double get outputDurationSeconds => sourceDurationSeconds / speed;
+
+  /// A moldura como ela sai no arquivo: num formato sem transparência (MP4),
+  /// "Fundo transparente" vira a cor do fundo escolhida. É o que a prévia
+  /// mostra e o que a conversão usa (ver [forOutput]).
+  FrameSettings get outputFrame => format.supportsTransparency
+      ? frame
+      : frame.copyWith(transparentBackground: false);
+
+  /// Estas configurações com a [outputFrame] — o que a conversão de fato
+  /// grava.
+  ConversionSettings get forOutput =>
+      format.supportsTransparency ? this : copyWith(frame: outputFrame);
 
   /// Quantidade de quadros que o GIF final vai ter (mínimo de 1).
   int get frameCount {

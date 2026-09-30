@@ -88,6 +88,7 @@ const Map<String, String> modelTranslations = {
   'Focada no movimento': 'Motion-focused',
   'Paleta por quadro': 'Palette per frame',
   'WebP animado': 'Animated WebP',
+  'Vídeo MP4': 'MP4 video',
   // Paletas da interface
   'Morceguinho': 'Little Bat',
   'Lavanda': 'Lavender',

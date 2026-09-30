@@ -39,7 +39,10 @@ class _ResultPageState extends State<ResultPage> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await _output.saveToGallery(widget.result.file);
+      await _output.saveToGallery(
+        widget.result.file,
+        asVideo: widget.result.format.isVideo,
+      );
       if (!mounted) return;
       setState(() {
         _saving = false;
