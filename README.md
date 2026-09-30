@@ -25,8 +25,6 @@ directly on Android — animated, transparent, high-resolution and offline.**
   <img alt="Telas do GitBat" src="assets/interface-v2/gitbat-interface-claro-v3.webp">
 </picture><br><br>
 
-
-
 </div>
 
 ## Overview
@@ -36,7 +34,7 @@ features and grew into an app for **creating content for GitHub READMEs**:
 banners, demos, badges, collages and illustrations in **GIF, animated WebP, SVG and PNG**.
 
 - **Transparency everywhere** — every editing screen supports a transparent
-  background, so the result sits cleanly on GitHub's light and dark themes.
+  background.
 - **Animated or still** — videos, GIFs and animated WebPs stay animated
   through frames, collages, stickers and text.
 - **High resolution** — exports keep the original resolution by default;
