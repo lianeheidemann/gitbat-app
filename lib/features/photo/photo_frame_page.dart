@@ -24,7 +24,6 @@ import '../../core/ui/checkerboard_background.dart';
 import '../../core/ui/color_adjust_controls.dart';
 import '../../core/ui/crop/crop_controller.dart';
 import '../../core/ui/crop/crop_tab.dart';
-import '../../core/ui/frame/content_fit_picker.dart';
 import '../../core/ui/frame/frame_border_panel.dart';
 import '../../core/ui/frame/border_ring.dart';
 import '../../core/ui/frame/frame_color_row.dart';
@@ -155,6 +154,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   bool _sharing = false;
   bool _erasing = false;
   bool _trimming = false;
+
+  /// "Ajuste do conteúdo" aberto dentro da aba "Moldura" — começa recolhido,
+  /// como no editor de vídeo.
+  bool _contentFitExpanded = false;
 
   @override
   void initState() {
@@ -363,14 +366,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       value: _frame.imageFrameLabel,
       builder: (_) => _imageFrameSection(),
     ),
-    if (_frame.hasFixedAspect)
-      EditorSection(
-        icon: Icons.fit_screen_rounded,
-        title: tr('Ajuste da foto', 'Photo fit'),
-        label: tr('Ajuste', 'Fit'),
-        value: _frame.contentFit.label,
-        builder: (_) => _contentFitSection(),
-      ),
     // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Girar →
     // Borda → Moldura → Fundo → Cor → Stickers → Texto → Configurações.
     EditorSection(
@@ -901,17 +896,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     onPickWindowColor: _pickExpandBackgroundColor,
     resolutionFitLabel: tr('Da foto', 'From photo'),
     onChanged: _updateFrame,
-  );
-
-  /// "Ajuste da foto" virou aba própria (só aparece com moldura de imagem
-  /// ativa), então aqui não cabe mais o cabeçalho recolhível que ela tinha
-  /// como sub-seção.
-  Widget _contentFitSection() => ContentFitOptions(
-    frame: _frame,
-    onSelected: (m) => _updateFrame(_frame.copyWith(contentFit: m)),
+    contentFitExpanded: _contentFitExpanded,
+    onToggleContentFit: () =>
+        setState(() => _contentFitExpanded = !_contentFitExpanded),
     onChangeStart: _pushUndoCheckpoint,
-    onChanged: (next) => _updateFrame(next, pushUndo: false),
-    onPickColor: _pickExpandBackgroundColor,
+    onChangedContinuous: (next) => _updateFrame(next, pushUndo: false),
   );
 
   void _selectImageFrame(ImageFrameAsset asset) {
