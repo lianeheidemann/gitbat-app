@@ -175,11 +175,12 @@ published version.
 ```
 lib/
 ├── main.dart
-├── app/          # theme, color palettes, licenses, app-wide controllers
+├── app/          # theme, color palettes (palettes/), licenses,
+│                 # app-wide controllers
 ├── core/         # shared code: ffmpeg, models, painting, services, ui
 └── features/     # one folder per tool
-    ├── collage/  ├── home/  ├── photo/
-    ├── quick_convert/  ├── svg/  └── video/
+    ├── collage/  ├── home/  ├── photo/  ├── quick_convert/
+    ├── settings/  ├── svg/  └── video/
 test/             # unit, widget and golden-pixel tests
 tool/             # icon generation, accuracy script, asset-list sync
 recursos/         # stable copies of brand art used inside the app
@@ -192,6 +193,13 @@ The layout is **feature-first**: code owned by one tool stays in
 `features/<tool>`, and only reusable code lives in `core`. Preview and
 export share the same painters and FFmpeg argument builders, so what is
 shown is what gets saved.
+
+Dependencies point one way: `core/` and `app/` never import `features/`,
+and a tool never imports another one — only `home`, which opens them all.
+`test/architecture_test.dart` fails the build if that changes. The four
+editors share their building blocks from `core/ui`: undo history, app
+bar actions, tabs footer, crop tab, frame tabs, and the sticker and text
+layers with their handles.
 
 ### Adding bundled art
 
