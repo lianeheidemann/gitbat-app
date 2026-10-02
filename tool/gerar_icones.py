@@ -56,7 +56,11 @@ def gradiente(largura, altura, inicio, fim):
 
 
 def icone_completo(tamanho):
-    """Ícone quadrado com fundo, para o launcher legado e para a loja."""
+    """Ícone quadrado com fundo, para o launcher legado e para a loja.
+
+    A nitidez é levemente reforçada depois da redução para compensar os
+    tamanhos pequenos das imagens usadas pelo launcher.
+    """
     with Image.open(ICONE_FONTE) as fonte:
         return fonte.convert('RGBA').resize((tamanho, tamanho), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=0.65, percent=105, threshold=2))
 
@@ -68,7 +72,7 @@ def morcego_sem_fundo(tamanho):
     poucos, sem serrilhado. Sobre o fundo azul-noite do ícone adaptativo o
     resultado fica idêntico ao original, e a versão monocromática (ícones
     temáticos do Android 13+) ganha a silhueta do morcego em vez de um
-    quadrado cheio.
+    quadrado cheio. A imagem reduzida recebe um leve realce de nitidez.
     """
     with Image.open(ICONE_FONTE) as fonte:
         icone = fonte.convert('RGBA').resize((tamanho, tamanho), Image.LANCZOS)

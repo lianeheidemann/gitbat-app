@@ -3,8 +3,9 @@ name: APK para testes
 # Um APK só, rápido, para instalar e testar no celular — sem os testes (o CI
 # já roda), sem APKs por arquitetura, universal nem AAB.
 #
-# Dispara manualmente: aba Actions -> "APK para testes" -> Run workflow,
-# escolhendo a branch. O APK sai num pré-lançamento (não vira o "Latest"),
+# Dispara automaticamente quando o ícone muda na main. Também pode ser iniciado
+# manualmente em Actions -> "APK para testes" -> Run workflow. O APK sai num
+# pré-lançamento (não vira o "Latest"),
 # com o nome da branch e o número do run.
 #
 # Só arm64-v8a: é a arquitetura de praticamente todo celular Android atual,
@@ -13,6 +14,12 @@ name: APK para testes
 # para instalar por cima da versão publicada sem desinstalar.
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/icon/icon-v2/**'
+      - 'android/app/src/main/res/mipmap-*/ic_launcher*.png'
+      - 'tool/gerar_icones.py'
   workflow_dispatch:
 
 permissions:
