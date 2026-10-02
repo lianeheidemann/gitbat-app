@@ -20,7 +20,7 @@ dele, está guardado em ``assets/icon/icon-v1/``.
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 RAIZ = Path(__file__).resolve().parent.parent
 ICONE_FONTE = RAIZ / 'assets/icon/icon-v2/morceguinho-icone-simples.png'
@@ -58,7 +58,7 @@ def gradiente(largura, altura, inicio, fim):
 def icone_completo(tamanho):
     """Ícone quadrado com fundo, para o launcher legado e para a loja."""
     with Image.open(ICONE_FONTE) as fonte:
-        return fonte.convert('RGBA').resize((tamanho, tamanho), Image.LANCZOS)
+        return fonte.convert('RGBA').resize((tamanho, tamanho), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=0.65, percent=105, threshold=2))
 
 
 def morcego_sem_fundo(tamanho):
@@ -173,3 +173,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
