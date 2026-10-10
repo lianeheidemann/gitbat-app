@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'app_message.dart';
 import 'dialog_title.dart';
@@ -76,15 +77,57 @@ class _ColorPickerSheet extends StatefulWidget {
 class _ColorPickerSheetState extends State<_ColorPickerSheet> {
   late Color _color = widget.initialColor;
   bool _samplingPreview = false;
+  late final TextEditingController _hexController = TextEditingController(
+    text: _hexOf(widget.initialColor),
+  );
+  final FocusNode _hexFocus = FocusNode();
 
   /// A roda HSV começa aberta só quando a cor atual já é customizada (não
   /// bate com nenhum swatch fixo) — senão fica recolhida, e só a bolinha de
   /// cor customizada (entre os swatches) abre/fecha ela.
   late bool _wheelOpen = !collageColorSwatches.contains(_color);
 
-  void _select(Color color) {
-    setState(() => _color = color);
+  @override
+  void initState() {
+    super.initState();
+    // Ao sair do campo, volta ao código da cor atual (descarta digitação
+    // incompleta em vez de deixar um valor que não vale).
+    _hexFocus.addListener(() {
+      if (!_hexFocus.hasFocus) _syncHexText();
+    });
+  }
+
+  @override
+  void dispose() {
+    _hexController.dispose();
+    _hexFocus.dispose();
+    super.dispose();
+  }
+
+  void _syncHexText() {
+    // Aceita o formato curto `RGB` ao confirmar.
+    final typed = _parseHex(_hexController.text);
+    if (typed != null && typed != _color) {
+      _select(typed);
+      return;
+    }
+    setState(() => _hexController.text = _hexOf(_color));
+  }
+
+  void _select(Color color, {bool fromHexField = false}) {
+    setState(() {
+      _color = color;
+      if (!fromHexField) _hexController.text = _hexOf(color);
+    });
     widget.onColorSelected(color);
+  }
+
+  /// Digitar o código: só aplica com os 6 dígitos completos; enquanto
+  /// incompleto não mexe na cor (o formato curto `RGB` vale ao confirmar).
+  void _onHexChanged(String text) {
+    if (text.length != 6) return;
+    final color = _parseHex(text);
+    if (color != null) _select(color, fromHexField: true);
   }
 
   void _selectSwatch(Color color) {
@@ -175,6 +218,14 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              _HexField(
+                controller: _hexController,
+                focusNode: _hexFocus,
+                color: _color,
+                onChanged: _onHexChanged,
+                onSubmitted: (_) => _syncHexText(),
+              ),
               AnimatedSize(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
@@ -182,15 +233,24 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
                 child: !_wheelOpen
                     ? const SizedBox(width: double.infinity)
                     : Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: ColorPicker(
-                          key: const ValueKey('collageColorPickerWheel'),
-                          pickerColor: _color,
-                          onColorChanged: _select,
-                          enableAlpha: false,
-                          displayThumbColor: true,
-                          labelTypes: const [],
-                          pickerAreaHeightPercent: 0.7,
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Center(
+                          child: ColorPicker(
+                            key: const ValueKey('collageColorPickerWheel'),
+                            pickerColor: _color,
+                            onColorChanged: _select,
+                            enableAlpha: false,
+                            displayThumbColor: true,
+                            labelTypes: const [],
+                            // Área e barra de matiz menores que o padrão do
+                            // pacote (300 de largura, 70% de altura), que
+                            // dominavam a folha perto dos swatches de 40.
+                            colorPickerWidth: 240,
+                            pickerAreaHeightPercent: 0.5,
+                            pickerAreaBorderRadius: const BorderRadius.all(
+                              Radius.circular(12),
+                            ),
+                          ),
                         ),
                       ),
               ),
@@ -198,6 +258,88 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// `#RRGGBB` em maiúsculas (a cor é sempre opaca neste seletor).
+String _hexOf(Color color) => (color.toARGB32() & 0x00FFFFFF)
+    .toRadixString(16)
+    .padLeft(6, '0')
+    .toUpperCase();
+
+/// Aceita `RRGGBB` ou `RGB` (com ou sem `#`); `null` se ainda incompleto.
+Color? _parseHex(String text) {
+  var hex = text.trim().replaceFirst('#', '');
+  if (hex.length == 3) {
+    hex = hex.split('').map((c) => '$c$c').join();
+  }
+  if (hex.length != 6) return null;
+  final value = int.tryParse(hex, radix: 16);
+  return value == null ? null : Color(0xFF000000 | value);
+}
+
+/// Campo do código hexadecimal da cor atual — mostra o valor e deixa
+/// digitar outro; a bolinha ao lado é a própria cor.
+class _HexField extends StatelessWidget {
+  const _HexField({
+    required this.controller,
+    required this.focusNode,
+    required this.color,
+    required this.onChanged,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final Color color;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 140,
+          child: TextField(
+            key: const ValueKey('collageColorHexField'),
+            controller: controller,
+            focusNode: focusNode,
+            onChanged: onChanged,
+            onSubmitted: onSubmitted,
+            textCapitalization: TextCapitalization.characters,
+            autocorrect: false,
+            enableSuggestions: false,
+            keyboardType: TextInputType.visiblePassword,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp('[0-9a-fA-F]')),
+              LengthLimitingTextInputFormatter(6),
+            ],
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontFeatures: const [ui.FontFeature.tabularFigures()],
+            ),
+            decoration: InputDecoration(
+              isDense: true,
+              prefixText: '#',
+              labelText: tr('Código da cor', 'Color code'),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
