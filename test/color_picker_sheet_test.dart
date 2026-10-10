@@ -118,4 +118,56 @@ void main() {
 
     expect(find.byKey(const ValueKey('collageColorPickerWheel')), findsNothing);
   });
+
+  testWidgets('mostra o código hexadecimal da cor atual', (tester) async {
+    await _openSheet(
+      tester,
+      initialColor: const Color(0xFF123456),
+      onColorSelected: (_) {},
+    );
+
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('collageColorHexField')),
+    );
+    expect(field.controller!.text, '123456');
+  });
+
+  testWidgets('digitar um código completo muda a cor', (tester) async {
+    Color? chosen;
+    await _openSheet(
+      tester,
+      initialColor: const Color(0xFFFFFFFF),
+      onColorSelected: (c) => chosen = c,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('collageColorHexField')),
+      'e57373',
+    );
+    await tester.pump();
+
+    expect(chosen, const Color(0xFFE57373));
+  });
+
+  testWidgets('escolher um swatch atualiza o código mostrado', (tester) async {
+    await _openSheet(
+      tester,
+      initialColor: const Color(0xFFFFFFFF),
+      onColorSelected: (_) {},
+    );
+
+    await tester.tap(
+      find
+          .byWidgetPredicate(
+            (widget) => widget.runtimeType.toString() == '_SwatchButton',
+          )
+          .at(1), // preto
+    );
+    await tester.pump();
+
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('collageColorHexField')),
+    );
+    expect(field.controller!.text, '000000');
+  });
 }
