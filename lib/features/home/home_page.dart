@@ -65,9 +65,8 @@ class _HomePageState extends State<HomePage> {
         MaterialPageRoute<void>(
           builder: (_) => EditorPage(
             video: video,
-            initialSettings: ConversionSettings.recommendedFor(
-              video,
-            ).copyWith(frame: EditorDefaults.frameSettings()),
+            initialSettings: ConversionSettings.recommendedFor(video)
+                .copyWith(frame: EditorDefaults.frameSettings()),
           ),
         ),
       );
@@ -226,9 +225,8 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       setState(() => _loading = false);
-      await Navigator.of(
-        context,
-      ).push(MaterialPageRoute<void>(builder: (_) => SvgEditPage(svg: svg)));
+      await Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => SvgEditPage(svg: svg)));
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -443,143 +441,148 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
-                Image.asset(
-                  'recursos/marca/gitbat-logo.png',
-                  key: const ValueKey('homeLogo'),
-                  height: 72,
-                  fit: BoxFit.contain,
-                  semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'GitBat',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: tr(
-                          'Edite, monte e converta ',
-                          'Edit, assemble and convert ',
-                        ),
-                        style: TextStyle(color: theme.colorScheme.tertiary),
-                      ),
-                      TextSpan(text: tr('mídias.', 'media.')),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  tr(
-                    'Vídeos, imagens, GIFs, SVGs e muito mais, em um só lugar.',
-                    'Videos, images, GIFs, SVGs and much more, in one place.',
-                  ),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (_error != null) ...[
-                  Card(
-                    color: theme.colorScheme.errorContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        _error!,
-                        style: TextStyle(
-                          color: theme.colorScheme.onErrorContainer,
-                        ),
+                    // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
+                    Image.asset(
+                      'recursos/marca/gitbat-logo.png',
+                      key: const ValueKey('homeLogo'),
+                      height: 72,
+                      fit: BoxFit.contain,
+                      semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'GitBat',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                Expanded(
-                  flex: 3,
-                  child: _MenuTile(
-                  key: const ValueKey('pickVideoButton'),
-                  icon: _kIconVideo,
-                  title: _loading
-                      ? tr('Abrindo…', 'Opening…')
-                      : tr('Escolher vídeo', 'Choose video'),
-                  subtitle: tr(
-                    'Selecione um vídeo do seu dispositivo.',
-                    'Select a video from your device.',
-                  ),
-                  highlighted: true,
-                  large: true,
-                  loading: _loading,
-                  onTap: _loading ? null : _pickVideo,
-                )),
-                const SizedBox(height: 8),
-                Expanded(
-                  flex: 2,
-                  child: _MenuTile(
-                  icon: _kIconImage,
-                  title: tr('Editar imagem', 'Edit image'),
-                  subtitle: tr(
-                    'Corte, redimensione e ajuste a imagem.',
-                    'Crop, resize and adjust the image.',
-                  ),
-                  onTap: _loading ? null : _pickPhoto,
-                )),
-                const SizedBox(height: 8),
-                Expanded(
-                  flex: 2,
-                  child: _MenuTile(
-                  key: const ValueKey('svgAccentIcon'),
-                  icon: _kIconSvg,
-                  title: tr('Editar SVG', 'Edit SVG'),
-                  subtitle: tr(
-                    'Personalize e edite seus arquivos SVG.',
-                    'Customize and edit your SVG files.',
-                  ),
-                  onTap: _loading ? null : _pickSvg,
-                )),
-                const SizedBox(height: 8),
-                Expanded(
-                  flex: 2,
-                  child: _MenuTile(
-                  icon: _kIconCollage,
-                  title: tr('Montagem', 'Collage'),
-                  subtitle: tr(
-                    'Combine mídias e crie composições.',
-                    'Combine media and create compositions.',
-                  ),
-                  onTap: _loading ? null : _pickPhotosForCollage,
-                )),
-                const SizedBox(height: 8),
-                Expanded(
-                  flex: 2,
-                  child: _MenuTile(
-                  key: const ValueKey('convertAccentIcon'),
-                  icon: _kIconConvert,
-                  title: tr('Converter formato', 'Convert format'),
-                  subtitle: tr(
-                    'Converta para MP4, WebP, PNG, JPG e outros.',
-                    'Convert to MP4, WebP, PNG, JPG and more.',
-                  ),
-                  onTap: _loading
-                      ? null
-                      : () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const QuickConvertPage(),
+                    const SizedBox(height: 8),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: tr(
+                              'Edite, monte e converta ',
+                              'Edit, assemble and convert ',
+                            ),
+                            style: TextStyle(color: theme.colorScheme.tertiary),
+                          ),
+                          TextSpan(text: tr('mídias.', 'media.')),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      tr(
+                        'Vídeos, imagens, GIFs, SVGs e muito mais, em um só lugar.',
+                        'Videos, images, GIFs, SVGs and much more, in one place.',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_error != null) ...[
+                      Card(
+                        color: theme.colorScheme.errorContainer,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: theme.colorScheme.onErrorContainer,
+                            ),
                           ),
                         ),
-                )),
-                const SizedBox(height: 12),
-                const _StepsCard(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Expanded(
+                      flex: 3,
+                      child: _MenuTile(
+                        key: const ValueKey('pickVideoButton'),
+                        icon: _kIconVideo,
+                        title: _loading
+                            ? tr('Abrindo…', 'Opening…')
+                            : tr('Escolher vídeo', 'Choose video'),
+                        subtitle: tr(
+                          'Selecione um vídeo do seu dispositivo.',
+                          'Select a video from your device.',
+                        ),
+                        highlighted: true,
+                        large: true,
+                        loading: _loading,
+                        onTap: _loading ? null : _pickVideo,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 2,
+                      child: _MenuTile(
+                        icon: _kIconImage,
+                        title: tr('Editar imagem', 'Edit image'),
+                        subtitle: tr(
+                          'Corte, redimensione e ajuste a imagem.',
+                          'Crop, resize and adjust the image.',
+                        ),
+                        onTap: _loading ? null : _pickPhoto,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 2,
+                      child: _MenuTile(
+                        key: const ValueKey('svgAccentIcon'),
+                        icon: _kIconSvg,
+                        title: tr('Editar SVG', 'Edit SVG'),
+                        subtitle: tr(
+                          'Personalize e edite seus arquivos SVG.',
+                          'Customize and edit your SVG files.',
+                        ),
+                        onTap: _loading ? null : _pickSvg,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 2,
+                      child: _MenuTile(
+                        icon: _kIconCollage,
+                        title: tr('Montagem', 'Collage'),
+                        subtitle: tr(
+                          'Combine mídias e crie composições.',
+                          'Combine media and create compositions.',
+                        ),
+                        onTap: _loading ? null : _pickPhotosForCollage,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 2,
+                      child: _MenuTile(
+                        key: const ValueKey('convertAccentIcon'),
+                        icon: _kIconConvert,
+                        title: tr('Converter formato', 'Convert format'),
+                        subtitle: tr(
+                          'Converta para MP4, WebP, PNG, JPG e outros.',
+                          'Convert to MP4, WebP, PNG, JPG and more.',
+                        ),
+                        onTap: _loading
+                            ? null
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const QuickConvertPage(),
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const _StepsCard(),
                   ],
                 ),
               ),
@@ -686,7 +689,7 @@ class _MenuTile extends StatelessWidget {
                         ),
                       )
                     : Padding(
-                        padding: const EdgeInsets.all(large ? 16 : 11),
+                        padding: EdgeInsets.all(large ? 16 : 11),
                         child: SvgPicture.string(
                           icon.replaceAll(
                             'currentColor',
@@ -702,12 +705,11 @@ class _MenuTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: (large
-                              ? theme.textTheme.titleLarge
-                              : theme.textTheme.titleMedium)
-                          ?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style:
+                          (large
+                                  ? theme.textTheme.titleLarge
+                                  : theme.textTheme.titleMedium)
+                              ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
