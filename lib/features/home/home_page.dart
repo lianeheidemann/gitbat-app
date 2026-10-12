@@ -575,8 +575,8 @@ class _HomePageState extends State<HomePage> {
                             icon: _kIconConvert,
                             title: tr('Converter formato', 'Convert format'),
                             subtitle: tr(
-                              'Converta para MP4, WebP, PNG, JPG e outros.',
-                              'Convert to MP4, WebP, PNG, JPG and more.',
+                              'Converta para WebP, GIF e MP4.',
+                              'Convert to WebP, GIF and MP4.',
                             ),
                             onTap: _loading
                                 ? null
