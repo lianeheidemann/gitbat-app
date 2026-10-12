@@ -65,8 +65,9 @@ class _HomePageState extends State<HomePage> {
         MaterialPageRoute<void>(
           builder: (_) => EditorPage(
             video: video,
-            initialSettings: ConversionSettings.recommendedFor(video)
-                .copyWith(frame: EditorDefaults.frameSettings()),
+            initialSettings: ConversionSettings.recommendedFor(
+              video,
+            ).copyWith(frame: EditorDefaults.frameSettings()),
           ),
         ),
       );
@@ -225,8 +226,9 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       setState(() => _loading = false);
-      await Navigator.of(context)
-          .push(MaterialPageRoute<void>(builder: (_) => SvgEditPage(svg: svg)));
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => SvgEditPage(svg: svg)));
     } catch (e) {
       if (mounted) {
         setState(() {
