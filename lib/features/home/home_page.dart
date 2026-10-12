@@ -609,10 +609,10 @@ const _kIconImage =
 const _kIconSvg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
     'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
-    'stroke-linejoin="round"><rect x="14.5" y="3.5" width="6" height="6" rx="1.5"/>'
-    '<rect x="3.5" y="9" width="6" height="6" rx="1.5"/>'
-    '<rect x="14.5" y="14.5" width="6" height="6" rx="1.5"/>'
-    '<path d="M9.5 12H12V6.5h2.5M12 12v5.5h2.5"/></svg>';
+    'stroke-linejoin="round"><rect x="14" y="3" width="6" height="6" rx="1.4"/>'
+    '<rect x="3.5" y="9" width="6" height="6" rx="1.4"/>'
+    '<rect x="14" y="15" width="6" height="6" rx="1.4"/>'
+    '<path d="M9.5 10.8l4.5-3M9.5 13.2l4.5 3"/></svg>';
 const _kIconCollage =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
     'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
