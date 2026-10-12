@@ -148,6 +148,15 @@ class CollageCellSettings {
   final double temperature;
 
   static const minZoom = 1.0;
+
+  /// Menor zoom no modo [CollageCellFitMode.contain]: a foto pode ficar até 5x
+  /// menor que o "ajustar" puro (`1.0`), flutuando pequena dentro da célula.
+  static const minContainZoom = 0.2;
+
+  /// Menor zoom aceito para [mode]: só o "ajustar" deixa a foto menor que a
+  /// célula; o "preencher" nunca mostra sobra.
+  static double minZoomFor(CollageCellFitMode mode) =>
+      mode == CollageCellFitMode.contain ? minContainZoom : minZoom;
   static const maxZoom = 4.0;
   static const maxCornerRatio = 0.5;
   static const maxBorderThickness = 24.0;
@@ -260,7 +269,7 @@ class CollageCellSettings {
       cellSize.width / footprintW,
       cellSize.height / footprintH,
     );
-    final scale = baseScale * zoom.clamp(minZoom, maxZoom);
+    final scale = baseScale * zoom.clamp(minContainZoom, maxZoom);
     return Size(photoW * scale, photoH * scale);
   }
 

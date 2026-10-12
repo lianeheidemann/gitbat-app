@@ -194,7 +194,7 @@ class _CollageCellViewState extends State<CollageCellView> {
     final cell = widget.cell;
     final contentSize = _contentSize;
     _freeZoom = (_startZoom * details.scale).clamp(
-      CollageCellSettings.minZoom,
+      CollageCellSettings.minZoomFor(cell.fitMode),
       CollageCellSettings.maxZoom,
     );
     _freeRotation = _startRotation + details.rotation;
@@ -502,7 +502,7 @@ class _CollageCellViewState extends State<CollageCellView> {
           final d0 = (_handleStart - center).distance;
           if (d0 < 1) return;
           final z = (_startZoom * (_handlePos - center).distance / d0).clamp(
-            CollageCellSettings.minZoom,
+            CollageCellSettings.minZoomFor(widget.cell.fitMode),
             CollageCellSettings.maxZoom,
           );
           _emit(zoom: (z - 1).abs() <= _zoomSnap ? 1.0 : z);
