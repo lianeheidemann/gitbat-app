@@ -702,31 +702,32 @@ class _MenuTile extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style:
-                          (large
-                                  ? theme.textTheme.titleLarge
-                                  : theme.textTheme.titleMedium)
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
+                // Encolhe o texto em vez de estourar o cartão (fonte grande).
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style:
+                            (large
+                                    ? theme.textTheme.titleLarge
+                                    : theme.textTheme.titleMedium)
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
                         subtitle,
                         maxLines: 1,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
@@ -794,10 +795,16 @@ class _StepIcon extends StatelessWidget {
           child: Icon(icon, color: theme.colorScheme.tertiary, size: 20),
         ),
         const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall,
+        SizedBox(
+          width: 84,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
         ),
       ],
     );
@@ -812,25 +819,31 @@ class _StepConnector extends StatelessWidget {
     final theme = Theme.of(context);
     return SizedBox(
       height: _kStepCircleSize,
-      child: Row(
-        children: [
-          const Expanded(child: _DashedLine()),
-          Container(
-            width: 22,
-            height: 22,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.secondary,
-            ),
-            child: Icon(
-              Icons.arrow_forward_rounded,
-              size: 13,
-              color: theme.colorScheme.onSecondary,
-            ),
-          ),
-          const Expanded(child: _DashedLine()),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Sem espaço para a seta (telas estreitas), fica só o tracejado.
+          if (constraints.maxWidth < 40) return const _DashedLine();
+          return Row(
+            children: [
+              const Expanded(child: _DashedLine()),
+              Container(
+                width: 22,
+                height: 22,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.secondary,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: theme.colorScheme.onSecondary,
+                ),
+              ),
+              const Expanded(child: _DashedLine()),
+            ],
+          );
+        },
       ),
     );
   }
