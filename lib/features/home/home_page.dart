@@ -431,139 +431,165 @@ class _HomePageState extends State<HomePage> {
       ),
       extendBodyBehindAppBar: true,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
-                Image.asset(
-                  'recursos/marca/gitbat-logo.png',
-                  key: const ValueKey('homeLogo'),
-                  height: 96,
-                  fit: BoxFit.contain,
-                  semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'GitBat',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  tr(
-                    'Corte, ajuste o tamanho e a velocidade — e veja quanto o GIF vai pesar antes de converter.',
-                    'Trim, resize and change the speed — and see how big the GIF will be before converting.',
-                  ),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (_error != null) ...[
-                  Card(
-                    color: theme.colorScheme.errorContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        _error!,
-                        style: TextStyle(
-                          color: theme.colorScheme.onErrorContainer,
-                        ),
+        // Nunca rola: o conteúdo tem um tamanho de projeto e o FittedBox o
+        // reduz na mesma proporção se a tela for menor, sempre centralizado.
+        child: Padding(
+          // 48: a barra de ações flutua sobre o corpo.
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 12),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(
+                width: 380,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
+                    Image.asset(
+                      'recursos/marca/gitbat-logo.png',
+                      key: const ValueKey('homeLogo'),
+                      height: 64,
+                      fit: BoxFit.contain,
+                      semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'GitBat',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                // O principal do app: mais alto e com texto maior que os
-                // outros botões.
-                FilledButton.icon(
-                  key: const ValueKey('pickVideoButton'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(54),
-                    textStyle: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(height: 8),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: tr(
+                              'Edite, monte e converta ',
+                              'Edit, assemble and convert ',
+                            ),
+                            style: TextStyle(color: theme.colorScheme.tertiary),
+                          ),
+                          TextSpan(text: tr('mídias.', 'media.')),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                    iconSize: 22,
-                  ),
-                  onPressed: _loading ? null : _pickVideo,
-                  icon: _loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.video_library_outlined),
-                  label: Text(
-                    _loading
-                        ? tr('Abrindo…', 'Opening…')
-                        : tr('Escolher vídeo', 'Choose video'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor: theme.colorScheme.tertiary,
-                  ),
-                  onPressed: _loading ? null : _pickPhoto,
-                  icon: const Icon(Icons.photo_filter_outlined),
-                  label: Text(tr('Editar imagem', 'Edit image')),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor: theme.colorScheme.tertiary,
-                  ),
-                  onPressed: _loading ? null : _pickSvg,
-                  icon: Icon(
-                    Icons.polyline_outlined,
-                    key: const ValueKey('svgAccentIcon'),
-                    color: theme.colorScheme.secondary,
-                  ),
-                  label: Text(tr('Editar SVG', 'Edit SVG')),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor: theme.colorScheme.tertiary,
-                  ),
-                  onPressed: _loading ? null : _pickPhotosForCollage,
-                  icon: const Icon(Icons.dashboard_customize_outlined),
-                  label: Text(tr('Montagem', 'Collage')),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor: theme.colorScheme.tertiary,
-                  ),
-                  onPressed: _loading
-                      ? null
-                      : () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const QuickConvertPage(),
+                    const SizedBox(height: 6),
+                    Text(
+                      tr(
+                        'Vídeos, imagens, GIFs, SVGs e muito mais,\nem um só lugar.',
+                        'Videos, images, GIFs, SVGs and much more,\nin one place.',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_error != null) ...[
+                      Card(
+                        color: theme.colorScheme.errorContainer,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: theme.colorScheme.onErrorContainer,
+                            ),
                           ),
                         ),
-                  icon: Icon(
-                    Icons.cached_outlined,
-                    key: const ValueKey('convertAccentIcon'),
-                    color: theme.colorScheme.secondary,
-                  ),
-                  label: Text(tr('Converter formato', 'Convert format')),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    SizedBox(
+                      height: 88,
+                      child: _MenuTile(
+                        key: const ValueKey('pickVideoButton'),
+                        icon: _kIconVideo,
+                        title: _loading
+                            ? tr('Abrindo…', 'Opening…')
+                            : tr('Escolher vídeo', 'Choose video'),
+                        subtitle: tr(
+                          'Selecione um vídeo do seu dispositivo.',
+                          'Select a video from your device.',
+                        ),
+                        highlighted: true,
+                        large: true,
+                        loading: _loading,
+                        onTap: _loading ? null : _pickVideo,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 60,
+                      child: _MenuTile(
+                        icon: _kIconImage,
+                        title: tr('Editar imagem', 'Edit image'),
+                        subtitle: tr(
+                          'Corte, redimensione e ajuste a imagem.',
+                          'Crop, resize and adjust the image.',
+                        ),
+                        onTap: _loading ? null : _pickPhoto,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 60,
+                      child: _MenuTile(
+                        key: const ValueKey('svgAccentIcon'),
+                        icon: _kIconSvg,
+                        title: tr('Editar SVG', 'Edit SVG'),
+                        subtitle: tr(
+                          'Personalize e edite seus arquivos SVG.',
+                          'Customize and edit your SVG files.',
+                        ),
+                        onTap: _loading ? null : _pickSvg,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 60,
+                      child: _MenuTile(
+                        icon: _kIconCollage,
+                        title: tr('Montagem', 'Collage'),
+                        subtitle: tr(
+                          'Combine mídias e crie composições.',
+                          'Combine media and create compositions.',
+                        ),
+                        onTap: _loading ? null : _pickPhotosForCollage,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 60,
+                      child: _MenuTile(
+                        key: const ValueKey('convertAccentIcon'),
+                        icon: _kIconConvert,
+                        title: tr('Converter formato', 'Convert format'),
+                        subtitle: tr(
+                          'Converta para WebP, GIF e MP4.',
+                          'Convert to WebP, GIF and MP4.',
+                        ),
+                        onTap: _loading
+                            ? null
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const QuickConvertPage(),
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const _StepsCard(),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                const _StepsCard(),
-              ],
+              ),
             ),
           ),
         ),
@@ -572,7 +598,150 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-const _kStepCircleSize = 44.0;
+// Ícones próprios do menu (traço de 1.8 em grade 24x24). Usam `currentColor`,
+// trocado pela cor do tema na hora de desenhar.
+const _kIconVideo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">'
+    '<rect x="3.5" y="4" width="17" height="16" rx="3.5"/>'
+    '<path d="M10 9l5 3-5 3z" fill="currentColor"/></svg>';
+const _kIconImage =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
+    'stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="3.5"/>'
+    '<circle cx="9" cy="9.5" r="1.4"/><path d="M4 17.5l5-4.5 3.5 3 3-2.5 4.5 4"/></svg>';
+const _kIconSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
+    'stroke-linejoin="round"><rect x="14" y="3" width="6" height="6" rx="1.4"/>'
+    '<rect x="3.5" y="9" width="6" height="6" rx="1.4"/>'
+    '<rect x="14" y="15" width="6" height="6" rx="1.4"/>'
+    '<path d="M9.5 10.8l4.5-3M9.5 13.2l4.5 3"/></svg>';
+const _kIconCollage =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
+    'stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/>'
+    '<rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/>'
+    '<rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/>'
+    '<path d="M17 13.5v7M13.5 17h7"/></svg>';
+const _kIconConvert =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
+    'stroke-linejoin="round"><path d="M19.5 10A7.5 7.5 0 0 0 5.8 7.2L4 9.5"/>'
+    '<path d="M4 4.5v5h5"/><path d="M4.5 14a7.5 7.5 0 0 0 13.7 2.8l1.8-2.3"/>'
+    '<path d="M20 19.5v-5h-5"/></svg>';
+
+/// Cartão de ação da tela inicial: ícone num quadrado colorido, título,
+/// descrição e seta.
+class _MenuTile extends StatelessWidget {
+  const _MenuTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.highlighted = false,
+    this.large = false,
+    this.loading = false,
+  });
+
+  final String icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final bool highlighted;
+  final bool large;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final accent = highlighted ? scheme.primary : scheme.tertiary;
+    return Material(
+      color: highlighted
+          ? scheme.primary.withValues(alpha: 0.12)
+          : scheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: highlighted
+              ? scheme.primary.withValues(alpha: 0.8)
+              : scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Row(
+            children: [
+              Container(
+                width: large ? 64 : 46,
+                height: large ? 64 : 46,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: accent.withValues(alpha: 0.16),
+                ),
+                child: loading
+                    ? const Center(
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : Padding(
+                        padding: EdgeInsets.all(large ? 16 : 11),
+                        child: SvgPicture.string(
+                          icon.replaceAll(
+                            'currentColor',
+                            '#${(accent.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
+                          ),
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                // Encolhe o texto em vez de estourar o cartão (fonte grande).
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style:
+                            (large
+                                    ? theme.textTheme.titleLarge
+                                    : theme.textTheme.titleMedium)
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+const _kStepCircleSize = 38.0;
 
 /// Etapas do fluxo de conversão, exibidas como um pequeno guia visual.
 class _StepsCard extends StatelessWidget {
@@ -591,7 +760,7 @@ class _StepsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -628,10 +797,16 @@ class _StepIcon extends StatelessWidget {
           child: Icon(icon, color: theme.colorScheme.tertiary, size: 20),
         ),
         const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall,
+        SizedBox(
+          width: 84,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
         ),
       ],
     );
@@ -646,25 +821,31 @@ class _StepConnector extends StatelessWidget {
     final theme = Theme.of(context);
     return SizedBox(
       height: _kStepCircleSize,
-      child: Row(
-        children: [
-          const Expanded(child: _DashedLine()),
-          Container(
-            width: 22,
-            height: 22,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.secondary,
-            ),
-            child: Icon(
-              Icons.arrow_forward_rounded,
-              size: 13,
-              color: theme.colorScheme.onSecondary,
-            ),
-          ),
-          const Expanded(child: _DashedLine()),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Sem espaço para a seta (telas estreitas), fica só o tracejado.
+          if (constraints.maxWidth < 40) return const _DashedLine();
+          return Row(
+            children: [
+              const Expanded(child: _DashedLine()),
+              Container(
+                width: 22,
+                height: 22,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.secondary,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: theme.colorScheme.onSecondary,
+                ),
+              ),
+              const Expanded(child: _DashedLine()),
+            ],
+          );
+        },
       ),
     );
   }

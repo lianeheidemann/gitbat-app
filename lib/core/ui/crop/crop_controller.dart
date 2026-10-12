@@ -176,7 +176,7 @@ class CropController {
             dy,
             boundsWidth: sourceWidth,
             boundsHeight: sourceHeight,
-            minSize: minHandleSize ?? 32,
+            minSize: minHandleSize ?? kMinCropHandle,
           )
         : resizeLockedCrop(
             crop,
@@ -186,7 +186,7 @@ class CropController {
             ratio,
             boundsWidth: sourceWidth,
             boundsHeight: sourceHeight,
-            minSide: minHandleSize ?? 32,
+            minSide: minHandleSize ?? kMinCropHandle,
           );
 
     if (next.width == crop.width &&
@@ -285,8 +285,8 @@ class CropController {
     final minScale = [
       minSide / start.width,
       minSide / start.height,
-      (minHandleSize ?? 32) / start.width,
-      (minHandleSize ?? 32) / start.height,
+      (minHandleSize ?? kMinCropHandle) / start.width,
+      (minHandleSize ?? kMinCropHandle) / start.height,
     ].reduce((a, b) => a > b ? a : b);
     final maxScale = [
       sourceWidth / start.width,
