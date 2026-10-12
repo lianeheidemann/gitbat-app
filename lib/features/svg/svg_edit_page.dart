@@ -1,4 +1,5 @@
 import '../../app/language_controller.dart';
+
 import 'dart:convert' show utf8;
 import 'dart:io';
 import 'dart:math' as math;
@@ -128,7 +129,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// foto, que nunca é menor que isso) quebraria um ícone de 24x24, bem
   /// comum em SVG. Escala com o próprio tamanho do SVG.
   double get _minCropSize =>
-      (math.min(_sourceWidth, _sourceHeight) / 8).clamp(1, 32);
+      (math.min(_sourceWidth, _sourceHeight) / 40).clamp(1, kMinCropHandle);
 
   @override
   void dispose() {

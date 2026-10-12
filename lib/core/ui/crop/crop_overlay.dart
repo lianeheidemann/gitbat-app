@@ -23,12 +23,16 @@ int _evenFloor(int value) {
   return value.isEven ? value : value - 1;
 }
 
+/// Menor janela (em pixels da fonte) que as alças deixam o recorte ter: 5x
+/// menor que os 32 de antes, para dar para recortar bem pequeno.
+const double kMinCropHandle = 6.4;
+
 /// Redimensiona o recorte movendo só o canto/lado arrastado, sem travar a
 /// proporção (usado no preset "Personalizado" do vídeo; não usado pelo
 /// recorte de foto da montagem, que é sempre travado).
 ///
-/// [minSize] é 32 por padrão (o suficiente pra não sumir numa tela de
-/// vídeo/foto, que nunca é menor que isso) — o editor de SVG passa um valor
+/// [minSize] é [kMinCropHandle] por padrão (o suficiente pra não sumir numa
+/// tela de vídeo/foto, que nunca é menor que isso) — o editor de SVG passa um valor
 /// menor, calculado a partir do tamanho do próprio SVG, porque um ícone de
 /// 24x24 nunca caberia numa janela mínima de 32.
 CropRect resizeFreeCrop(
@@ -38,7 +42,7 @@ CropRect resizeFreeCrop(
   double dy, {
   required int boundsWidth,
   required int boundsHeight,
-  double minSize = 32,
+  double minSize = kMinCropHandle,
 }) {
   var left = crop.x.toDouble();
   var top = crop.y.toDouble();
@@ -109,7 +113,7 @@ CropRect resizeLockedCrop(
   double ratio, {
   required int boundsWidth,
   required int boundsHeight,
-  double minSide = 32,
+  double minSide = kMinCropHandle,
 }) {
   // As alças de borda (top/bottom/left/right) só existem no modo livre
   // ("Personalizados"), que nunca chama esta função — os ramos delas abaixo
