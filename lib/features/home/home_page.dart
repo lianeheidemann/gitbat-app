@@ -431,22 +431,27 @@ class _HomePageState extends State<HomePage> {
       ),
       extendBodyBehindAppBar: true,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+        // Tudo cabe na tela: os cartões dividem a altura que sobra. Só em
+        // telas muito baixas (ou com fonte enorme) a página rola.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: SizedBox(
+              height: constraints.maxHeight < 640 ? 640 : constraints.maxHeight,
+              child: Padding(
+                // kToolbarHeight: a barra de ações flutua sobre o corpo.
+                padding: const EdgeInsets.fromLTRB(20, 48, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                 // Logo sem fundo (cópia estável de assets/readme/gitbat-logo.png).
                 Image.asset(
                   'recursos/marca/gitbat-logo.png',
                   key: const ValueKey('homeLogo'),
-                  height: 96,
+                  height: 72,
                   fit: BoxFit.contain,
                   semanticLabel: tr('Logo do GitBat', 'GitBat logo'),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 6),
                 Text(
                   'GitBat',
                   textAlign: TextAlign.center,
@@ -484,7 +489,7 @@ class _HomePageState extends State<HomePage> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 if (_error != null) ...[
                   Card(
                     color: theme.colorScheme.errorContainer,
@@ -500,7 +505,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                _MenuTile(
+                Expanded(
+                  flex: 3,
+                  child: _MenuTile(
                   key: const ValueKey('pickVideoButton'),
                   icon: _kIconVideo,
                   title: _loading
@@ -511,11 +518,14 @@ class _HomePageState extends State<HomePage> {
                     'Select a video from your device.',
                   ),
                   highlighted: true,
+                  large: true,
                   loading: _loading,
                   onTap: _loading ? null : _pickVideo,
-                ),
-                const SizedBox(height: 10),
-                _MenuTile(
+                )),
+                const SizedBox(height: 8),
+                Expanded(
+                  flex: 2,
+                  child: _MenuTile(
                   icon: _kIconImage,
                   title: tr('Editar imagem', 'Edit image'),
                   subtitle: tr(
@@ -523,9 +533,11 @@ class _HomePageState extends State<HomePage> {
                     'Crop, resize and adjust the image.',
                   ),
                   onTap: _loading ? null : _pickPhoto,
-                ),
-                const SizedBox(height: 10),
-                _MenuTile(
+                )),
+                const SizedBox(height: 8),
+                Expanded(
+                  flex: 2,
+                  child: _MenuTile(
                   key: const ValueKey('svgAccentIcon'),
                   icon: _kIconSvg,
                   title: tr('Editar SVG', 'Edit SVG'),
@@ -534,9 +546,11 @@ class _HomePageState extends State<HomePage> {
                     'Customize and edit your SVG files.',
                   ),
                   onTap: _loading ? null : _pickSvg,
-                ),
-                const SizedBox(height: 10),
-                _MenuTile(
+                )),
+                const SizedBox(height: 8),
+                Expanded(
+                  flex: 2,
+                  child: _MenuTile(
                   icon: _kIconCollage,
                   title: tr('Montagem', 'Collage'),
                   subtitle: tr(
@@ -544,9 +558,11 @@ class _HomePageState extends State<HomePage> {
                     'Combine media and create compositions.',
                   ),
                   onTap: _loading ? null : _pickPhotosForCollage,
-                ),
-                const SizedBox(height: 10),
-                _MenuTile(
+                )),
+                const SizedBox(height: 8),
+                Expanded(
+                  flex: 2,
+                  child: _MenuTile(
                   key: const ValueKey('convertAccentIcon'),
                   icon: _kIconConvert,
                   title: tr('Converter formato', 'Convert format'),
@@ -561,10 +577,12 @@ class _HomePageState extends State<HomePage> {
                             builder: (_) => const QuickConvertPage(),
                           ),
                         ),
-                ),
-                const SizedBox(height: 16),
+                )),
+                const SizedBox(height: 12),
                 const _StepsCard(),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -616,6 +634,7 @@ class _MenuTile extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.highlighted = false,
+    this.large = false,
     this.loading = false,
   });
 
@@ -624,6 +643,7 @@ class _MenuTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback? onTap;
   final bool highlighted;
+  final bool large;
   final bool loading;
 
   @override
@@ -647,12 +667,12 @@ class _MenuTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: large ? 64 : 46,
+                height: large ? 64 : 46,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   color: accent.withValues(alpha: 0.16),
@@ -666,7 +686,7 @@ class _MenuTile extends StatelessWidget {
                         ),
                       )
                     : Padding(
-                        padding: const EdgeInsets.all(13),
+                        padding: const EdgeInsets.all(large ? 16 : 11),
                         child: SvgPicture.string(
                           icon.replaceAll(
                             'currentColor',
@@ -682,13 +702,18 @@ class _MenuTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: (large
+                              ? theme.textTheme.titleLarge
+                              : theme.textTheme.titleMedium)
+                          ?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -705,7 +730,7 @@ class _MenuTile extends StatelessWidget {
   }
 }
 
-const _kStepCircleSize = 44.0;
+const _kStepCircleSize = 38.0;
 
 /// Etapas do fluxo de conversão, exibidas como um pequeno guia visual.
 class _StepsCard extends StatelessWidget {
@@ -724,7 +749,7 @@ class _StepsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
