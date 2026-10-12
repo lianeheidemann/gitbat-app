@@ -25,6 +25,10 @@ on:
         description: 'Versão (ex.: 1.0.0). Se vazio, usa a do pubspec.yaml.'
         required: false
         type: string
+      descricao:
+        description: 'Texto (Markdown) da descrição do release. Se vazio, sem descrição.'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -174,5 +178,7 @@ jobs:
           # lateral do repositório ficou presa numa versão antiga enquanto os
           # runs saíam verdes.
           make_latest: true
-          # Sem `body`: o release mostra só o título e os arquivos, sem texto
-          # descritivo.
+          # Sem descrição por padrão: o release mostra só o título e os
+          # arquivos. Só o disparo manual com o campo "descricao" preenchido
+          # ganha texto.
+          body: ${{ inputs.descricao }}
