@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/lianeheidemann/gitbat-app/releases/latest">
-    <img width="100" src="assets/GitBat_download-v1.png" width="210" alt="Download do GitBat">
+    <img width="120" src="assets/icon/icon-download-v1.svg" width="210" alt="Download do GitBat">
   </a>
 </p>
 
