@@ -42,10 +42,30 @@ void main() {
   });
 
   test('quadros mais longos se repetem na taxa fixa', () {
-    expect(webpFrameCopies(const Duration(milliseconds: 100), 10), 1);
-    expect(webpFrameCopies(const Duration(milliseconds: 300), 10), 3);
-    expect(webpFrameCopies(const Duration(milliseconds: 20), 10), 1);
+    expect(webpFrameCopies(startMs: 0, durationMs: 100, fps: 10), 1);
+    expect(webpFrameCopies(startMs: 100, durationMs: 300, fps: 10), 3);
     expect(webpFrameMs(Duration.zero), 100);
+  });
+
+  test('a taxa vem do quadro mais curto e o tempo total se mantém', () {
+    // Um primeiro quadro longo (1 s) não pode baixar a taxa do resto.
+    const durations = [1000, 40, 40, 40, 80];
+    final fps = webpIntermediateFps(40);
+    expect(fps, 25);
+    var start = 0;
+    var total = 0;
+    final copies = <int>[];
+    for (final ms in durations) {
+      final n = webpFrameCopies(startMs: start, durationMs: ms, fps: fps);
+      copies.add(n);
+      total += n;
+      start += ms;
+    }
+    expect(copies, [25, 1, 1, 1, 2]);
+    // 1,2 s a 25 quadros por segundo.
+    expect(total, 30);
+    expect(webpIntermediateFps(5), 60);
+    expect(webpIntermediateFps(5000), 1);
   });
 
   test('só .webp é considerado WebP animado', () async {
@@ -89,6 +109,7 @@ void main() {
     expect(info.frames, 3);
     // Quadro sem duração conta 100 ms.
     expect(info.durationMs, 450);
+    expect(info.shortestFrameMs, 100);
     expect(parseAnimatedWebp(Uint8List.fromList('nada'.codeUnits)), isNull);
   });
 }

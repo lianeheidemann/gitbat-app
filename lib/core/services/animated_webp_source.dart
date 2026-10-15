@@ -32,13 +32,12 @@ Future<bool> isAnimatedWebp(String path) async {
   }
 }
 
-/// Canvas, número de quadros e duração de um WebP animado, lidos direto do
-/// cabeçalho do arquivo (chunks `VP8X` e `ANMF`) — sem decodificar nenhum
-/// quadro, então é instantâneo mesmo num arquivo grande. `null` se o
-/// arquivo não tiver essa estrutura.
-({int width, int height, int frames, int durationMs})? parseAnimatedWebp(
-  Uint8List bytes,
-) {
+/// Canvas, número de quadros, duração e o quadro mais curto de um WebP
+/// animado, lidos direto do cabeçalho do arquivo (chunks `VP8X` e `ANMF`) —
+/// sem decodificar nenhum quadro, então é instantâneo mesmo num arquivo
+/// grande. `null` se o arquivo não tiver essa estrutura.
+({int width, int height, int frames, int durationMs, int shortestFrameMs})?
+parseAnimatedWebp(Uint8List bytes) {
   if (bytes.length < 30) return null;
   String tag(int at) => String.fromCharCodes(bytes.sublist(at, at + 4));
   int u24(int at) => bytes[at] | (bytes[at + 1] << 8) | (bytes[at + 2] << 16);
@@ -49,6 +48,7 @@ Future<bool> isAnimatedWebp(String path) async {
   int? height;
   var frames = 0;
   var durationMs = 0;
+  int? shortestFrameMs;
   var at = 12;
   while (at + 8 <= bytes.length) {
     final fourcc = tag(at);
@@ -60,13 +60,23 @@ Future<bool> isAnimatedWebp(String path) async {
       height = u24(payload + 7) + 1;
     } else if (fourcc == 'ANMF' && size >= 16) {
       frames++;
-      final ms = u24(payload + 12);
-      durationMs += ms <= 0 ? 100 : ms;
+      final raw = u24(payload + 12);
+      final ms = raw <= 0 ? 100 : raw;
+      durationMs += ms;
+      if (shortestFrameMs == null || ms < shortestFrameMs) {
+        shortestFrameMs = ms;
+      }
     }
     at = payload + size + (size.isOdd ? 1 : 0);
   }
   if (width == null || height == null || frames < 2) return null;
-  return (width: width, height: height, frames: frames, durationMs: durationMs);
+  return (
+    width: width,
+    height: height,
+    frames: frames,
+    durationMs: durationMs,
+    shortestFrameMs: shortestFrameMs!,
+  );
 }
 
 /// [VideoInfo] de um WebP animado sem convertê-lo: o cartão da tela aparece
@@ -118,20 +128,20 @@ Future<VideoInfo> probeAnimatedWebp(
   ).create(recursive: true);
   final bytes = await File(path).readAsBytes();
 
-  // O primeiro quadro dá o tamanho e a taxa do intermediário (que é de taxa
-  // fixa): quadros mais longos que ele se repetem, e o tempo total fica
-  // igual ao original.
+  // O intermediário é de taxa fixa, medida pelo quadro **mais curto** do
+  // cabeçalho: os mais longos se repetem e o tempo total fica igual ao
+  // original. Antes valia o primeiro quadro, e um primeiro quadro longo
+  // (uma tela de título de 1 s, por exemplo) baixava a taxa do arquivo
+  // inteiro — todo o resto saía lento e travado.
   final int width;
   final int height;
   final int frameCount;
   final double fps;
   int? decodeWidth;
-  {
-    final info = parseAnimatedWebp(bytes);
-    if (maxWidth != null && info != null && maxWidth < info.width) {
-      // Par, que o H.264 e o redimensionamento do FFmpeg preferem.
-      decodeWidth = (maxWidth ~/ 2 * 2).clamp(2, info.width);
-    }
+  final info = parseAnimatedWebp(bytes);
+  if (maxWidth != null && info != null && maxWidth < info.width) {
+    // Par, que o H.264 e o redimensionamento do FFmpeg preferem.
+    decodeWidth = (maxWidth ~/ 2 * 2).clamp(2, info.width);
   }
   Future<ui.Codec> openCodec() =>
       ui.instantiateImageCodec(bytes, targetWidth: decodeWidth);
@@ -142,7 +152,9 @@ Future<VideoInfo> probeAnimatedWebp(
       final first = await codec.getNextFrame();
       width = first.image.width;
       height = first.image.height;
-      fps = (1000 / webpFrameMs(first.duration)).clamp(1.0, 60.0);
+      fps = webpIntermediateFps(
+        info?.shortestFrameMs ?? webpFrameMs(first.duration),
+      );
       first.image.dispose();
     } finally {
       codec.dispose();
@@ -151,6 +163,7 @@ Future<VideoInfo> probeAnimatedWebp(
 
   Future<void> writeFrames(IOSink sink) async {
     final codec = await openCodec();
+    var elapsedMs = 0;
     try {
       for (var i = 0; i < frameCount; i++) {
         if (ffmpeg.isCancelled) {
@@ -166,7 +179,13 @@ Future<VideoInfo> probeAnimatedWebp(
         );
         frame.image.dispose();
         final pixels = data!.buffer.asUint8List();
-        final copies = webpFrameCopies(frame.duration, fps);
+        final frameMs = webpFrameMs(frame.duration);
+        final copies = webpFrameCopies(
+          startMs: elapsedMs,
+          durationMs: frameMs,
+          fps: fps,
+        );
+        elapsedMs += frameMs;
         for (var c = 0; c < copies; c++) {
           sink.add(pixels);
         }
@@ -213,9 +232,27 @@ int webpFrameMs(Duration duration) {
   return ms <= 0 ? 100 : ms;
 }
 
-/// Quantas vezes um quadro de [duration] entra no intermediário de taxa
-/// fixa [fps] — pelo menos uma, para nenhum quadro sumir.
-int webpFrameCopies(Duration duration, double fps) {
-  final copies = (webpFrameMs(duration) * fps / 1000).round();
-  return copies < 1 ? 1 : copies;
+/// Taxa fixa do intermediário para um WebP cujo quadro mais curto dura
+/// [shortestFrameMs]: um quadro de saída por quadro mais curto, de 1 a 60
+/// por segundo.
+double webpIntermediateFps(int shortestFrameMs) =>
+    (1000 / (shortestFrameMs <= 0 ? 100 : shortestFrameMs)).clamp(1.0, 60.0);
+
+/// Quantas vezes o quadro que começa em [startMs] e dura [durationMs] entra
+/// no intermediário de taxa fixa [fps].
+///
+/// A conta é pelo relógio acumulado (quantos instantes de amostragem caem
+/// dentro do quadro), não pela duração isolada: assim o arredondamento de
+/// um quadro não se soma ao do próximo, e o tempo total do `.mov` bate com
+/// o do WebP. Um quadro mais curto que um intervalo da taxa (só acontece
+/// acima de 60 por segundo) pode dar zero — sai, em vez de deixar o resto
+/// da animação mais lento.
+int webpFrameCopies({
+  required int startMs,
+  required int durationMs,
+  required double fps,
+}) {
+  final first = (startMs * fps / 1000).round();
+  final last = ((startMs + durationMs) * fps / 1000).round();
+  return last - first;
 }
