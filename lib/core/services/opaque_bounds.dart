@@ -90,6 +90,15 @@ Future<CropRect?> detectOpaqueBounds(
   return _boundsOf(image, width ?? image.width, height ?? image.height);
 }
 
+/// Mesma coisa de [detectOpaqueBounds] para uma imagem já decodificada — a
+/// foto com o desenho do Pincel gravado, cuja transparência ainda não
+/// existe em arquivo nenhum. Libera [image].
+Future<CropRect?> detectOpaqueBoundsOfImage(
+  ui.Image image, {
+  int? width,
+  int? height,
+}) => _boundsOf(image, width ?? image.width, height ?? image.height);
+
 /// Mesma coisa de [detectOpaqueBounds] para um SVG, medido no espaço de
 /// [width]x[height]. O desenho é rasterizado maior (até ~1024 px no lado
 /// maior) para um ícone pequeno não perder precisão na borda.

@@ -9,8 +9,10 @@ const Map<String, String> modelTranslations = {
   'Nenhum': 'None',
   'Preto e branco': 'Black and white',
   'Inverter': 'Invert',
-  // EraserTool / EraserQuality
+  // EraserTool / EraserQuality / DrawingTool
   'Pincel': 'Brush',
+  'Borracha': 'Eraser',
+  'Transparência': 'Transparency',
   'Apagar seleção': 'Erase selection',
   'Laço': 'Lasso',
   'Retângulo': 'Rectangle',

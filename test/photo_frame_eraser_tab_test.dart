@@ -7,7 +7,7 @@ import 'package:gitbat/features/photo/models/eraser_mask.dart';
 import 'package:gitbat/core/models/photo_info.dart';
 import 'package:gitbat/features/photo/photo_frame_page.dart';
 import 'package:gitbat/features/photo/widgets/eraser_mask_overlay.dart';
-import 'package:gitbat/features/photo/widgets/eraser_option_button.dart';
+import 'package:gitbat/core/ui/option_pill_button.dart';
 
 Future<void> _writeSolidPng(String path, int width, int height) async {
   final recorder = ui.PictureRecorder();
@@ -89,11 +89,11 @@ void main() {
 
     // O estado da seleção fica no selo do cabeçalho do painel.
     expect(find.text('Nenhuma seleção'), findsOneWidget);
-    expect(find.widgetWithText(EraserOptionButton, 'Pincel'), findsOneWidget);
+    expect(find.widgetWithText(OptionPillButton, 'Pincel'), findsOneWidget);
     // "Apagar seleção" não está no mockup, mas continua no painel; os textos
     // de ajuda saíram.
     expect(
-      find.widgetWithText(EraserOptionButton, 'Apagar seleção'),
+      find.widgetWithText(OptionPillButton, 'Apagar seleção'),
       findsOneWidget,
     );
     expect(find.textContaining('Mais qualidade demora mais'), findsNothing);
@@ -157,7 +157,7 @@ void main() {
 
     await tapInPanel(
       tester,
-      find.widgetWithText(EraserOptionButton, 'Retângulo'),
+      find.widgetWithText(OptionPillButton, 'Retângulo'),
     );
 
     // Retângulo desenha área fechada — espessura não quer dizer nada.
@@ -172,7 +172,7 @@ void main() {
     await openEraserTab(tester);
     await tapInPanel(
       tester,
-      find.widgetWithText(EraserOptionButton, 'Retângulo'),
+      find.widgetWithText(OptionPillButton, 'Retângulo'),
     );
 
     await paintStroke(tester);
@@ -189,7 +189,7 @@ void main() {
 
     await tapInPanel(
       tester,
-      find.widgetWithText(EraserOptionButton, 'Apagar seleção'),
+      find.widgetWithText(OptionPillButton, 'Apagar seleção'),
     );
     await paintStroke(tester);
 
@@ -205,10 +205,10 @@ void main() {
     await pumpPage(tester);
     await openEraserTab(tester);
 
-    await tapInPanel(tester, find.widgetWithText(EraserOptionButton, 'Alta'));
+    await tapInPanel(tester, find.widgetWithText(OptionPillButton, 'Alta'));
 
-    final chip = tester.widget<EraserOptionButton>(
-      find.widgetWithText(EraserOptionButton, 'Alta'),
+    final chip = tester.widget<OptionPillButton>(
+      find.widgetWithText(OptionPillButton, 'Alta'),
     );
     expect(chip.selected, isTrue);
   });

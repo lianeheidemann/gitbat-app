@@ -38,7 +38,7 @@ import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
 import '../../core/ui/export_progress_dialog.dart';
 import 'widgets/eraser_mask_overlay.dart';
-import 'widgets/eraser_option_button.dart';
+import '../../core/ui/option_pill_button.dart';
 import '../../core/ui/photo_placement_view.dart';
 import '../../core/ui/preview_settings_panel.dart';
 import '../../core/ui/rotate_flip_panel.dart';
@@ -1045,7 +1045,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
               EraserTool.lasso,
               EraserTool.unbrush,
             ])
-              EraserOptionButton(
+              OptionPillButton(
                 label: tool.label,
                 icon: _eraserToolIcon(tool),
                 selected: _eraserTool == tool,
@@ -1104,7 +1104,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
             for (final (i, quality) in EraserQuality.values.indexed) ...[
               if (i > 0) const SizedBox(width: 6),
               Expanded(
-                child: EraserOptionButton(
+                child: OptionPillButton(
                   label: quality.label,
                   selected: _eraserQuality == quality,
                   showCheck: true,

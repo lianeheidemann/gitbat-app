@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Botão de escolha do painel da borracha — ferramentas e qualidade.
+/// Botão de escolha dos painéis da Borracha mágica e do Pincel —
+/// ferramentas e qualidade.
 ///
 /// Substitui o [ChoiceChip]: o chip do Material 3 fixa altura, padding e
 /// fonte pelo tema, e o painel precisa das proporções do mockup (botões de
 /// 34dp, cantos de 10dp, rótulo de 13sp). O rótulo nunca vira reticências:
 /// numa célula estreita o conteúdo inteiro encolhe até caber.
-class EraserOptionButton extends StatelessWidget {
-  const EraserOptionButton({
+class OptionPillButton extends StatelessWidget {
+  const OptionPillButton({
     super.key,
     required this.label,
     required this.selected,
