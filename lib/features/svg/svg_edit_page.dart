@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/aspect_preset.dart';
 import '../../core/models/crop_rect.dart';
+import '../../core/models/drawing_layer.dart';
 import '../../core/models/output_transform.dart';
 import 'models/svg_edit_settings.dart';
 import 'models/svg_info.dart';
@@ -33,6 +34,9 @@ import '../../core/ui/frame/frame_color_row.dart';
 import '../../core/ui/frame/frame_style_picker.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
+import '../../core/ui/drawing/drawing_canvas.dart';
+import '../../core/ui/drawing/drawing_panel.dart';
+import '../../core/ui/drawing/drawn_image.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
@@ -106,6 +110,11 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// Gestos de posicionar o desenho ligados — atualizado a cada build.
   bool _placementGestures = true;
 
+  /// Aba "Pincel": o pincel em uso (estado de tela — só os traços entram no
+  /// desfazer, dentro de [SvgEditSettings.drawing]).
+  DrawingBrush _brush = DrawingBrush(color: EditorDefaults.text);
+  final _drawingCanvasKey = GlobalKey<DrawingCanvasState>();
+
   @override
   void initState() {
     super.initState();
@@ -172,6 +181,14 @@ class _SvgEditPageState extends State<SvgEditPage> {
       title: tr('Recorte', 'Crop'),
       value: _cropLabel,
       builder: (_) => _cropSection(),
+    ),
+    // Recorte → Pincel → Girar…: a mesma ordem de "Editar imagem" (que
+    // ainda tem a Borracha mágica entre os dois primeiros).
+    EditorSection(
+      icon: Icons.brush_rounded,
+      title: tr('Pincel', 'Brush'),
+      value: drawingSummary(_settings.drawing),
+      builder: (_) => _drawingSection(),
     ),
     EditorSection(
       icon: Icons.rotate_90_degrees_ccw_rounded,
@@ -263,10 +280,15 @@ class _SvgEditPageState extends State<SvgEditPage> {
         active != null && sections[active].title == tr('Texto', 'Text');
     _stickersTabActive =
         active != null && sections[active].title == tr('Stickers', 'Stickers');
+    final drawingTabActive =
+        active != null && sections[active].title == tr('Pincel', 'Brush');
     // Arrastar/pinçar/girar o desenho vale fora das abas que usam o toque
-    // para outra coisa (Recorte, Texto e Stickers).
+    // para outra coisa (Recorte, Pincel, Texto e Stickers).
     _placementGestures =
-        !showCropHandles && !textTabActive && !_stickersTabActive;
+        !showCropHandles &&
+        !textTabActive &&
+        !_stickersTabActive &&
+        !drawingTabActive;
 
     return Scaffold(
       appBar: AppBar(
@@ -308,6 +330,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
                         child: _preview(
                           showCropHandles: showCropHandles,
                           textTabActive: textTabActive,
+                          drawingTabActive: drawingTabActive,
                         ),
                       ),
                     ),
@@ -333,9 +356,72 @@ class _SvgEditPageState extends State<SvgEditPage> {
   Widget _preview({
     required bool showCropHandles,
     required bool textTabActive,
-  }) => showCropHandles
-      ? _rawPreviewWithHandles()
-      : _withTextOverlay(_croppedDecoratedPreview(), textTabActive);
+    required bool drawingTabActive,
+  }) {
+    if (showCropHandles) return _rawPreviewWithHandles();
+    if (drawingTabActive) return _drawingPreview();
+    return _withTextOverlay(_croppedDecoratedPreview(), textTabActive);
+  }
+
+  /// O SVG inteiro, no tamanho de exibição, com o desenho do Pincel por
+  /// cima — o conteúdo que recorte, giro e o resto recebem, como no
+  /// arquivo salvo (ver `applyDrawingSvg`).
+  Widget _drawnSvg([DrawingLayer? drawing]) => DrawingOverlay(
+    layer: drawing ?? _settings.drawing,
+    child: SvgPicture.file(File(widget.svg.path), fit: BoxFit.fill),
+  );
+
+  /// Prévia do Pincel: o SVG inteiro e sem giro (como a foto em "Editar
+  /// imagem"), já com filtro, cor e opacidade — que no arquivo também valem
+  /// para o desenho —, e os gestos de desenhar e dar zoom.
+  Widget _drawingPreview() {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: DrawingCanvas(
+        key: _drawingCanvasKey,
+        sourceWidth: widget.svg.width,
+        sourceHeight: widget.svg.height,
+        layer: _settings.drawing,
+        brush: _brush,
+        enabled: !_saving && !_sharing,
+        onStroke: (stroke) =>
+            _update(_settings.copyWith(drawing: _settings.drawing.add(stroke))),
+        onZoomChanged: (_) => setState(() {}),
+        contentBuilder: (layer) => _withColorAndOpacity(_drawnSvg(layer)),
+      ),
+    );
+  }
+
+  /// Só pincel e borracha: um SVG não tem pixels para a transparência furar.
+  Widget _drawingSection() {
+    final canvas = _drawingCanvasKey.currentState;
+    return DrawingPanel(
+      brush: _brush,
+      onBrushChanged: (brush) => setState(() => _brush = brush),
+      tools: const [DrawingTool.pen, DrawingTool.eraser],
+      sourceShortestSide: math.min(widget.svg.width, widget.svg.height),
+      onPickColor: () => showFrameColorPicker(
+        context: context,
+        title: tr('Cor do pincel', 'Brush color'),
+        selectedColor: _brush.color,
+        onSelected: (color) =>
+            setState(() => _brush = _brush.copyWith(color: color)),
+        // Trocar a cor do pincel não muda o SVG: nada a desfazer.
+        onFirstChange: () {},
+        previewImageBuilder: _renderPreviewImage,
+      ),
+      onClear: _settings.drawing.isEmpty
+          ? null
+          : () => _update(_settings.copyWith(drawing: DrawingLayer.empty)),
+      onFitView: (canvas?.isZoomed ?? false) ? canvas!.resetZoom : null,
+      enabled: !_saving && !_sharing,
+    );
+  }
 
   /// Caixas de texto arrastáveis (aba "Texto") por cima do resultado — o
   /// `LayoutBuilder` mede exatamente a caixa do resultado recortado/girado,
@@ -388,7 +474,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
   /// [_moveCropFromHandle] convertem o arrasto de volta.
   Widget _rawPreviewWithHandles() {
     final theme = Theme.of(context);
-    Widget picture = SvgPicture.file(File(widget.svg.path), fit: BoxFit.fill);
+    Widget picture = _drawnSvg();
     if (_settings.rotationQuarterTurns != 0) {
       picture = RotatedBox(
         quarterTurns: _settings.rotationQuarterTurns,
@@ -443,7 +529,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
       sourceWidth: _sourceWidth,
       sourceHeight: _sourceHeight,
       crop: _settings.crop,
-      child: SvgPicture.file(File(widget.svg.path), fit: BoxFit.fill),
+      child: _drawnSvg(),
     );
 
     if (_settings.rotationQuarterTurns != 0) {
@@ -463,22 +549,7 @@ class _SvgEditPageState extends State<SvgEditPage> {
         child: content,
       );
     }
-    // Ajuste fino primeiro, preset por cima — mesma ordem de
-    // `svg_xml_editor.dart`'s `applyFilterSvg`, para a prévia nunca divergir
-    // do arquivo exportado.
-    if (_settings.adjustments.hasAdjustments) {
-      content = ColorFiltered(
-        colorFilter: _settings.adjustments.filter,
-        child: content,
-      );
-    }
-    final filter = _settings.previewColorFilter;
-    if (filter != null) {
-      content = ColorFiltered(colorFilter: filter, child: content);
-    }
-    if (_settings.opacity < 1) {
-      content = Opacity(opacity: _settings.opacity, child: content);
-    }
+    content = _withColorAndOpacity(content);
     // Posição livre com os dedos e as alças, como em "Editar imagem".
     content = PhotoPlacementView(
       placement: _settings.placement,
@@ -504,6 +575,26 @@ class _SvgEditPageState extends State<SvgEditPage> {
               child: BorderedPreview(frame: _settings.border, child: content),
             ),
     );
+  }
+
+  /// Ajuste fino, filtro e opacidade sobre [content]. Ajuste fino primeiro,
+  /// preset por cima — mesma ordem de `svg_xml_editor.dart`'s
+  /// `applyFilterSvg`, para a prévia nunca divergir do arquivo exportado.
+  Widget _withColorAndOpacity(Widget content) {
+    if (_settings.adjustments.hasAdjustments) {
+      content = ColorFiltered(
+        colorFilter: _settings.adjustments.filter,
+        child: content,
+      );
+    }
+    final filter = _settings.previewColorFilter;
+    if (filter != null) {
+      content = ColorFiltered(colorFilter: filter, child: content);
+    }
+    if (_settings.opacity < 1) {
+      content = Opacity(opacity: _settings.opacity, child: content);
+    }
+    return content;
   }
 
   // ---------------------------------------------------------------------
@@ -592,6 +683,8 @@ class _SvgEditPageState extends State<SvgEditPage> {
     }
     if (!mounted) return;
     setState(() => _trimming = false);
+    // O que o Pincel pintou também é conteúdo, mesmo sobre a margem vazia.
+    bounds = _withDrawingBounds(bounds);
     if (bounds == null) {
       _message(
         tr('O SVG está todo transparente.', 'The SVG is fully transparent.'),
@@ -612,6 +705,36 @@ class _SvgEditPageState extends State<SvgEditPage> {
     }
     _cropTab.aspect = AspectPreset.trim;
     _update(_settings.copyWith(crop: bounds));
+  }
+
+  /// [bounds] somado à caixa do que o Pincel pintou, arredondada para fora.
+  CropRect? _withDrawingBounds(CropRect? bounds) {
+    final paint = _settings.drawing.paintBoundsIn(
+      Size(_sourceWidth.toDouble(), _sourceHeight.toDouble()),
+    );
+    if (paint == null) return bounds;
+    var rect = Rect.fromLTRB(
+      paint.left.floorToDouble(),
+      paint.top.floorToDouble(),
+      paint.right.ceilToDouble(),
+      paint.bottom.ceilToDouble(),
+    );
+    if (bounds != null) {
+      rect = rect.expandToInclude(
+        Rect.fromLTWH(
+          bounds.x.toDouble(),
+          bounds.y.toDouble(),
+          bounds.width.toDouble(),
+          bounds.height.toDouble(),
+        ),
+      );
+    }
+    return CropRect(
+      x: rect.left.round(),
+      y: rect.top.round(),
+      width: rect.width.round(),
+      height: rect.height.round(),
+    );
   }
 
   void _applyCropWidth(String value) {

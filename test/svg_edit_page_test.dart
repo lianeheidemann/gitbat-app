@@ -42,10 +42,13 @@ void main() {
 
     expect(find.text('Editar SVG'), findsOneWidget);
     expect(find.text('Recorte'), findsWidgets);
+    expect(find.text('Pincel'), findsWidgets);
     expect(find.text('Girar'), findsWidgets);
     expect(find.text('Borda'), findsWidgets);
     expect(find.text('Fundo'), findsWidgets);
     expect(find.text('Filtro'), findsWidgets);
+    // A barra rola na horizontal: as do fim só existem depois de rolar.
+    await _showTab(tester, 'Opacidade');
     expect(find.text('Opacidade'), findsWidgets);
     await _showTab(tester, 'Configurações');
     expect(find.text('Configurações'), findsWidgets);

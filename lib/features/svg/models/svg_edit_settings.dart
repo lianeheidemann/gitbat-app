@@ -4,6 +4,7 @@ import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
+import '../../../core/models/drawing_layer.dart';
 import '../../../core/models/default_colors.dart';
 import '../../../core/models/frame_settings.dart';
 import '../../../core/models/photo_placement.dart';
@@ -45,6 +46,7 @@ class SvgEditSettings {
     this.stickers = const [],
     this.border = const FrameSettings(),
     this.placement = PhotoPlacement.identity,
+    this.drawing = DrawingLayer.empty,
   });
 
   /// `null` = o SVG inteiro, no tamanho nativo (`SvgInfo.width`/`height`).
@@ -100,6 +102,14 @@ class SvgEditSettings {
   /// vira um `transform` no grupo do conteúdo (ver `applyPlacementSvg`).
   final PhotoPlacement placement;
 
+  /// Desenho da aba "Pincel", preso à arte: os traços são normalizados ao
+  /// SVG inteiro (antes do recorte) e saem como `<path>` dentro do grupo de
+  /// conteúdo, então recorte, giro, espelho, filtro, opacidade, posição e
+  /// borda o alcançam como alcançam o desenho original (ver
+  /// `svg_xml_editor.dart`'s `applyDrawingSvg`). Sem transparência: só
+  /// pincel e borracha de traços.
+  final DrawingLayer drawing;
+
   /// Filtro equivalente ao [filterType] para a prévia (widget), com os
   /// mesmos coeficientes usados na exportação (`svg_xml_editor.dart`'s
   /// `applyFilterSvg`) — preto e branco reaproveita
@@ -139,6 +149,7 @@ class SvgEditSettings {
     List<CollageSticker>? stickers,
     FrameSettings? border,
     PhotoPlacement? placement,
+    DrawingLayer? drawing,
   }) {
     return SvgEditSettings(
       crop: clearCrop ? null : (crop ?? this.crop),
@@ -155,6 +166,7 @@ class SvgEditSettings {
       stickers: stickers ?? this.stickers,
       border: border ?? this.border,
       placement: placement ?? this.placement,
+      drawing: drawing ?? this.drawing,
     );
   }
 }
