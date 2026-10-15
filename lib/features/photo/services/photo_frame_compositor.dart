@@ -11,6 +11,7 @@ import '../../../core/models/frame_settings.dart';
 import '../../../core/models/image_frame.dart';
 import '../../../core/models/output_transform.dart';
 import '../../../core/models/photo_info.dart';
+import '../../../core/painting/drawing_painting.dart';
 import '../../../core/painting/frame_painter.dart';
 import '../../../core/painting/overlay_painting.dart';
 
@@ -25,7 +26,20 @@ Future<Uint8List> composeFramedPhoto({
   required PhotoInfo photo,
   required FrameSettings frame,
 }) async {
-  final image = await _decodeImageFile(photo.path);
+  final decoded = await _decodeImageFile(photo.path);
+  // O desenho do Pincel é gravado na foto antes de tudo: daqui em diante
+  // ele é só mais pixel dela, e recorte, posição, giro, moldura e ajuste de
+  // cor o alcançam pelos mesmos caminhos — como na prévia.
+  final ui.Image image;
+  if (frame.drawing.isEmpty) {
+    image = decoded;
+  } else {
+    try {
+      image = await bakeDrawing(decoded, frame.drawing);
+    } finally {
+      decoded.dispose();
+    }
+  }
   try {
     return await (frame.imageFrame != null
         ? _composeImageFramed(photo, image, frame)

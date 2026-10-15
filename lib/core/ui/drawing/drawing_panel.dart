@@ -7,6 +7,13 @@ import '../../models/drawing_layer.dart';
 import '../option_pill_button.dart';
 import '../panel_rows.dart';
 
+/// Resumo da aba "Pincel" no cabeçalho do painel: quantos traços há.
+String drawingSummary(DrawingLayer layer) => switch (layer.strokes.length) {
+  0 => tr('Nenhum', 'None'),
+  1 => tr('1 traço', '1 stroke'),
+  final n => tr('$n traços', '$n strokes'),
+};
+
 /// Painel do Pincel — o mesmo em Editar imagem, Editar SVG e no "..." de
 /// uma foto da Montagem: ferramenta, cor e opacidade (só no pincel),
 /// tamanho e as ações de limpar e enquadrar.

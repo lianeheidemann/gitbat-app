@@ -10,6 +10,7 @@ import 'package:gitbat/core/models/collage_sticker.dart';
 import 'package:gitbat/core/models/frame_settings.dart';
 import 'package:gitbat/core/models/photo_info.dart';
 import 'package:gitbat/core/services/text_overlay_render.dart';
+import 'package:gitbat/core/ui/editor_tabs_footer.dart';
 import 'package:gitbat/core/ui/sticker_overlay_editor.dart';
 import 'package:gitbat/features/photo/photo_frame_page.dart';
 import 'package:gitbat/features/photo/services/photo_frame_compositor.dart';
@@ -234,10 +235,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final tab = find.text('Stickers').last;
-    await tester.ensureVisible(tab);
+    // A barra de abas rola na horizontal e só constrói o que está perto da
+    // tela: "Stickers" fica mais à direita.
+    final tab = find.text('Stickers');
+    await tester.scrollUntilVisible(
+      tab,
+      120,
+      scrollable: find
+          .descendant(
+            of: find.byType(EditorTabsFooter),
+            matching: find.byType(Scrollable),
+          )
+          .last,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(tab);
+    await tester.tap(tab.last);
     await tester.pumpAndSettle();
     expect(find.byType(StickerOverlayPanel), findsOneWidget);
 

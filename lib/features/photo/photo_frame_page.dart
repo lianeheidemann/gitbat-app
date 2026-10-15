@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/aspect_preset.dart';
 import '../../core/models/crop_rect.dart';
+import '../../core/models/drawing_layer.dart';
 import '../../core/models/frame_settings.dart';
 import '../../core/models/image_frame.dart';
 import '../../core/models/photo_info.dart';
@@ -33,6 +34,9 @@ import '../../core/ui/frame/image_framed_preview.dart';
 import '../../core/ui/frame/imported_frame_library.dart';
 import '../../core/ui/crop/crop_overlay.dart';
 import '../../core/ui/crop/cropped_view.dart';
+import '../../core/ui/drawing/drawing_canvas.dart';
+import '../../core/ui/drawing/drawing_panel.dart';
+import '../../core/ui/drawing/drawn_image.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
@@ -119,6 +123,11 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   final _eraserCanvasKey = GlobalKey<EraserCanvasState>();
 
+  /// Aba "Pincel": o pincel em uso (estado de tela — só os traços entram no
+  /// desfazer, dentro de [FrameSettings.drawing]).
+  DrawingBrush _brush = DrawingBrush(color: EditorDefaults.text);
+  final _drawingCanvasKey = GlobalKey<DrawingCanvasState>();
+
   /// Aba "Recorte", com as regras compartilhadas com as telas de vídeo e
   /// SVG.
   late final _cropTab = CropTabController(
@@ -202,8 +211,16 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// A foto da prévia, já com o ajuste de cor por cima — o mesmo filtro que
   /// `photo_frame_compositor` aplica na exportação, para a tela mostrar o
   /// que vai sair. A moldura e o fundo ficam de fora, como lá.
-  Widget _photoPreview(BoxFit fit) {
-    final photo = Image.file(File(_photo.path), fit: fit);
+  ///
+  /// O desenho do Pincel entra aqui, na própria foto: tudo o que vem por
+  /// fora (recorte, posição, moldura, giro e o ajuste de cor) o alcança como
+  /// alcança a foto, igual ao `bakeDrawing` da exportação. [drawing] troca o
+  /// desenho guardado pelo da aba "Pincel", que inclui o traço em andamento.
+  Widget _photoPreview(BoxFit fit, {DrawingLayer? drawing}) {
+    final layer = drawing ?? _frame.drawing;
+    final Widget photo = layer.isEmpty
+        ? Image.file(File(_photo.path), fit: fit)
+        : DrawnImage(image: FileImage(File(_photo.path)), layer: layer);
     if (!_frame.adjustments.hasAdjustments) return photo;
     return ColorFiltered(colorFilter: _frame.adjustments.filter, child: photo);
   }
@@ -345,6 +362,12 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       builder: (_) => _eraserSection(),
     ),
     EditorSection(
+      icon: Icons.brush_rounded,
+      title: tr('Pincel', 'Brush'),
+      value: drawingSummary(_frame.drawing),
+      builder: (_) => _drawingSection(),
+    ),
+    EditorSection(
       icon: Icons.rotate_90_degrees_ccw_rounded,
       title: tr('Girar', 'Rotate'),
       value: _frame.outputTransform.label,
@@ -366,8 +389,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       value: _frame.imageFrameLabel,
       builder: (_) => _imageFrameSection(),
     ),
-    // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Girar →
-    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Configurações.
+    // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Pincel →
+    // Girar → Borda → Moldura → Fundo → Cor → Stickers → Texto →
+    // Configurações.
     EditorSection(
       icon: Icons.wallpaper_rounded,
       title: tr('Fundo', 'Background'),
@@ -426,6 +450,8 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     final eraserTabActive =
         active != null &&
         sections[active].title == tr('Borracha mágica', 'Magic eraser');
+    final drawingTabActive =
+        active != null && sections[active].title == tr('Pincel', 'Brush');
     return Scaffold(
       appBar: AppBar(
         title: AppBarTitle(tr('Editar imagem', 'Edit image')),
@@ -467,6 +493,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                           showCropHandles: showCropHandles,
                           textTabActive: textTabActive,
                           eraserTabActive: eraserTabActive,
+                          drawingTabActive: drawingTabActive,
                         ),
                       ),
                     ),
@@ -493,12 +520,15 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     required bool showCropHandles,
     required bool textTabActive,
     required bool eraserTabActive,
+    required bool drawingTabActive,
   }) {
     // A borracha trabalha sobre a foto inteira, sem recorte, moldura nem
     // rotação: o que se apaga é conteúdo da foto, e a seleção é medida em
     // pixels dela. Mesma razão pela qual as alças de recorte também ficam na
-    // orientação original.
+    // orientação original — e pela qual o Pincel, que desenha na foto,
+    // também a mostra assim.
     if (eraserTabActive) return _eraserPreview();
+    if (drawingTabActive) return _drawingPreview();
     return _previewForFrame(
       showCropHandles: showCropHandles,
       textTabActive: textTabActive,
@@ -525,6 +555,31 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         onMaskChanged: (mask) => setState(() => _eraserMask = mask),
         onZoomChanged: (_) => setState(() {}),
         child: _photoPreview(BoxFit.fill),
+      ),
+    );
+  }
+
+  /// Prévia do Pincel: a foto crua, o desenho por cima e os gestos de
+  /// desenhar e dar zoom. Cada traço é um passo de desfazer da tela.
+  Widget _drawingPreview() {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: DrawingCanvas(
+        key: _drawingCanvasKey,
+        sourceWidth: _photo.width.toDouble(),
+        sourceHeight: _photo.height.toDouble(),
+        layer: _frame.drawing,
+        brush: _brush,
+        enabled: !_saving && !_sharing && !_erasing,
+        onStroke: (stroke) =>
+            _updateFrame(_frame.copyWith(drawing: _frame.drawing.add(stroke))),
+        onZoomChanged: (_) => setState(() {}),
+        contentBuilder: (layer) => _photoPreview(BoxFit.fill, drawing: layer),
       ),
     );
   }
@@ -718,7 +773,8 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   double? get _lockedRatio => _cropTab.lockedRatio;
 
   /// Encosta o recorte nos pixels visíveis da foto atual — já com o que a
-  /// borracha apagou, porque lê `_photo` e não a foto que abriu a tela.
+  /// borracha apagou, porque lê `_photo` e não a foto que abriu a tela, e
+  /// com o desenho do Pincel.
   Future<void> _trimTransparentEdges() async {
     if (_trimming) return;
     setState(() => _trimming = true);
@@ -729,6 +785,8 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         path,
         width: _photo.width,
         height: _photo.height,
+        // O que a transparência do Pincel apagou também é margem.
+        drawing: _frame.drawing,
       );
     } catch (_) {
       if (!mounted) return;
@@ -992,6 +1050,38 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// Ajuste de cor da foto: o mesmo painel da montagem e da edição de GIF,
   /// aqui gravando em [FrameSettings.adjustments] — assim o desfazer/refazer
   /// da tela já cobre o ajuste, como cobre os outros controles.
+  // ---------------------------------------------------------------------
+  // Aba "Pincel"
+  // ---------------------------------------------------------------------
+
+  /// As três ferramentas: numa foto parada a transparência também vale.
+  Widget _drawingSection() {
+    final canvas = _drawingCanvasKey.currentState;
+    return DrawingPanel(
+      brush: _brush,
+      onBrushChanged: (brush) => setState(() => _brush = brush),
+      tools: DrawingTool.values,
+      sourceShortestSide:
+          (_photo.width < _photo.height ? _photo.width : _photo.height)
+              .toDouble(),
+      onPickColor: () => showFrameColorPicker(
+        context: context,
+        title: tr('Cor do pincel', 'Brush color'),
+        selectedColor: _brush.color,
+        onSelected: (color) =>
+            setState(() => _brush = _brush.copyWith(color: color)),
+        // Trocar a cor do pincel não muda a imagem: nada a desfazer.
+        onFirstChange: () {},
+        previewImageBuilder: _renderPreviewImage,
+      ),
+      onClear: _frame.drawing.isEmpty
+          ? null
+          : () => _updateFrame(_frame.copyWith(drawing: DrawingLayer.empty)),
+      onFitView: (canvas?.isZoomed ?? false) ? canvas!.resetZoom : null,
+      enabled: !_saving && !_sharing && !_erasing,
+    );
+  }
+
   // ---------------------------------------------------------------------
   // Aba "Borracha mágica"
   // ---------------------------------------------------------------------
