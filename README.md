@@ -46,9 +46,9 @@ FFmpeg — the app has **no internet permission**.
 | Tool | Purpose |
 |---|---|
 | **Video → GIF / WebP / MP4** | Converts MP4, MOV, AVI, MKV, WebM and 3GP into GIF, animated WebP or an edited MP4, and **estimates the GIF size before converting**. |
-| **Edit image** | Frames a single photo (border or phone mockup), adjusts color and removes objects with a **magic eraser**. |
-| **Edit SVG** | Crops, rotates, recolors and decorates an SVG, and saves it **as a vector**. |
-| **Photo collage** | Combines photos into one composition — grids, custom layouts, stickers and text. Exports animated when any photo is animated. |
+| **Edit image** | Frames a single photo (border or phone mockup), adjusts color, **draws with a brush** and removes objects with a **magic eraser**. |
+| **Edit SVG** | Crops, rotates, recolors, draws on and decorates an SVG, and saves it **as a vector**. |
+| **Photo collage** | Combines photos into one composition — grids, custom layouts, stickers, text and a brush per photo. Exports animated when any photo is animated. |
 | **Convert format** | Re-encodes a video, GIF or animated WebP to GIF, WebP or MP4. |
 
 | Output | Best for |
@@ -76,11 +76,17 @@ FFmpeg — the app has **no internet permission**.
 - Content fit — auto, fill, or zoom with a background color
 - **Magic eraser** — brush, lasso or rectangle; the background is rebuilt by
   PatchMatch inpainting written in plain Dart (no model, no APK growth)
+- **Pincel** (brush) — color, opacity and size; **Borracha** erases only the
+  brush strokes, and **Transparência** erases the photo itself, leaving it
+  transparent (or in the background color). The drawing is attached to the
+  photo, so crop, position, rotation, frames and color follow it
 - Transparent or solid background, color adjustment, stickers and text
 
 ### Edit SVG
 
 - Crop, rotate, mirror, background, filter, color, opacity and **border**
+- **Pincel** (brush) and **Borracha** (stroke eraser), saved as real
+  `<path>` elements — the eraser becomes an SVG `<mask>`
 - Stickers and text saved as real `<text>` / nested `<svg>` elements
 - Tolerant loading: gzip (`.svgz`), UTF-16 and SVGs without a declared size
 
@@ -95,7 +101,10 @@ FFmpeg — the app has **no internet permission**.
 - Aspect ratio (presets or free), margins, border and corner rounding for
   the montage and for the photos
 - Background — transparent, color or image, for the montage and per photo
-- Per-photo replace, crop, rotate, flip, recenter and color adjustment
+- Per-photo replace, crop, rotate, flip, recenter, color adjustment and
+  **Pincel** (brush, in the photo's "..." menu) — the drawing follows the
+  photo through crop, zoom, rotation and swaps; still photos also get
+  **Transparência**, animated ones keep the drawing on every frame
 - Stickers (bundled or imported, in folders) and text with imported fonts
 - Animated export (GIF or WebP) when any photo is animated, with frames
   decoded only at the size each area needs
@@ -105,6 +114,10 @@ FFmpeg — the app has **no internet permission**.
 - Video, GIF or animated WebP → GIF, WebP or MP4, with a resolution slider
 - Animated WebPs open instantly; conversion shows progress from the start
   and can be cancelled at any time
+- MP4 is encoded with an explicit bitrate and BT.709 color, and transparent
+  areas of a GIF/WebP come out in the background color. H.264 stores color
+  at half resolution (4:2:0), so thin colored text is a little softer than
+  in WebP or GIF — prefer those for crisp README graphics
 
 ### Common to all editors
 
@@ -197,8 +210,10 @@ Dependencies point one way: `core/` and `app/` never import `features/`,
 and a tool never imports another one — only `home`, which opens them all.
 `test/architecture_test.dart` fails the build if that changes. The four
 editors share their building blocks from `core/ui`: undo history, app
-bar actions, tabs footer, crop tab, frame tabs, and the sticker and text
-layers with their handles.
+bar actions, tabs footer, crop tab, frame tabs, the sticker and text
+layers with their handles, and the brush (`core/ui/drawing`), whose strokes
+are painted by a single function for preview and export
+(`core/painting/drawing_painting.dart`).
 
 ### Adding bundled art
 
