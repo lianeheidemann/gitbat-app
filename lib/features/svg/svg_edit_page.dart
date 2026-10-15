@@ -182,8 +182,9 @@ class _SvgEditPageState extends State<SvgEditPage> {
       value: _cropLabel,
       builder: (_) => _cropSection(),
     ),
-    // Recorte → Pincel → Girar…: a mesma ordem de "Editar imagem" (que
-    // ainda tem a Borracha mágica entre os dois primeiros).
+    // Recorte → Pincel → Girar…: a mesma ordem de "Editar imagem". Lá o
+    // Pincel tem também a transparência e a Borracha mágica; aqui não, que
+    // um SVG não tem pixels para furar nem para reconstruir.
     EditorSection(
       icon: Icons.brush_rounded,
       title: tr('Pincel', 'Brush'),

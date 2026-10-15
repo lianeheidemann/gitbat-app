@@ -50,9 +50,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Abre a aba da borracha tocando no rótulo curto do rodapé.
+  /// Abre a Borracha mágica: a aba "Pincel" do rodapé e, nela, a quarta
+  /// ferramenta (a linha de ferramentas rola na horizontal).
   Future<void> openEraserTab(WidgetTester tester) async {
-    await tester.tap(find.text('Borracha'));
+    await tester.tap(find.text('Pincel'));
+    await tester.pumpAndSettle();
+    final magic = find.byKey(const ValueKey('drawingTool-magicEraser'));
+    await tester.ensureVisible(magic);
+    await tester.pumpAndSettle();
+    await tester.tap(magic);
     await tester.pumpAndSettle();
   }
 
@@ -83,19 +89,19 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('a aba existe e abre sem erro', (tester) async {
+  testWidgets('mora dentro do Pincel e abre sem erro', (tester) async {
     await pumpPage(tester);
+    // Não é mais uma aba própria do rodapé.
+    expect(find.text('Borracha'), findsNothing);
+    expect(find.text('Borracha mágica'), findsNothing);
     await openEraserTab(tester);
 
-    // O estado da seleção fica no selo do cabeçalho do painel.
+    // O estado da seleção fica no resumo da aba.
     expect(find.text('Nenhuma seleção'), findsOneWidget);
+    // "Marcar" e "Desmarcar", para não repetir o "Pincel" de cima.
+    expect(find.widgetWithText(OptionPillButton, 'Marcar'), findsOneWidget);
+    expect(find.widgetWithText(OptionPillButton, 'Desmarcar'), findsOneWidget);
     expect(find.widgetWithText(OptionPillButton, 'Pincel'), findsOneWidget);
-    // "Apagar seleção" não está no mockup, mas continua no painel; os textos
-    // de ajuda saíram.
-    expect(
-      find.widgetWithText(OptionPillButton, 'Apagar seleção'),
-      findsOneWidget,
-    );
     expect(find.textContaining('Mais qualidade demora mais'), findsNothing);
     expect(find.textContaining('Pinte o que quer'), findsNothing);
     expect(find.byType(EraserCanvas), findsOneWidget);
@@ -152,7 +158,7 @@ void main() {
     await pumpPage(tester);
     await openEraserTab(tester);
 
-    // Pincel: o tamanho importa.
+    // Marcar: o tamanho importa.
     expect(find.text('Tamanho do pincel'), findsOneWidget);
 
     await tapInPanel(
@@ -182,14 +188,14 @@ void main() {
     expect(stroke.points, hasLength(4));
   });
 
-  testWidgets('"Apagar seleção" marca o traço como subtrativo', (tester) async {
+  testWidgets('"Desmarcar" marca o traço como subtrativo', (tester) async {
     await pumpPage(tester);
     await openEraserTab(tester);
     await paintStroke(tester);
 
     await tapInPanel(
       tester,
-      find.widgetWithText(OptionPillButton, 'Apagar seleção'),
+      find.widgetWithText(OptionPillButton, 'Desmarcar'),
     );
     await paintStroke(tester);
 

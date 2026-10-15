@@ -11,9 +11,12 @@ import 'package:gitbat/core/models/frame_settings.dart';
 import 'package:gitbat/core/models/photo_info.dart';
 import 'package:gitbat/core/services/opaque_bounds.dart';
 import 'package:gitbat/core/ui/drawing/drawing_canvas.dart';
+import 'package:gitbat/core/ui/drawing/eraser_glyph.dart';
 import 'package:gitbat/core/ui/option_pill_button.dart';
 import 'package:gitbat/features/photo/photo_frame_page.dart';
 import 'package:gitbat/features/photo/services/photo_frame_compositor.dart';
+import 'package:gitbat/features/photo/widgets/eraser_mask_overlay.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
 // A aba "Pincel" de "Editar imagem": o desenho fica preso à foto, entra no
 // desfazer da tela e sai no PNG salvo — inclusive a transparência.
@@ -160,12 +163,27 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('as três ferramentas, com a transparência', (tester) async {
+    testWidgets('as quatro ferramentas: transparência e Borracha mágica', (
+      tester,
+    ) async {
       await pumpPage(tester);
       expect(find.byType(DrawingCanvas), findsOneWidget);
-      for (final label in ['Pincel', 'Borracha', 'Transparência']) {
+      for (final label in [
+        'Pincel',
+        'Borracha',
+        'Transparência',
+        'Borracha mágica',
+      ]) {
         expect(find.widgetWithText(OptionPillButton, label), findsOneWidget);
       }
+      // A borracha de traços tem o ícone desenhado de borracha.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('drawingTool-eraser')),
+          matching: find.byType(EraserGlyph),
+        ),
+        findsOneWidget,
+      );
       // A foto aparece inteira, na orientação dela.
       expect(canvas(tester).sourceWidth, 100);
       expect(canvas(tester).sourceHeight, 100);
@@ -189,6 +207,93 @@ void main() {
       expect(canvas(tester).layer.isEmpty, isTrue);
     });
 
+    Future<void> chooseMagicEraser(WidgetTester tester) async {
+      final magic = find.byKey(const ValueKey('drawingTool-magicEraser'));
+      await tester.ensureVisible(magic);
+      await tester.pumpAndSettle();
+      await tester.tap(magic);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> choosePen(WidgetTester tester) async {
+      final pen = find.byKey(const ValueKey('drawingTool-pen'));
+      await tester.ensureVisible(pen);
+      await tester.pumpAndSettle();
+      await tester.tap(pen);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a Borracha mágica troca a prévia e mantém o zoom', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      final zoom = canvas(tester).zoom!;
+      zoom.value = (zoom: 2, pan: Offset.zero);
+      await tester.pumpAndSettle();
+
+      await chooseMagicEraser(tester);
+      expect(find.byType(DrawingCanvas), findsNothing);
+      final eraser = tester.widget<EraserCanvas>(find.byType(EraserCanvas));
+      // O mesmo enquadramento: trocar de ferramenta não volta ao inteiro.
+      expect(identical(eraser.zoom, zoom), isTrue);
+      expect(zoom.isZoomed, isTrue);
+      expect(find.text('Enquadrar'), findsOneWidget);
+      // O resumo da aba passa a ser o da seleção.
+      expect(find.text('Nenhuma seleção'), findsOneWidget);
+      expect(find.text('Nenhum'), findsNothing);
+
+      await choosePen(tester);
+      expect(find.byType(EraserCanvas), findsNothing);
+      expect(find.byType(DrawingCanvas), findsOneWidget);
+      expect(zoom.isZoomed, isTrue);
+      // O painel rola: o botão fica no fim dele.
+      await tester.ensureVisible(find.text('Enquadrar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Enquadrar'));
+      await tester.pumpAndSettle();
+      expect(zoom.isZoomed, isFalse);
+    });
+
+    testWidgets('"Tentar de novo" some com um traço feito depois da apagada', (
+      tester,
+    ) async {
+      final original = PathProviderPlatform.instance;
+      PathProviderPlatform.instance = _TempPaths(tempDir.path);
+      addTearDown(() => PathProviderPlatform.instance = original);
+      await pumpPage(tester);
+      await chooseMagicEraser(tester);
+
+      // Marca um ponto e apaga de verdade (Isolate: tempo real).
+      final center = tester.getCenter(find.byType(EraserCanvas));
+      await tester.tapAt(center);
+      await tester.pumpAndSettle();
+      final erase = find.widgetWithText(FilledButton, 'Apagar');
+      await tester.ensureVisible(erase);
+      await tester.pumpAndSettle();
+      await tester.tap(erase);
+      final retry = find.text('Tentar de novo');
+      for (var i = 0; i < 200 && retry.evaluate().isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pumpAndSettle();
+      expect(retry, findsOneWidget);
+
+      // Um traço do Pincel depois: desfazer agora derrubaria o traço, não a
+      // apagada — "Tentar de novo" some.
+      await choosePen(tester);
+      await drawStroke(tester);
+      await chooseMagicEraser(tester);
+      expect(retry, findsNothing);
+
+      // Desfeito o traço, a apagada volta a ser o último passo.
+      await tester.tap(find.byTooltip('Desfazer'));
+      await tester.pumpAndSettle();
+      expect(retry, findsOneWidget);
+    });
+
     testWidgets('a ferramenta escolhida vale para o próximo traço', (
       tester,
     ) async {
@@ -200,4 +305,14 @@ void main() {
       expect(canvas(tester).layer.hasCutout, isTrue);
     });
   });
+}
+
+/// A pasta temporária da Borracha mágica, sem o plugin de verdade.
+class _TempPaths extends PathProviderPlatform {
+  _TempPaths(this.dir);
+
+  final String dir;
+
+  @override
+  Future<String?> getTemporaryPath() async => dir;
 }

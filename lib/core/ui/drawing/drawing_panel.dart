@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/drawing_layer.dart';
 import '../option_pill_button.dart';
 import '../panel_rows.dart';
+import 'eraser_glyph.dart';
 
 /// Resumo da aba "Pincel" no cabeçalho do painel: quantos traços há.
 String drawingSummary(DrawingLayer layer) => switch (layer.strokes.length) {
@@ -13,6 +14,26 @@ String drawingSummary(DrawingLayer layer) => switch (layer.strokes.length) {
   1 => tr('1 traço', '1 stroke'),
   final n => tr('$n traços', '$n strokes'),
 };
+
+/// Uma ferramenta a mais na linha do Pincel que não é de traço — a Borracha
+/// mágica de "Editar imagem", que mora em `features/photo` e por isso entra
+/// aqui de fora, sem o `core` conhecê-la.
+class DrawingPanelExtraTool {
+  const DrawingPanelExtraTool({
+    required this.id,
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  /// Para a chave do botão (`drawingTool-<id>`).
+  final String id;
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onSelected;
+}
 
 /// Painel do Pincel — o mesmo em Editar imagem, Editar SVG e no "..." de
 /// uma foto da Montagem: ferramenta, cor e opacidade (só no pincel),
@@ -31,6 +52,8 @@ class DrawingPanel extends StatelessWidget {
     required this.onClear,
     this.onFitView,
     this.enabled = true,
+    this.extraTools = const [],
+    this.body,
   });
 
   final DrawingBrush brush;
@@ -53,11 +76,30 @@ class DrawingPanel extends StatelessWidget {
 
   final bool enabled;
 
-  static IconData iconFor(DrawingTool tool) => switch (tool) {
-    DrawingTool.pen => Icons.brush_rounded,
-    DrawingTool.eraser => Icons.cleaning_services_rounded,
-    DrawingTool.cutout => Icons.layers_clear_rounded,
-  };
+  /// Ferramentas a mais, depois das de traço, na mesma linha. Com uma delas
+  /// escolhida ([DrawingPanelExtraTool.selected]), nenhuma de traço aparece
+  /// marcada, e tocar numa de traço chega por [onBrushChanged] — quem chama
+  /// desliga a extra ali.
+  final List<DrawingPanelExtraTool> extraTools;
+
+  /// Os controles da ferramenta extra escolhida, no lugar dos do pincel
+  /// (dica, cor, opacidade, tamanho e limpar). Só vale com uma extra
+  /// escolhida.
+  final Widget? body;
+
+  /// Ícone de cada ferramenta de traço. A borracha não existe no pacote de
+  /// ícones e é desenhada ([EraserGlyph]); por isso o construtor recebe a
+  /// cor e o tamanho, como o [OptionPillButton.iconBuilder].
+  static Widget iconFor(DrawingTool tool, Color color, double size) =>
+      switch (tool) {
+        DrawingTool.pen => Icon(Icons.brush_rounded, color: color, size: size),
+        DrawingTool.eraser => EraserGlyph(color: color, size: size),
+        DrawingTool.cutout => Icon(
+          Icons.layers_clear_rounded,
+          color: color,
+          size: size,
+        ),
+      };
 
   static String _hintFor(DrawingTool tool) => switch (tool) {
     DrawingTool.pen => tr(
@@ -98,26 +140,54 @@ class DrawingPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
     );
     final tool = tools.contains(brush.tool) ? brush.tool : tools.first;
+    final extraActive = extraTools.any((t) => t.selected);
+    final buttons = [
+      for (final option in tools)
+        OptionPillButton(
+          key: ValueKey('drawingTool-${option.name}'),
+          label: option.label,
+          iconBuilder: (color, size) => iconFor(option, color, size),
+          selected: !extraActive && tool == option,
+          onPressed: enabled
+              ? () => onBrushChanged(brush.copyWith(tool: option))
+              : null,
+        ),
+      for (final extra in extraTools)
+        OptionPillButton(
+          key: ValueKey('drawingTool-${extra.id}'),
+          label: extra.label,
+          icon: extra.icon,
+          selected: extra.selected,
+          onPressed: enabled ? extra.onSelected : null,
+        ),
+    ];
+    // Uma linha só, rolando na horizontal: quatro ferramentas não cabem numa
+    // tela de 360dp, e quebrar em duas linhas comeria a altura do painel.
+    final toolRow = SingleChildScrollView(
+      key: const ValueKey('drawingToolRow'),
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final (i, button) in buttons.indexed) ...[
+            if (i > 0) const SizedBox(width: 8),
+            button,
+          ],
+        ],
+      ),
+    );
+
+    final extraBody = body;
+    if (extraActive && extraBody != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [toolRow, const SizedBox(height: 8), extraBody],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final option in tools)
-              OptionPillButton(
-                key: ValueKey('drawingTool-${option.name}'),
-                label: option.label,
-                icon: iconFor(option),
-                selected: tool == option,
-                onPressed: enabled
-                    ? () => onBrushChanged(brush.copyWith(tool: option))
-                    : null,
-              ),
-          ],
-        ),
+        toolRow,
         const SizedBox(height: 6),
         Text(
           _hintFor(tool),

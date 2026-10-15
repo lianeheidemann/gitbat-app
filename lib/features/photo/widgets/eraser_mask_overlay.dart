@@ -20,6 +20,7 @@ class EraserCanvas extends StatefulWidget {
     required this.child,
     this.enabled = true,
     this.onZoomChanged,
+    this.zoom,
   });
 
   final int photoWidth;
@@ -46,6 +47,9 @@ class EraserCanvas extends StatefulWidget {
   /// Avisa quando a prévia passa de enquadrada para ampliada e vice-versa
   /// (ver [ZoomableDrawSurface.onZoomChanged]).
   final ValueChanged<bool>? onZoomChanged;
+
+  /// Ver [ZoomableDrawSurface.zoom] — o mesmo enquadramento do Pincel.
+  final DrawZoomController? zoom;
 
   @override
   State<EraserCanvas> createState() => EraserCanvasState();
@@ -98,6 +102,7 @@ class EraserCanvasState extends State<EraserCanvas> {
       sourceHeight: widget.photoHeight.toDouble(),
       enabled: widget.enabled,
       onZoomChanged: widget.onZoomChanged,
+      zoom: widget.zoom,
       onStrokeEnd: (points) =>
           widget.onMaskChanged(widget.mask.add(_strokeFrom(points))),
       builder: (context, drawing, scale) => Stack(

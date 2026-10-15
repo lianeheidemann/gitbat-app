@@ -74,12 +74,15 @@ FFmpeg — the app has **no internet permission**.
 - **Borda** (procedural border) and **Moldura** (bundled or imported phone
   mockups, with automatic window detection)
 - Content fit — auto, fill, or zoom with a background color
-- **Magic eraser** — brush, lasso or rectangle; the background is rebuilt by
-  PatchMatch inpainting written in plain Dart (no model, no APK growth)
-- **Pincel** (brush) — color, opacity and size; **Borracha** erases only the
-  brush strokes, and **Transparência** erases the photo itself, leaving it
-  transparent (or in the background color). The drawing is attached to the
-  photo, so crop, position, rotation, frames and color follow it
+- **Pincel** (brush) tab with four tools — **Pincel** (color, opacity and
+  size), **Borracha** (erases only the brush strokes), **Transparência**
+  (erases the photo itself, leaving it transparent or in the background
+  color) and **Borracha mágica**. The drawing is attached to the photo, so
+  crop, position, rotation, frames and color follow it, and the zoom is kept
+  when switching tools
+- **Borracha mágica** (magic eraser) — mark, lasso or rectangle; the
+  background is rebuilt by PatchMatch inpainting written in plain Dart (no
+  model, no APK growth)
 - Transparent or solid background, color adjustment, stickers and text
 
 ### Edit SVG

@@ -37,6 +37,7 @@ import '../../core/ui/crop/cropped_view.dart';
 import '../../core/ui/drawing/drawing_canvas.dart';
 import '../../core/ui/drawing/drawing_panel.dart';
 import '../../core/ui/drawing/drawn_image.dart';
+import '../../core/ui/drawing/zoomable_draw_surface.dart';
 import '../../core/ui/editor_app_bar_actions.dart';
 import '../../core/ui/editor_overlay_layers.dart';
 import '../../core/ui/editor_tabs_footer.dart';
@@ -113,20 +114,33 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   /// região com outra semente.
   EraserMask? _lastErased;
 
-  /// O arquivo que a última apagada produziu. "Tentar de novo" só vale
-  /// enquanto ele ainda é a foto em uso: se a pessoa mexeu em outra coisa
-  /// depois, desfazer para tentar de novo derrubaria essa outra mudança.
+  /// O arquivo que a última apagada produziu e a edição logo depois dela.
+  /// "Tentar de novo" desfaz um passo antes de apagar outra vez, então só
+  /// vale enquanto a apagada é mesmo o último passo: comparar só o arquivo
+  /// deixava passar um traço do Pincel ou uma borda feitos depois (a foto
+  /// continua a mesma), e o desfazer derrubaria essa outra mudança.
   String? _lastErasedPath;
+  FrameSettings? _frameAfterErase;
 
   bool get _canRetryErase =>
-      _lastErased != null && _lastErasedPath == _photo.path;
+      _lastErased != null &&
+      _lastErasedPath == _photo.path &&
+      identical(_frameAfterErase, _frame);
 
   final _eraserCanvasKey = GlobalKey<EraserCanvasState>();
 
   /// Aba "Pincel": o pincel em uso (estado de tela — só os traços entram no
   /// desfazer, dentro de [FrameSettings.drawing]).
   DrawingBrush _brush = DrawingBrush(color: EditorDefaults.text);
-  final _drawingCanvasKey = GlobalKey<DrawingCanvasState>();
+
+  /// A Borracha mágica é a quarta ferramenta da aba "Pincel" (depois de
+  /// Pincel, Borracha e Transparência): com ela escolhida, a prévia e o
+  /// painel são os dela.
+  bool _magicEraserActive = false;
+
+  /// Um enquadramento só para a prévia do Pincel e a da Borracha mágica:
+  /// trocar de ferramenta no meio de um zoom não volta à foto inteira.
+  final _drawZoom = DrawZoomController();
 
   /// Aba "Recorte", com as regras compartilhadas com as telas de vídeo e
   /// SVG.
@@ -178,6 +192,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
 
   @override
   void dispose() {
+    _drawZoom.dispose();
     _cropTab.dispose();
     _textOverlay.dispose();
     _stickerOverlay.dispose();
@@ -353,18 +368,16 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       value: _cropLabel,
       builder: (_) => _cropSection(),
     ),
-    EditorSection(
-      icon: Icons.auto_fix_high_rounded,
-      title: tr('Borracha mágica', 'Magic eraser'),
-      label: tr('Borracha', 'Eraser'),
-      // Sem `value`: o painel desenha o próprio cabeçalho, com o estado da
-      // seleção num selo ao lado do título (ver `_eraserHeader`).
-      builder: (_) => _eraserSection(),
-    ),
+    // A Borracha mágica mora dentro do Pincel (a quarta ferramenta), e o
+    // resumo da aba acompanha a ferramenta: com ela, o estado da seleção.
     EditorSection(
       icon: Icons.brush_rounded,
       title: tr('Pincel', 'Brush'),
-      value: drawingSummary(_frame.drawing),
+      value: _magicEraserActive
+          ? (_eraserMask.isEmpty
+                ? tr('Nenhuma seleção', 'No selection')
+                : tr('Seleção pronta', 'Selection ready'))
+          : drawingSummary(_frame.drawing),
       builder: (_) => _drawingSection(),
     ),
     EditorSection(
@@ -389,9 +402,8 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       value: _frame.imageFrameLabel,
       builder: (_) => _imageFrameSection(),
     ),
-    // Mesma ordem nas quatro telas de edição: Recorte → Borracha → Pincel →
-    // Girar → Borda → Moldura → Fundo → Cor → Stickers → Texto →
-    // Configurações.
+    // Mesma ordem nas quatro telas de edição: Recorte → Pincel → Girar →
+    // Borda → Moldura → Fundo → Cor → Stickers → Texto → Configurações.
     EditorSection(
       icon: Icons.wallpaper_rounded,
       title: tr('Fundo', 'Background'),
@@ -447,9 +459,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         active != null && sections[active].title == tr('Texto', 'Text');
     _stickersTabActive =
         active != null && sections[active].title == tr('Stickers', 'Stickers');
-    final eraserTabActive =
-        active != null &&
-        sections[active].title == tr('Borracha mágica', 'Magic eraser');
     final drawingTabActive =
         active != null && sections[active].title == tr('Pincel', 'Brush');
     return Scaffold(
@@ -492,7 +501,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                         child: _preview(
                           showCropHandles: showCropHandles,
                           textTabActive: textTabActive,
-                          eraserTabActive: eraserTabActive,
                           drawingTabActive: drawingTabActive,
                         ),
                       ),
@@ -519,7 +527,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   Widget _preview({
     required bool showCropHandles,
     required bool textTabActive,
-    required bool eraserTabActive,
     required bool drawingTabActive,
   }) {
     // A borracha trabalha sobre a foto inteira, sem recorte, moldura nem
@@ -527,15 +534,17 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     // pixels dela. Mesma razão pela qual as alças de recorte também ficam na
     // orientação original — e pela qual o Pincel, que desenha na foto,
     // também a mostra assim.
-    if (eraserTabActive) return _eraserPreview();
-    if (drawingTabActive) return _drawingPreview();
+    if (drawingTabActive) {
+      return _magicEraserActive ? _eraserPreview() : _drawingPreview();
+    }
     return _previewForFrame(
       showCropHandles: showCropHandles,
       textTabActive: textTabActive,
     );
   }
 
-  /// Prévia da borracha: a foto crua com o véu da seleção por cima.
+  /// Prévia da Borracha mágica: a foto crua com o véu da seleção por cima —
+  /// e o desenho do Pincel, que ela não apaga (reconstrói só a foto).
   Widget _eraserPreview() {
     final theme = Theme.of(context);
     return Container(
@@ -546,6 +555,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       ),
       child: EraserCanvas(
         key: _eraserCanvasKey,
+        zoom: _drawZoom,
         photoWidth: _photo.width,
         photoHeight: _photo.height,
         mask: _eraserMask,
@@ -570,7 +580,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         ),
       ),
       child: DrawingCanvas(
-        key: _drawingCanvasKey,
+        zoom: _drawZoom,
         sourceWidth: _photo.width.toDouble(),
         sourceHeight: _photo.height.toDouble(),
         layer: _frame.drawing,
@@ -1054,13 +1064,30 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   // Aba "Pincel"
   // ---------------------------------------------------------------------
 
-  /// As três ferramentas: numa foto parada a transparência também vale.
+  /// Pincel, Borracha e Transparência (numa foto parada a transparência
+  /// também vale) e, por último, a Borracha mágica — que traz a própria
+  /// prévia e os próprios controles ([_eraserSection]).
   Widget _drawingSection() {
-    final canvas = _drawingCanvasKey.currentState;
+    final busy = _saving || _sharing || _erasing;
     return DrawingPanel(
       brush: _brush,
-      onBrushChanged: (brush) => setState(() => _brush = brush),
+      // Tocar numa ferramenta de traço com a Borracha mágica escolhida
+      // também chega aqui: é o que a desliga.
+      onBrushChanged: (brush) => setState(() {
+        _brush = brush;
+        _magicEraserActive = false;
+      }),
       tools: DrawingTool.values,
+      extraTools: [
+        DrawingPanelExtraTool(
+          id: 'magicEraser',
+          label: tr('Borracha mágica', 'Magic eraser'),
+          icon: Icons.auto_fix_high_rounded,
+          selected: _magicEraserActive,
+          onSelected: () => setState(() => _magicEraserActive = true),
+        ),
+      ],
+      body: _magicEraserActive ? _eraserSection() : null,
       sourceShortestSide:
           (_photo.width < _photo.height ? _photo.width : _photo.height)
               .toDouble(),
@@ -1077,18 +1104,21 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
       onClear: _frame.drawing.isEmpty
           ? null
           : () => _updateFrame(_frame.copyWith(drawing: DrawingLayer.empty)),
-      onFitView: (canvas?.isZoomed ?? false) ? canvas!.resetZoom : null,
-      enabled: !_saving && !_sharing && !_erasing,
+      onFitView: _drawZoom.isZoomed ? _drawZoom.reset : null,
+      // Durante a reconstrução da Borracha mágica nenhuma ferramenta troca:
+      // a prévia e o painel são dela até o fim.
+      enabled: !busy,
     );
   }
 
   // ---------------------------------------------------------------------
-  // Aba "Borracha mágica"
+  // Borracha mágica (quarta ferramenta da aba "Pincel")
   // ---------------------------------------------------------------------
 
-  /// O painel da borracha. A ordem segue o uso: escolher a ferramenta,
-  /// ajustar o pincel e a qualidade, apagar — e só depois os botões de
-  /// arrependimento. Divisórias separam os três blocos.
+  /// O painel da Borracha mágica, abaixo da linha de ferramentas do Pincel.
+  /// A ordem segue o uso: escolher como marcar, ajustar o tamanho e a
+  /// qualidade, apagar — e só depois os botões de arrependimento. Divisórias
+  /// separam os três blocos. O estado da seleção vai no resumo da aba.
   ///
   /// Tudo é compacto de propósito (rótulos de 13sp, botões de escolha de
   /// 34dp) para caber numa tela de 360dp, e nenhum texto usa reticências:
@@ -1096,7 +1126,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
   Widget _eraserSection() {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final canvas = _eraserCanvasKey.currentState;
     final radius = brushRadiusFor(_brushPercent, _photo.width, _photo.height);
     final divider = Divider(
       height: 20,
@@ -1120,15 +1149,25 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _eraserHeader(theme),
-        const SizedBox(height: 10),
+        Text(
+          tr(
+            'Marque o que quer remover e toque em Apagar: o fundo é '
+                'reconstruído. Os traços do pincel ficam.',
+            'Mark what to remove and tap Erase: the background is rebuilt. '
+                'Brush strokes stay.',
+          ),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            // Pincel, Retângulo e Laço na primeira linha, como no mockup;
-            // "Apagar seleção" (que não está nele) vem por último e cai na
-            // linha de baixo nas telas estreitas.
+            // Marcar, Retângulo e Laço na primeira linha, como no mockup;
+            // "Desmarcar" (que não está nele) vem por último e cai na linha
+            // de baixo nas telas estreitas.
             for (final tool in const [
               EraserTool.brush,
               EraserTool.rectangle,
@@ -1264,10 +1303,10 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: Text(tr('Tentar de novo', 'Try again')),
               ),
-            if (canvas?.isZoomed ?? false)
+            if (_drawZoom.isZoomed)
               TextButton.icon(
                 style: linkStyle,
-                onPressed: canvas!.resetZoom,
+                onPressed: _drawZoom.reset,
                 icon: const Icon(Icons.zoom_out_map_rounded, size: 18),
                 label: Text(tr('Enquadrar', 'Fit to view')),
               ),
@@ -1277,66 +1316,9 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     );
   }
 
-  /// Cabeçalho do painel: ícone, título e a dica de uso, com o estado da
-  /// seleção num selo à direita — é o resumo que as outras abas mostram na
-  /// linha de valor do rodapé.
-  Widget _eraserHeader(ThemeData theme) {
-    final scheme = theme.colorScheme;
-    final ready = !_eraserMask.isEmpty;
-    // O selo fica só na altura do título; a dica corre por baixo dos dois,
-    // alinhada ao texto do título, numa linha só (encolhe se não couber).
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.auto_fix_normal_rounded,
-              size: 20,
-              color: scheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                tr('Borracha', 'Eraser'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              height: 24,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: ready
-                    ? scheme.primaryContainer
-                    : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                ready
-                    ? tr('Seleção pronta', 'Selection ready')
-                    : tr('Nenhuma seleção', 'No selection'),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: ready
-                      ? scheme.onPrimaryContainer
-                      : scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   IconData _eraserToolIcon(EraserTool tool) => switch (tool) {
-    EraserTool.brush => Icons.brush_rounded,
+    // Marcador, e não pincel: o Pincel de verdade é a ferramenta de cima.
+    EraserTool.brush => Icons.border_color_rounded,
     EraserTool.unbrush => Icons.remove_circle_outline_rounded,
     EraserTool.rectangle => Icons.crop_square_rounded,
     EraserTool.lasso => Icons.highlight_alt_rounded,
@@ -1413,6 +1395,7 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
         _eraserMask = EraserMask.empty;
         _lastErased = mask;
         _lastErasedPath = erased.path;
+        _frameAfterErase = _frame;
         _eraseSeed = seed;
       });
     } on MagicEraserCancelled {

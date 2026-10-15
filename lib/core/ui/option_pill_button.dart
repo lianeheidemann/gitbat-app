@@ -14,6 +14,7 @@ class OptionPillButton extends StatelessWidget {
     required this.selected,
     required this.onPressed,
     this.icon,
+    this.iconBuilder,
     this.showCheck = false,
     this.expand = false,
   });
@@ -26,6 +27,11 @@ class OptionPillButton extends StatelessWidget {
 
   /// Ícone à esquerda do rótulo, usado pelas ferramentas.
   final IconData? icon;
+
+  /// Ícone desenhado (em vez de [icon]), que recebe a cor e o tamanho do
+  /// estado atual — para os que não existem no pacote de ícones, como a
+  /// borracha do Pincel.
+  final Widget Function(Color color, double size)? iconBuilder;
 
   /// Mostra um ✓ à esquerda quando selecionado, como na linha de qualidade.
   final bool showCheck;
@@ -45,7 +51,9 @@ class OptionPillButton extends StatelessWidget {
     final foreground = selected
         ? scheme.onPrimaryContainer
         : scheme.onSurfaceVariant;
-    final leading = showCheck && selected ? Icons.check_rounded : icon;
+    final check = showCheck && selected;
+    final leading = check ? Icons.check_rounded : icon;
+    final builder = check ? null : iconBuilder;
     // Com ✓ o escolhido é só cheio; nas ferramentas ganha também a borda.
     final BorderSide border;
     if (selected) {
@@ -63,7 +71,10 @@ class OptionPillButton extends StatelessWidget {
     final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (leading != null) ...[
+        if (builder != null) ...[
+          builder(foreground, 16),
+          SizedBox(width: expand ? 4 : 6),
+        ] else if (leading != null) ...[
           Icon(leading, size: 16, color: foreground),
           SizedBox(width: expand ? 4 : 6),
         ],

@@ -13,10 +13,11 @@ import 'dart:ui'
         StrokeCap,
         StrokeJoin;
 
-/// Qual ferramenta da aba "Borracha" está ativa.
+/// Como a Borracha mágica marca o que apagar. "Marcar" e "Desmarcar" (e não
+/// "Pincel"): ela mora dentro da aba "Pincel", ao lado do Pincel de verdade.
 enum EraserTool {
-  brush('Pincel'),
-  unbrush('Apagar seleção'),
+  brush('Marcar'),
+  unbrush('Desmarcar'),
   lasso('Laço'),
   rectangle('Retângulo');
 

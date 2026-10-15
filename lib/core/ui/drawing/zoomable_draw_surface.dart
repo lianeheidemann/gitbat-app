@@ -5,6 +5,20 @@ import 'package:flutter/material.dart';
 /// pixels.
 const _maxZoom = 8.0;
 
+/// Zoom e deslocamento de uma [ZoomableDrawSurface]. Passar o mesmo
+/// controlador a duas superfícies da mesma imagem (o Pincel e a Borracha
+/// mágica, na mesma aba) mantém o enquadramento ao trocar de ferramenta.
+class DrawZoomController extends ValueNotifier<({double zoom, Offset pan})> {
+  DrawZoomController() : super((zoom: 1, pan: Offset.zero));
+
+  /// `true` quando a imagem está ampliada ou deslocada — é quando vale
+  /// mostrar o botão "Enquadrar".
+  bool get isZoomed => value.zoom > 1.001 || value.pan != Offset.zero;
+
+  /// Volta ao enquadramento inteiro.
+  void reset() => value = (zoom: 1, pan: Offset.zero);
+}
+
 /// O que desenhar na superfície: a imagem e, por cima, o traço em andamento
 /// [drawing] (em unidades da origem, `null` sem dedo na tela). [scale] leva
 /// unidades da origem para a caixa, antes do zoom — quem pinta por cima
@@ -38,6 +52,7 @@ class ZoomableDrawSurface extends StatefulWidget {
     required this.onStrokeEnd,
     this.enabled = true,
     this.onZoomChanged,
+    this.zoom,
   });
 
   final double sourceWidth;
@@ -57,13 +72,21 @@ class ZoomableDrawSurface extends StatefulWidget {
   /// acontece no estado deste widget, que a tela não observa.
   final ValueChanged<bool>? onZoomChanged;
 
+  /// Enquadramento compartilhado com outra superfície; sem ele, cada uma
+  /// guarda o próprio.
+  final DrawZoomController? zoom;
+
   @override
   State<ZoomableDrawSurface> createState() => ZoomableDrawSurfaceState();
 }
 
 class ZoomableDrawSurfaceState extends State<ZoomableDrawSurface> {
-  double _zoom = 1;
-  Offset _pan = Offset.zero;
+  DrawZoomController? _ownZoom;
+  late DrawZoomController _controller;
+  late bool _wasZoomed;
+
+  double get _zoom => _controller.value.zoom;
+  Offset get _pan => _controller.value.pan;
 
   /// Traço sendo desenhado agora, em unidades da origem.
   List<Offset>? _drawing;
@@ -75,29 +98,55 @@ class ZoomableDrawSurfaceState extends State<ZoomableDrawSurface> {
   Offset _focalAtGestureStart = Offset.zero;
   bool _transforming = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _attach(widget.zoom);
+  }
+
+  @override
+  void didUpdateWidget(ZoomableDrawSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.zoom != widget.zoom) {
+      _controller.removeListener(_onZoom);
+      _attach(widget.zoom);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onZoom);
+    _ownZoom?.dispose();
+    super.dispose();
+  }
+
+  void _attach(DrawZoomController? shared) {
+    _controller = shared ?? (_ownZoom ??= DrawZoomController());
+    _wasZoomed = _controller.isZoomed;
+    _controller.addListener(_onZoom);
+  }
+
+  /// Redesenha a cada mudança de enquadramento (venha ela daqui ou da outra
+  /// superfície que divide o controlador) e avisa a tela só quando o estado
+  /// "ampliado ou não" realmente virou.
+  void _onZoom() {
+    if (!mounted) return;
+    setState(() {});
+    final zoomed = _controller.isZoomed;
+    if (zoomed != _wasZoomed) {
+      _wasZoomed = zoomed;
+      widget.onZoomChanged?.call(zoomed);
+    }
+  }
+
   /// `true` quando a superfície está ampliada — a tela usa isso para mostrar
   /// o botão de voltar ao enquadramento.
-  bool get isZoomed => _zoom > 1.001 || _pan != Offset.zero;
+  bool get isZoomed => _controller.isZoomed;
 
-  void resetZoom() {
-    if (!isZoomed) return;
-    setState(() {
-      _zoom = 1;
-      _pan = Offset.zero;
-    });
-    widget.onZoomChanged?.call(false);
-  }
+  void resetZoom() => _controller.reset();
 
-  /// Aplica um novo enquadramento e avisa a tela só quando o estado
-  /// "ampliado ou não" realmente virou.
-  void _setZoom(double zoom, Offset pan) {
-    final was = isZoomed;
-    setState(() {
-      _zoom = zoom;
-      _pan = pan;
-    });
-    if (isZoomed != was) widget.onZoomChanged?.call(isZoomed);
-  }
+  void _setZoom(double zoom, Offset pan) =>
+      _controller.value = (zoom: zoom, pan: pan);
 
   /// Escala entre a origem e a caixa (antes do zoom).
   double _baseScale(Size box) => box.width / widget.sourceWidth;

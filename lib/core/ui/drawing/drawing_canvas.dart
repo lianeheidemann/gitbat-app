@@ -21,6 +21,7 @@ class DrawingCanvas extends StatefulWidget {
     required this.contentBuilder,
     this.enabled = true,
     this.onZoomChanged,
+    this.zoom,
   });
 
   /// Tamanho da imagem de origem (pixels da foto, ou o tamanho de exibição
@@ -43,6 +44,9 @@ class DrawingCanvas extends StatefulWidget {
 
   /// Ver [ZoomableDrawSurface.onZoomChanged].
   final ValueChanged<bool>? onZoomChanged;
+
+  /// Ver [ZoomableDrawSurface.zoom].
+  final DrawZoomController? zoom;
 
   @override
   State<DrawingCanvas> createState() => DrawingCanvasState();
@@ -68,6 +72,7 @@ class DrawingCanvasState extends State<DrawingCanvas> {
       sourceHeight: widget.sourceHeight,
       enabled: widget.enabled,
       onZoomChanged: widget.onZoomChanged,
+      zoom: widget.zoom,
       onStrokeEnd: (points) => widget.onStroke(_strokeFrom(points)),
       builder: (context, drawing, _) => widget.contentBuilder(
         drawing == null || drawing.isEmpty
