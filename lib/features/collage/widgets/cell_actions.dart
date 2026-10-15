@@ -7,8 +7,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/crop_rect.dart';
+import '../../../core/models/drawing_layer.dart';
 import '../../../core/ui/color_adjust_controls.dart';
 import '../../../core/ui/crop/photo_crop_page.dart';
+import '../../../core/ui/drawing/photo_draw_page.dart';
 import '../models/collage_layout.dart';
 import '../models/collage_cell.dart';
 import '../models/collage_defaults.dart';
@@ -17,7 +19,7 @@ import 'panels/collage_panel_actions.dart';
 
 /// Ações de uma célula da montagem: o menu de contexto e o que cada item
 /// dele faz — substituir a foto, trocar com outra célula, recortar, ajustar
-/// cor, girar, espelhar, recentralizar e remover a foto.
+/// cor, desenhar (Pincel), girar, espelhar, recentralizar e remover a foto.
 ///
 /// [settings] é um getter, não um valor: as folhas abertas aqui sobrevivem a
 /// vários rebuilds e releem as configurações a cada um — a de ajuste de cor
@@ -139,6 +141,20 @@ void openCollageCellMenu(
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   openCellColorAdjust(
+                    index,
+                    context,
+                    settings: settings,
+                    actions: actions,
+                  );
+                },
+              ),
+              ListTile(
+                key: const ValueKey('drawOnCollagePhoto'),
+                leading: const Icon(Icons.brush_rounded),
+                title: Text(tr('Pincel', 'Brush')),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  openCellDrawing(
                     index,
                     context,
                     settings: settings,
@@ -279,6 +295,8 @@ Future<void> pickPhotoForCell(
             photoWidth: width,
             photoHeight: height,
             clearManualCrop: true,
+            // O desenho era da foto que saiu.
+            drawing: DrawingLayer.empty,
           )
           .resetFraming(),
     );
@@ -410,6 +428,66 @@ void openCellColorAdjust(
       );
     },
   );
+}
+
+/// Abre o Pincel em tela cheia para a foto da célula [index]. O desenho fica
+/// preso à foto e volta como um passo de desfazer só, como o "Recortar".
+///
+/// Numa foto animada (GIF/WebP) a Transparência não é oferecida: o desenho
+/// sai igual em todos os quadros, e furar uma animação quadro a quadro é
+/// complexidade que ninguém pediu.
+Future<void> openCellDrawing(
+  int index,
+  BuildContext context, {
+  required CollageSettings Function() settings,
+  required CollagePanelActions actions,
+}) async {
+  final cell = settings().cells[index];
+  final path = cell.photoPath;
+  if (path == null) return;
+  final animated = await _isAnimated(path);
+  if (!context.mounted) return;
+  final drawing = await Navigator.of(context).push<DrawingLayer>(
+    MaterialPageRoute(
+      builder: (_) => PhotoDrawPage(
+        photoPath: path,
+        photoWidth: cell.photoWidth,
+        photoHeight: cell.photoHeight,
+        initialDrawing: cell.drawing,
+        allowTransparency: !animated,
+        colorFilter: cell.hasColorAdjustments ? cell.colorFilter : null,
+      ),
+    ),
+  );
+  if (drawing == null || !context.mounted) return;
+  // O desenho é da foto: só entra se a célula ainda tiver a mesma.
+  final current = settings();
+  if (index >= current.cells.length || current.cells[index].photoPath != path) {
+    return;
+  }
+  actions.pushUndoCheckpoint();
+  actions.update(
+    current.replacingCell(
+      index,
+      current.cells[index].copyWith(drawing: drawing),
+    ),
+    pushUndo: false,
+  );
+}
+
+/// `true` para GIF/WebP com mais de um quadro — a mesma checagem de
+/// `frameCount` da exportação. Na dúvida (arquivo ilegível), parada.
+Future<bool> _isAnimated(String path) async {
+  try {
+    final codec = await ui.instantiateImageCodec(
+      await File(path).readAsBytes(),
+    );
+    final animated = codec.frameCount > 1;
+    codec.dispose();
+    return animated;
+  } catch (_) {
+    return false;
+  }
 }
 
 /// Mais um quarto de volta a partir de onde a foto já estiver — continua

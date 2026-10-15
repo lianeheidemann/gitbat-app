@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitbat/core/ui/drawing/drawing_canvas.dart';
+import 'package:gitbat/core/ui/drawing/photo_draw_page.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gitbat/features/collage/models/collage_background.dart';
@@ -511,6 +513,48 @@ void main() {
     // Começa no brilho, com a régua no zero.
     expect(find.text('0'), findsOneWidget);
     expect(find.text('Brilho'), findsWidgets);
+  });
+
+  testWidgets('"Pincel" no "..." desenha na foto e volta num passo só', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(home: CollagePage(photos: photos)));
+    await tester.pumpAndSettle();
+
+    await _selectFirstPhoto(tester);
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byIcon(Icons.more_horiz_rounded).first),
+    );
+    await tester.pump(const Duration(milliseconds: 60));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('drawOnCollagePhoto')));
+    // Ler a foto (parada ou animada?) é E/S de verdade.
+    await _pumpUntilFound(tester, find.byType(PhotoDrawPage));
+    await tester.pumpAndSettle();
+    expect(find.byType(PhotoDrawPage), findsOneWidget);
+
+    final center = tester.getCenter(find.byType(DrawingCanvas));
+    await tester.dragFrom(center, const Offset(60, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('photoDrawDone')));
+    await tester.pumpAndSettle();
+
+    CollageCellSettings first() => tester
+        .widgetList<CollageCellView>(find.byType(CollageCellView))
+        .first
+        .cell;
+    expect(first().drawing.strokes, hasLength(1));
+
+    await tester.tap(find.byTooltip('Desfazer'));
+    await tester.pumpAndSettle();
+    expect(first().drawing.isEmpty, isTrue);
   });
 
   testWidgets('duplo toque num ícone de "Ajustar cor" zera só aquele ajuste', (
