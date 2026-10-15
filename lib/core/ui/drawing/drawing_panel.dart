@@ -83,7 +83,7 @@ class DrawingPanel extends StatelessWidget {
   final List<DrawingPanelExtraTool> extraTools;
 
   /// Os controles da ferramenta extra escolhida, no lugar dos do pincel
-  /// (dica, cor, opacidade, tamanho e limpar). Só vale com uma extra
+  /// (cor, opacidade, tamanho e limpar). Só vale com uma extra
   /// escolhida.
   final Widget? body;
 
@@ -101,21 +101,6 @@ class DrawingPanel extends StatelessWidget {
         ),
       };
 
-  static String _hintFor(DrawingTool tool) => switch (tool) {
-    DrawingTool.pen => tr(
-      'Um dedo desenha; dois dedos dão zoom.',
-      'One finger draws; two fingers zoom.',
-    ),
-    DrawingTool.eraser => tr(
-      'Apaga só os traços do pincel — a imagem fica intacta.',
-      'Erases only brush strokes — the image stays intact.',
-    ),
-    DrawingTool.cutout => tr(
-      'Apaga a própria imagem, deixando-a transparente.',
-      'Erases the image itself, making it transparent.',
-    ),
-  };
-
   /// O slider anda em [0, 1] e o tamanho cresce pelo quadrado: a ponta fina,
   /// onde um décimo de ponto faz diferença, ganha mais curso que a grossa.
   static double _percentFor(double t) =>
@@ -130,7 +115,6 @@ class DrawingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final pixels = math.max(
       1,
       (brush.sizePercent * sourceShortestSide / 100).round(),
@@ -188,13 +172,7 @@ class DrawingPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         toolRow,
-        const SizedBox(height: 6),
-        Text(
-          _hintFor(tool),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        const SizedBox(height: 4),
         if (tool == DrawingTool.pen) ...[
           PanelColorRow(
             key: const ValueKey('drawingColorRow'),

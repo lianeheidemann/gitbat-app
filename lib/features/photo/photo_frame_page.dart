@@ -1149,18 +1149,6 @@ class _PhotoFramePageState extends State<PhotoFramePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          tr(
-            'Marque o que quer remover e toque em Apagar: o fundo é '
-                'reconstruído. Os traços do pincel ficam.',
-            'Mark what to remove and tap Erase: the background is rebuilt. '
-                'Brush strokes stay.',
-          ),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
