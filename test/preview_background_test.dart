@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gitbat/app/preview_background_controller.dart';
 import 'package:gitbat/core/ui/checkerboard_background.dart';
 
@@ -39,5 +40,29 @@ void main() {
     previewCheckerboardNotifier.value = false;
     await tester.pump();
     expect(find.byType(CheckerboardBackground), findsNothing);
+  });
+
+  group('preferência', () {
+    tearDown(() => previewCheckerboardNotifier.value = true);
+
+    test('sem nada salvo, o xadrez vem ligado', () async {
+      SharedPreferences.setMockInitialValues({});
+      previewCheckerboardNotifier.value = false;
+      await loadPreviewCheckerboardPreference();
+      expect(previewCheckerboardNotifier.value, isTrue);
+    });
+
+    test('quem desligou continua desligado na próxima abertura', () async {
+      SharedPreferences.setMockInitialValues({});
+      await setPreviewCheckerboardEnabled(false);
+      previewCheckerboardNotifier.value = true;
+      await loadPreviewCheckerboardPreference();
+      expect(previewCheckerboardNotifier.value, isFalse);
+
+      await setPreviewCheckerboardEnabled(true);
+      previewCheckerboardNotifier.value = false;
+      await loadPreviewCheckerboardPreference();
+      expect(previewCheckerboardNotifier.value, isTrue);
+    });
   });
 }
