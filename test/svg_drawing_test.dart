@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui' show Color, Offset;
 
-import 'package:flutter/material.dart' show MaterialApp, Size;
+import 'package:flutter/material.dart' show MaterialApp, Size, ValueKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitbat/core/models/crop_rect.dart';
 import 'package:gitbat/core/models/drawing_layer.dart';
@@ -218,7 +218,10 @@ void main() {
       await tester.tap(find.text('Pincel'));
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(OptionPillButton, 'Pincel'), findsOneWidget);
+      // Um grupo só (o Pincel): sem linha de ferramentas, direto na escolha
+      // Pintar / Borracha.
+      expect(find.byKey(const ValueKey('drawingToolRow')), findsNothing);
+      expect(find.widgetWithText(OptionPillButton, 'Pintar'), findsOneWidget);
       expect(find.widgetWithText(OptionPillButton, 'Borracha'), findsOneWidget);
       expect(
         find.widgetWithText(OptionPillButton, 'Transparência'),

@@ -60,7 +60,8 @@ class DrawingPanel extends StatelessWidget {
   final ValueChanged<DrawingBrush> onBrushChanged;
 
   /// As ferramentas oferecidas aqui: [DrawingTool.cutout] só entra numa foto
-  /// parada.
+  /// parada. [DrawingTool.pen] e [DrawingTool.eraser] formam o grupo
+  /// "Pincel" (a Borracha é uma subopção dele, "Pintar" / "Borracha").
   final List<DrawingTool> tools;
 
   /// Menor lado da imagem de origem, para o tamanho aparecer em pixels dela.
@@ -79,7 +80,7 @@ class DrawingPanel extends StatelessWidget {
   /// Ferramentas a mais, depois das de traço, na mesma linha. Com uma delas
   /// escolhida ([DrawingPanelExtraTool.selected]), nenhuma de traço aparece
   /// marcada, e tocar numa de traço chega por [onBrushChanged] — quem chama
-  /// desliga a extra ali.
+  /// desliga a extra ali. Voltar ao Pincel também.
   final List<DrawingPanelExtraTool> extraTools;
 
   /// Os controles da ferramenta extra escolhida, no lugar dos do pincel
@@ -125,15 +126,33 @@ class DrawingPanel extends StatelessWidget {
     );
     final tool = tools.contains(brush.tool) ? brush.tool : tools.first;
     final extraActive = extraTools.any((t) => t.selected);
-    final buttons = [
-      for (final option in tools)
+
+    // A Borracha só apaga o que o Pincel pintou, então é uma subopção dele
+    // (Pintar / Borracha) e não uma ferramenta ao lado. A linha de cima tem
+    // os grupos: Pincel, Transparência e as extras.
+    final inPencil = tool == DrawingTool.pen || tool == DrawingTool.eraser;
+    final hasEraser = tools.contains(DrawingTool.eraser);
+    final groups = [
+      OptionPillButton(
+        key: const ValueKey('drawingTool-pen'),
+        label: DrawingTool.pen.label,
+        iconBuilder: (color, size) => iconFor(DrawingTool.pen, color, size),
+        selected: !extraActive && inPencil,
+        // Voltar ao Pincel volta ao modo em que ele estava (Pintar ou
+        // Borracha), e tira a ferramenta extra de cena.
+        onPressed: enabled
+            ? () => onBrushChanged(brush.copyWith(tool: brush.pencilMode))
+            : null,
+      ),
+      if (tools.contains(DrawingTool.cutout))
         OptionPillButton(
-          key: ValueKey('drawingTool-${option.name}'),
-          label: option.label,
-          iconBuilder: (color, size) => iconFor(option, color, size),
-          selected: !extraActive && tool == option,
+          key: const ValueKey('drawingTool-cutout'),
+          label: DrawingTool.cutout.label,
+          iconBuilder: (color, size) =>
+              iconFor(DrawingTool.cutout, color, size),
+          selected: !extraActive && tool == DrawingTool.cutout,
           onPressed: enabled
-              ? () => onBrushChanged(brush.copyWith(tool: option))
+              ? () => onBrushChanged(brush.copyWith(tool: DrawingTool.cutout))
               : null,
         ),
       for (final extra in extraTools)
@@ -145,33 +164,79 @@ class DrawingPanel extends StatelessWidget {
           onPressed: enabled ? extra.onSelected : null,
         ),
     ];
-    // Uma linha só, rolando na horizontal: quatro ferramentas não cabem numa
-    // tela de 360dp, e quebrar em duas linhas comeria a altura do painel.
-    final toolRow = SingleChildScrollView(
-      key: const ValueKey('drawingToolRow'),
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final (i, button) in buttons.indexed) ...[
-            if (i > 0) const SizedBox(width: 8),
-            button,
-          ],
-        ],
-      ),
-    );
+    // Uma linha só, rolando na horizontal: com a Borracha mágica os grupos
+    // não cabem numa tela de 360dp, e quebrar em duas linhas comeria a
+    // altura do painel. Um grupo sozinho (SVG, foto animada) não precisa de
+    // linha: só a escolha de Pintar / Borracha.
+    final Widget? toolRow = groups.length < 2
+        ? null
+        : SingleChildScrollView(
+            key: const ValueKey('drawingToolRow'),
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final (i, button) in groups.indexed) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  button,
+                ],
+              ],
+            ),
+          );
+
+    // Pintar / Borracha, repartidos em partes iguais como um seletor de
+    // modo, só com o Pincel escolhido.
+    final Widget? modeRow = (!extraActive && inPencil && hasEraser)
+        ? Row(
+            key: const ValueKey('drawingModeRow'),
+            children: [
+              Expanded(
+                child: OptionPillButton(
+                  key: const ValueKey('drawingMode-pen'),
+                  label: tr('Pintar', 'Paint'),
+                  iconBuilder: (color, size) =>
+                      iconFor(DrawingTool.pen, color, size),
+                  selected: tool == DrawingTool.pen,
+                  expand: true,
+                  onPressed: enabled
+                      ? () => onBrushChanged(
+                          brush.copyWith(tool: DrawingTool.pen),
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OptionPillButton(
+                  key: const ValueKey('drawingMode-eraser'),
+                  label: DrawingTool.eraser.label,
+                  iconBuilder: (color, size) =>
+                      iconFor(DrawingTool.eraser, color, size),
+                  selected: tool == DrawingTool.eraser,
+                  expand: true,
+                  onPressed: enabled
+                      ? () => onBrushChanged(
+                          brush.copyWith(tool: DrawingTool.eraser),
+                        )
+                      : null,
+                ),
+              ),
+            ],
+          )
+        : null;
 
     final extraBody = body;
     if (extraActive && extraBody != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [toolRow, const SizedBox(height: 8), extraBody],
+        children: [?toolRow, const SizedBox(height: 8), extraBody],
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        toolRow,
+        if (toolRow != null) ...[toolRow, const SizedBox(height: 8)],
+        ?modeRow,
         const SizedBox(height: 4),
         if (tool == DrawingTool.pen) ...[
           PanelColorRow(

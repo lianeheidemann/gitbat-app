@@ -53,6 +53,15 @@ void main() {
       expect(stroke.widthIn(const Size(400, 200)), closeTo(4, 1e-9));
       expect(stroke.pointsIn(const Size(400, 200)), [const Offset(40, 40)]);
 
+      // O grupo Pincel lembra o último modo (Pintar ou Borracha) enquanto
+      // outra ferramenta está em uso.
+      expect(brush.pencilMode, DrawingTool.pen);
+      final erasing = brush.copyWith(tool: DrawingTool.eraser);
+      expect(erasing.pencilMode, DrawingTool.eraser);
+      final cut = erasing.copyWith(tool: DrawingTool.cutout);
+      expect(cut.pencilMode, DrawingTool.eraser);
+      expect(cut.copyWith(tool: cut.pencilMode).tool, DrawingTool.eraser);
+
       // Cada ferramenta tem o próprio tamanho.
       final eraser = brush.copyWith(tool: DrawingTool.eraser);
       expect(eraser.sizePercent, brush.eraserPercent);

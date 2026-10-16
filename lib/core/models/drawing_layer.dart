@@ -127,6 +127,7 @@ class DrawingBrush {
     this.opacity = 1,
     this.penPercent = 1.5,
     this.eraserPercent = 5,
+    this.pencilMode = DrawingTool.pen,
   });
 
   /// Limites do tamanho, em % do menor lado da imagem.
@@ -144,6 +145,12 @@ class DrawingBrush {
   final double penPercent;
   final double eraserPercent;
 
+  /// O último modo do grupo "Pincel" — [DrawingTool.pen] (Pintar) ou
+  /// [DrawingTool.eraser] (Borracha, que só apaga o que o pincel pintou e
+  /// por isso é uma subopção dele). Voltar ao Pincel depois da Transparência
+  /// ou da Borracha mágica volta a ele.
+  final DrawingTool pencilMode;
+
   double get sizePercent =>
       tool == DrawingTool.pen ? penPercent : eraserPercent;
 
@@ -153,13 +160,19 @@ class DrawingBrush {
     double? opacity,
     double? penPercent,
     double? eraserPercent,
-  }) => DrawingBrush(
-    tool: tool ?? this.tool,
-    color: color ?? this.color,
-    opacity: opacity ?? this.opacity,
-    penPercent: penPercent ?? this.penPercent,
-    eraserPercent: eraserPercent ?? this.eraserPercent,
-  );
+  }) {
+    final next = tool ?? this.tool;
+    return DrawingBrush(
+      tool: next,
+      color: color ?? this.color,
+      opacity: opacity ?? this.opacity,
+      penPercent: penPercent ?? this.penPercent,
+      eraserPercent: eraserPercent ?? this.eraserPercent,
+      pencilMode: next == DrawingTool.pen || next == DrawingTool.eraser
+          ? next
+          : pencilMode,
+    );
+  }
 
   /// Novo tamanho para a ferramenta em uso.
   DrawingBrush withSizePercent(double percent) => tool == DrawingTool.pen

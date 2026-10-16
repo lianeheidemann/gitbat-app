@@ -163,23 +163,29 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('as quatro ferramentas: transparência e Borracha mágica', (
-      tester,
-    ) async {
+    testWidgets('três grupos na linha de cima, com a Borracha dentro do '
+        'Pincel', (tester) async {
       await pumpPage(tester);
       expect(find.byType(DrawingCanvas), findsOneWidget);
-      for (final label in [
-        'Pincel',
-        'Borracha',
-        'Transparência',
-        'Borracha mágica',
-      ]) {
+      // Pincel, Transparência e Borracha mágica; a Borracha não é um deles.
+      for (final label in ['Pincel', 'Transparência', 'Borracha mágica']) {
         expect(find.widgetWithText(OptionPillButton, label), findsOneWidget);
       }
-      // A borracha de traços tem o ícone desenhado de borracha.
+      final row = find.byKey(const ValueKey('drawingToolRow'));
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('drawingTool-eraser')),
+          of: row,
+          matching: find.widgetWithText(OptionPillButton, 'Borracha'),
+        ),
+        findsNothing,
+      );
+      // Já a subopção Pintar / Borracha aparece com o Pincel escolhido, e a
+      // Borracha tem o ícone desenhado de borracha.
+      expect(find.widgetWithText(OptionPillButton, 'Pintar'), findsOneWidget);
+      expect(find.widgetWithText(OptionPillButton, 'Borracha'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('drawingMode-eraser')),
           matching: find.byType(EraserGlyph),
         ),
         findsOneWidget,
@@ -187,6 +193,40 @@ void main() {
       // A foto aparece inteira, na orientação dela.
       expect(canvas(tester).sourceWidth, 100);
       expect(canvas(tester).sourceHeight, 100);
+    });
+
+    Future<void> tapKey(WidgetTester tester, String key) async {
+      final finder = find.byKey(ValueKey(key));
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a Borracha é subopção do Pincel: some nos outros grupos e '
+        'volta ao modo em que estava', (tester) async {
+      await pumpPage(tester);
+      await tapKey(tester, 'drawingMode-eraser');
+      await drawStroke(tester);
+      expect(canvas(tester).layer.strokes.single.tool, DrawingTool.eraser);
+
+      // Transparência e Borracha mágica não têm Pintar / Borracha.
+      await tapKey(tester, 'drawingTool-cutout');
+      expect(find.byKey(const ValueKey('drawingModeRow')), findsNothing);
+      await tapKey(tester, 'drawingTool-magicEraser');
+      expect(find.byKey(const ValueKey('drawingModeRow')), findsNothing);
+
+      // Voltar ao Pincel traz de volta a Borracha, que era o modo dele.
+      await tapKey(tester, 'drawingTool-pen');
+      expect(find.byKey(const ValueKey('drawingModeRow')), findsOneWidget);
+      final eraser = tester.widget<OptionPillButton>(
+        find.byKey(const ValueKey('drawingMode-eraser')),
+      );
+      expect(eraser.selected, isTrue);
+      // Cor e opacidade são só do Pintar.
+      expect(find.byKey(const ValueKey('drawingColorRow')), findsNothing);
+      await tapKey(tester, 'drawingMode-pen');
+      expect(find.byKey(const ValueKey('drawingColorRow')), findsOneWidget);
     });
 
     testWidgets('arrastar desenha um traço, e desfazer o tira', (tester) async {

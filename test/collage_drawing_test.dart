@@ -196,7 +196,7 @@ void main() {
 
     testWidgets('foto animada: sem transparência', (tester) async {
       await pump(tester, transparency: false);
-      expect(find.widgetWithText(OptionPillButton, 'Pincel'), findsOneWidget);
+      expect(find.widgetWithText(OptionPillButton, 'Pintar'), findsOneWidget);
       expect(find.widgetWithText(OptionPillButton, 'Borracha'), findsOneWidget);
       expect(
         find.widgetWithText(OptionPillButton, 'Transparência'),
