@@ -10,6 +10,7 @@ import '../../../core/models/collage_sticker.dart';
 import '../../../core/models/collage_text.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/crop_rect.dart';
+import '../../../core/models/drawing_layer.dart';
 import '../../../core/models/frame_settings.dart';
 import '../../../core/models/photo_placement.dart';
 import '../models/svg_edit_settings.dart';
@@ -153,6 +154,145 @@ XmlElement ensureContentGroup(XmlElement root) {
   group.children.addAll(moved);
   root.children.add(group);
   return group;
+}
+
+/// Acrescenta o desenho da aba "Pincel" ao grupo de conteúdo de [root],
+/// por cima da arte, em coordenadas do `viewBox` original — por isso tem que
+/// rodar **antes** do recorte: daí em diante o desenho é só mais conteúdo,
+/// e recorte, giro, espelho, filtro, opacidade, posição e borda o alcançam
+/// pelos mesmos caminhos, como na prévia (onde ele é desenhado por cima do
+/// `SvgPicture`, dentro das mesmas transformações).
+///
+/// Continua vetor: cada traço vira um `<path>` (ou um `<circle>`, de um
+/// toque só) com pontas e junções redondas, a mesma geometria de
+/// `paintDrawingStroke`. A borracha vira `<mask>`: como ela só apaga o que
+/// foi pintado **antes** dela, cada trecho entre borrachas ganha um grupo
+/// próprio, aninhado — `((p1 p2) − b1, p3) − b2, p4` —, a mesma ordem do
+/// `BlendMode.clear` da prévia. Traços de transparência não existem no SVG
+/// e são ignorados.
+void applyDrawingSvg(
+  XmlElement root,
+  SvgGeometry geometry,
+  DrawingLayer drawing,
+) {
+  if (!drawing.hasPaint) return;
+  final group = ensureContentGroup(root);
+  // Um `transform` que a raiz tinha passou para o grupo de conteúdo (este
+  // passo é o primeiro, então não há outro); o desenho é medido no
+  // `viewBox` e não pode herdá-lo. A arte original vai para um grupo
+  // interno com esse `transform`.
+  final inherited = group.getAttribute('transform');
+  if (inherited != null) {
+    final inner = XmlElement.tag('g')..setAttribute('transform', inherited);
+    inner.children.addAll(group.children.map((n) => n.copy()));
+    group.children
+      ..clear()
+      ..add(inner);
+    group.removeAttribute('transform');
+  }
+
+  final vbX = geometry.viewBoxX;
+  final vbY = geometry.viewBoxY;
+  final vbW = geometry.viewBoxWidth;
+  final vbH = geometry.viewBoxHeight;
+  final unit =
+      math.min(geometry.attrWidth, geometry.attrHeight) *
+      (geometry.scaleX + geometry.scaleY) /
+      2;
+
+  XmlElement shape(DrawingStroke stroke, Color color) {
+    final points = [
+      for (final p in stroke.points) Offset(vbX + p.dx * vbW, vbY + p.dy * vbH),
+    ];
+    final width = stroke.widthRatio * unit;
+    final opacity = color.a;
+    if (points.length == 1) {
+      final circle = XmlElement.tag('circle')
+        ..setAttribute('cx', _num(points.first.dx))
+        ..setAttribute('cy', _num(points.first.dy))
+        ..setAttribute('r', _num(width / 2))
+        ..setAttribute('fill', _colorToHex(color));
+      if (opacity < 1) circle.setAttribute('fill-opacity', _num(opacity));
+      return circle;
+    }
+    final d = StringBuffer(
+      'M${_num(points.first.dx)} ${_num(points.first.dy)}',
+    );
+    for (final p in points.skip(1)) {
+      d.write('L${_num(p.dx)} ${_num(p.dy)}');
+    }
+    final path = XmlElement.tag('path')
+      ..setAttribute('d', d.toString())
+      ..setAttribute('fill', 'none')
+      ..setAttribute('stroke', _colorToHex(color))
+      ..setAttribute('stroke-width', _num(width))
+      ..setAttribute('stroke-linecap', 'round')
+      ..setAttribute('stroke-linejoin', 'round');
+    if (opacity < 1) path.setAttribute('stroke-opacity', _num(opacity));
+    return path;
+  }
+
+  final masks = <XmlElement>[];
+  var painted = <XmlElement>[];
+  XmlElement? openMask;
+  void closeMask() {
+    final mask = openMask;
+    if (mask == null) return;
+    painted = [
+      XmlElement.tag('g')
+        ..setAttribute('mask', 'url(#${mask.getAttribute('id')})')
+        ..children.addAll(painted),
+    ];
+    openMask = null;
+  }
+
+  for (final stroke in drawing.strokes) {
+    switch (stroke.tool) {
+      case DrawingTool.pen:
+        closeMask();
+        painted.add(shape(stroke, stroke.color));
+      case DrawingTool.eraser:
+        // Borracha antes de qualquer pintura não tem o que apagar.
+        if (painted.isEmpty) continue;
+        // Borrachas seguidas dividem a mesma máscara.
+        openMask ??= () {
+          final mask = XmlElement.tag('mask')
+            ..setAttribute('id', 'svgedit-draw-mask-${masks.length}')
+            ..setAttribute('maskUnits', 'userSpaceOnUse')
+            ..setAttribute('x', _num(vbX))
+            ..setAttribute('y', _num(vbY))
+            ..setAttribute('width', _num(vbW))
+            ..setAttribute('height', _num(vbH));
+          mask.children.add(
+            XmlElement.tag('rect')
+              ..setAttribute('x', _num(vbX))
+              ..setAttribute('y', _num(vbY))
+              ..setAttribute('width', _num(vbW))
+              ..setAttribute('height', _num(vbH))
+              ..setAttribute('fill', '#ffffff'),
+          );
+          masks.add(mask);
+          return mask;
+        }();
+        openMask!.children.add(shape(stroke, const Color(0xFF000000)));
+      case DrawingTool.cutout:
+        continue;
+    }
+  }
+  closeMask();
+
+  if (masks.isNotEmpty) {
+    root.children.add(
+      XmlElement.tag('defs')
+        ..setAttribute('$_marker-drawing', '1')
+        ..children.addAll(masks),
+    );
+  }
+  group.children.add(
+    XmlElement.tag('g')
+      ..setAttribute('$_marker-drawing', '1')
+      ..children.addAll(painted),
+  );
 }
 
 /// Reescreve o `viewBox` de [root] para a sub-região [cropDisplayRect] (em
@@ -681,7 +821,8 @@ XmlElement? _nestedStickerSvg(String source, String prefix) {
 /// Aplica [settings] inteiro sobre [originalSource] (sempre a partir do XML
 /// original — nunca reedita um documento já editado numa chamada anterior,
 /// pra desfazer/refazer nunca acumular grupos/transforms obsoletos) e
-/// devolve o SVG resultante como texto. Ordem fixa: recorte → girar →
+/// devolve o SVG resultante como texto. Ordem fixa: desenho do Pincel
+/// ([applyDrawingSvg]) → recorte → girar →
 /// espelhar → fundo → filtro (ajuste fino + preset, nessa ordem — ver
 /// [applyFilterSvg]) → opacidade → textos ([applyTextsSvg]).
 String renderEditedSvg(
@@ -716,6 +857,8 @@ String renderEditedSvg(
     }
 
     final geometry = readSvgGeometry(root, info);
+    // Antes do recorte: o desenho é medido no `viewBox` original.
+    applyDrawingSvg(root, geometry, settings.drawing);
     final crop = settings.crop;
     if (crop != null) {
       cropSvg(root, geometry, crop);

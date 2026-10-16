@@ -7,7 +7,7 @@ import 'package:gitbat/features/photo/models/eraser_mask.dart';
 import 'package:gitbat/core/models/photo_info.dart';
 import 'package:gitbat/features/photo/photo_frame_page.dart';
 import 'package:gitbat/features/photo/widgets/eraser_mask_overlay.dart';
-import 'package:gitbat/features/photo/widgets/eraser_option_button.dart';
+import 'package:gitbat/core/ui/option_pill_button.dart';
 
 Future<void> _writeSolidPng(String path, int width, int height) async {
   final recorder = ui.PictureRecorder();
@@ -50,9 +50,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Abre a aba da borracha tocando no rótulo curto do rodapé.
+  /// Abre a Borracha mágica: a aba "Pincel" do rodapé e, nela, a quarta
+  /// ferramenta (a linha de ferramentas rola na horizontal).
   Future<void> openEraserTab(WidgetTester tester) async {
-    await tester.tap(find.text('Borracha'));
+    await tester.tap(find.text('Pincel'));
+    await tester.pumpAndSettle();
+    final magic = find.byKey(const ValueKey('drawingTool-magicEraser'));
+    await tester.ensureVisible(magic);
+    await tester.pumpAndSettle();
+    await tester.tap(magic);
     await tester.pumpAndSettle();
   }
 
@@ -83,19 +89,19 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('a aba existe e abre sem erro', (tester) async {
+  testWidgets('mora dentro do Pincel e abre sem erro', (tester) async {
     await pumpPage(tester);
+    // Não é mais uma aba própria do rodapé.
+    expect(find.text('Borracha'), findsNothing);
+    expect(find.text('Borracha mágica'), findsNothing);
     await openEraserTab(tester);
 
-    // O estado da seleção fica no selo do cabeçalho do painel.
+    // O estado da seleção fica no resumo da aba.
     expect(find.text('Nenhuma seleção'), findsOneWidget);
-    expect(find.widgetWithText(EraserOptionButton, 'Pincel'), findsOneWidget);
-    // "Apagar seleção" não está no mockup, mas continua no painel; os textos
-    // de ajuda saíram.
-    expect(
-      find.widgetWithText(EraserOptionButton, 'Apagar seleção'),
-      findsOneWidget,
-    );
+    // "Marcar" e "Desmarcar", para não repetir o "Pincel" de cima.
+    expect(find.widgetWithText(OptionPillButton, 'Marcar'), findsOneWidget);
+    expect(find.widgetWithText(OptionPillButton, 'Desmarcar'), findsOneWidget);
+    expect(find.widgetWithText(OptionPillButton, 'Pincel'), findsOneWidget);
     expect(find.textContaining('Mais qualidade demora mais'), findsNothing);
     expect(find.textContaining('Pinte o que quer'), findsNothing);
     expect(find.byType(EraserCanvas), findsOneWidget);
@@ -152,12 +158,12 @@ void main() {
     await pumpPage(tester);
     await openEraserTab(tester);
 
-    // Pincel: o tamanho importa.
+    // Marcar: o tamanho importa.
     expect(find.text('Tamanho do pincel'), findsOneWidget);
 
     await tapInPanel(
       tester,
-      find.widgetWithText(EraserOptionButton, 'Retângulo'),
+      find.widgetWithText(OptionPillButton, 'Retângulo'),
     );
 
     // Retângulo desenha área fechada — espessura não quer dizer nada.
@@ -172,7 +178,7 @@ void main() {
     await openEraserTab(tester);
     await tapInPanel(
       tester,
-      find.widgetWithText(EraserOptionButton, 'Retângulo'),
+      find.widgetWithText(OptionPillButton, 'Retângulo'),
     );
 
     await paintStroke(tester);
@@ -182,14 +188,14 @@ void main() {
     expect(stroke.points, hasLength(4));
   });
 
-  testWidgets('"Apagar seleção" marca o traço como subtrativo', (tester) async {
+  testWidgets('"Desmarcar" marca o traço como subtrativo', (tester) async {
     await pumpPage(tester);
     await openEraserTab(tester);
     await paintStroke(tester);
 
     await tapInPanel(
       tester,
-      find.widgetWithText(EraserOptionButton, 'Apagar seleção'),
+      find.widgetWithText(OptionPillButton, 'Desmarcar'),
     );
     await paintStroke(tester);
 
@@ -205,10 +211,10 @@ void main() {
     await pumpPage(tester);
     await openEraserTab(tester);
 
-    await tapInPanel(tester, find.widgetWithText(EraserOptionButton, 'Alta'));
+    await tapInPanel(tester, find.widgetWithText(OptionPillButton, 'Alta'));
 
-    final chip = tester.widget<EraserOptionButton>(
-      find.widgetWithText(EraserOptionButton, 'Alta'),
+    final chip = tester.widget<OptionPillButton>(
+      find.widgetWithText(OptionPillButton, 'Alta'),
     );
     expect(chip.selected, isTrue);
   });

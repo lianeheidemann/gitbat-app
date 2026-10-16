@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
-/// Botão de escolha do painel da borracha — ferramentas e qualidade.
+/// Botão de escolha dos painéis da Borracha mágica e do Pincel —
+/// ferramentas e qualidade.
 ///
 /// Substitui o [ChoiceChip]: o chip do Material 3 fixa altura, padding e
 /// fonte pelo tema, e o painel precisa das proporções do mockup (botões de
 /// 34dp, cantos de 10dp, rótulo de 13sp). O rótulo nunca vira reticências:
 /// numa célula estreita o conteúdo inteiro encolhe até caber.
-class EraserOptionButton extends StatelessWidget {
-  const EraserOptionButton({
+class OptionPillButton extends StatelessWidget {
+  const OptionPillButton({
     super.key,
     required this.label,
     required this.selected,
     required this.onPressed,
     this.icon,
+    this.iconBuilder,
     this.showCheck = false,
     this.expand = false,
   });
@@ -25,6 +27,11 @@ class EraserOptionButton extends StatelessWidget {
 
   /// Ícone à esquerda do rótulo, usado pelas ferramentas.
   final IconData? icon;
+
+  /// Ícone desenhado (em vez de [icon]), que recebe a cor e o tamanho do
+  /// estado atual — para os que não existem no pacote de ícones, como a
+  /// borracha do Pincel.
+  final Widget Function(Color color, double size)? iconBuilder;
 
   /// Mostra um ✓ à esquerda quando selecionado, como na linha de qualidade.
   final bool showCheck;
@@ -44,7 +51,9 @@ class EraserOptionButton extends StatelessWidget {
     final foreground = selected
         ? scheme.onPrimaryContainer
         : scheme.onSurfaceVariant;
-    final leading = showCheck && selected ? Icons.check_rounded : icon;
+    final check = showCheck && selected;
+    final leading = check ? Icons.check_rounded : icon;
+    final builder = check ? null : iconBuilder;
     // Com ✓ o escolhido é só cheio; nas ferramentas ganha também a borda.
     final BorderSide border;
     if (selected) {
@@ -62,7 +71,10 @@ class EraserOptionButton extends StatelessWidget {
     final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (leading != null) ...[
+        if (builder != null) ...[
+          builder(foreground, 16),
+          SizedBox(width: expand ? 4 : 6),
+        ] else if (leading != null) ...[
           Icon(leading, size: 16, color: foreground),
           SizedBox(width: expand ? 4 : 6),
         ],

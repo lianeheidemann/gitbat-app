@@ -4,6 +4,7 @@ import 'collage_sticker.dart';
 import 'collage_text.dart';
 import 'color_adjustments.dart';
 import 'crop_rect.dart';
+import 'drawing_layer.dart';
 import 'default_colors.dart';
 import 'image_frame.dart';
 import 'output_transform.dart';
@@ -122,6 +123,7 @@ class FrameSettings {
     this.frameQuarterTurns = 0,
     this.expandBackgroundColor = const Color(0xFF000000),
     this.placement = PhotoPlacement.identity,
+    this.drawing = DrawingLayer.empty,
   });
 
   final FrameStyle style;
@@ -233,6 +235,12 @@ class FrameSettings {
   /// foto: moldura, fundo e textos ficam onde estão.
   final PhotoPlacement placement;
 
+  /// O desenho da aba "Pincel" de "Editar imagem", preso à foto: os traços
+  /// são normalizados a ela inteira (antes do recorte), então acompanham o
+  /// recorte, a posição, o giro, a moldura e o ajuste de cor — ver
+  /// `drawing_painting.dart`. O vídeo não oferece a aba e nunca preenche.
+  final DrawingLayer drawing;
+
   /// O que girar/espelhar só o conteúdo, antes de encaixá-lo na janela da
   /// moldura de imagem: [outputTransform] quando há uma, nada quando não há.
   OutputTransform get contentTransform =>
@@ -330,6 +338,7 @@ class FrameSettings {
     int? frameQuarterTurns,
     Color? expandBackgroundColor,
     PhotoPlacement? placement,
+    DrawingLayer? drawing,
   }) {
     return FrameSettings(
       style: style ?? this.style,
@@ -352,6 +361,7 @@ class FrameSettings {
       expandBackgroundColor:
           expandBackgroundColor ?? this.expandBackgroundColor,
       placement: placement ?? this.placement,
+      drawing: drawing ?? this.drawing,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
 
+import '../../../core/painting/drawing_painting.dart';
 import '../models/collage_background.dart';
 import '../models/collage_cell.dart';
 import '../models/collage_settings.dart';
@@ -239,6 +240,19 @@ void paintCollageCell(
   final paint = Paint()
     ..filterQuality = FilterQuality.high
     ..colorFilter = cell.colorFilter;
+  // Com desenho do Pincel, a foto e os traços saem juntos de
+  // `paintDrawnImage` — o mesmo da prévia —, com o ajuste de cor valendo
+  // para os dois; sem ele, o caminho de sempre.
+  void drawPhoto(Rect src, Rect dst) => cell.drawing.isEmpty
+      ? canvas.drawImageRect(photoImage, src, dst, paint)
+      : paintDrawnImage(
+          canvas,
+          photoImage,
+          src,
+          dst,
+          cell.drawing,
+          colorFilter: cell.colorFilter,
+        );
   // Os retângulos de origem são em pixels da foto original; a exportação
   // animada pode decodificar a foto menor (só o que a célula precisa), então
   // eles são levados para a escala da imagem recebida.
@@ -256,15 +270,13 @@ void paintCollageCell(
           contentRect.height,
           cell.rotation,
         );
-        canvas.drawImageRect(
-          photoImage,
+        drawPhoto(
           src,
           Rect.fromCenter(
             center: Offset.zero,
             width: destWidth,
             height: destHeight,
           ),
-          paint,
         );
       }
     case CollageCellFitMode.contain:
@@ -275,15 +287,13 @@ void paintCollageCell(
       final display = cell.containDisplaySize(contentRect.size);
       if (display != Size.zero) {
         final offset = cell.containDisplayOffset(contentRect.size);
-        canvas.drawImageRect(
-          photoImage,
+        drawPhoto(
           scaled(cell.manualCropSrcRect),
           Rect.fromCenter(
             center: offset,
             width: display.width,
             height: display.height,
           ),
-          paint,
         );
       }
   }

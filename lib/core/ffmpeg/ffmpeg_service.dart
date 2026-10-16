@@ -1,7 +1,7 @@
 import '../../app/language_controller.dart';
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show Size;
+import 'dart:ui' show Color, Size;
 
 import 'package:ffmpeg_kit_flutter_new_video/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_video/ffmpeg_kit_config.dart';
@@ -589,16 +589,14 @@ class FfmpegService {
   /// ampliar) e reaproveita [convert] — mesmo pipeline de paleta/WebP já
   /// usado por "Editar vídeo" (com a mesma correção de velocidade do WebP).
   ///
-  /// MP4: linha de comando própria e simples — só limita a largura (mesmo
-  /// teto de [ConversionSettings.recommendedFor], nunca amplia) e codifica
-  /// o áudio quando existir. Sem `-map` explícito, o FFmpeg já escolhe
-  /// sozinho o melhor stream de vídeo e (se houver) de áudio — se a fonte
-  /// não tiver áudio (ex.: veio de um GIF), as flags de áudio simplesmente
-  /// não têm efeito, sem precisar detectar isso antes.
+  /// MP4: linha de comando própria ([quickConvertVideoArgs]) — só limita a
+  /// largura (nunca amplia) e codifica o áudio quando existir. As áreas
+  /// transparentes de um GIF ou WebP saem com [background].
   Future<File> quickConvert({
     required VideoInfo video,
     required QuickConvertFormat format,
     required int targetWidth,
+    Color background = const Color(0xFFFFFFFF),
     void Function(double progress)? onProgress,
   }) async {
     if (format.isAnimatedImage) {
@@ -633,6 +631,7 @@ class FfmpegService {
           format: format,
           width: width,
           outputPath: outputPath,
+          background: background,
         ),
         onTimeMs: (ms) => onProgress?.call(_ratio(ms, totalMs)),
         step: tr(
@@ -662,32 +661,89 @@ class FfmpegService {
   /// (`ffmpeg_kit_flutter_new_video`, ver `docs/pt-Br/LICENCAS.md`), que não
   /// traz nenhum codec H.264 por software (GPL). Por ser um encoder de
   /// hardware, não aceita `-preset`/`-crf` (específicos do `libx264`).
+  ///
+  /// O que segura a qualidade, já que não há `-crf`:
+  ///  - `-b:v` explícito ([mp4Bitrate], a mesma conta do MP4 de "Editar
+  ///    vídeo"). Sem ele o FFmpeg entrega ao encoder o padrão de 200 kb/s,
+  ///    e era isso que borrava o resultado — sobretudo de WebP e GIF, que
+  ///    costumam ser texto e interface com bordas nítidas;
+  ///  - a conversão para YUV feita aqui, com `lanczos` + arredondamento
+  ///    exato e a matriz BT.709, e as mesmas etiquetas BT.709 no arquivo —
+  ///    sem elas a conversão automática usava BT.601 e o player lia como
+  ///    BT.709, desviando as cores;
+  ///  - GIF e WebP ([_hasAlphaSource]) achatados sobre [background]: o
+  ///    H.264 não tem alfa, e o que fica por baixo de um pixel transparente
+  ///    (quase sempre preto) aparecia como fundo e como borda suja.
   @visibleForTesting
   List<String> quickConvertVideoArgs({
     required VideoInfo video,
     required QuickConvertFormat format, // só mp4 chega aqui hoje
     required int width,
     required String outputPath,
+    Color background = const Color(0xFFFFFFFF),
   }) {
+    final height = video.width <= 0
+        ? evenAtLeast2(width)
+        : evenAtLeast2(width * video.height / video.width);
+    final fps = video.frameRate > 0 ? video.frameRate.clamp(1.0, 60.0) : 30.0;
+    const toYuv =
+        'scale=flags=lanczos+accurate_rnd+full_chroma_int:'
+        'out_color_matrix=bt709:out_range=tv,format=yuv420p';
+    final resize =
+        'scale=$width:$height:flags=lanczos+accurate_rnd+full_chroma_int';
     return [
       '-y',
       '-i',
       video.path,
-      '-vf',
-      'scale=$width:-2:flags=lanczos',
+      if (_hasAlphaSource(video)) ...[
+        '-filter_complex',
+        '[0:v]$resize,format=rgba,split=2[bg][fg];'
+            '[bg]drawbox=x=0:y=0:w=iw:h=ih:'
+            'color=${ffmpegColor(background)}:t=fill[bg_solid];'
+            // `format=rgb`: compõe em RGB, como a moldura do vídeo, para a
+            // borda suave do alfa não passar antes pela subamostragem.
+            '[bg_solid][fg]overlay=0:0:format=rgb,$toYuv[out]',
+        '-map',
+        '[out]',
+        // O `?` deixa o áudio opcional: GIF e WebP nunca têm.
+        '-map',
+        '0:a?',
+      ] else ...[
+        '-vf',
+        '$resize:out_color_matrix=bt709:out_range=tv,'
+            'format=yuv420p',
+      ],
       '-c:v',
       'h264_mediacodec',
+      '-b:v',
+      '${mp4Bitrate(width, height, fps.round())}',
+      '-pix_fmt',
+      'yuv420p',
+      '-colorspace',
+      'bt709',
+      '-color_primaries',
+      'bt709',
+      '-color_trc',
+      'bt709',
+      '-color_range',
+      'tv',
       '-c:a',
       'aac',
       '-b:a',
       '128k',
       '-movflags',
-      '+faststart',
+      '+faststart+write_colr',
       '-f',
       'mp4',
       outputPath,
     ];
   }
+
+  /// GIF ou WebP animado (este já como o `.mov` intermediário, ver
+  /// `animated_webp_source.dart`): os dois formatos de origem que podem ter
+  /// transparência.
+  static bool _hasAlphaSource(VideoInfo video) =>
+      video.codec == 'gif' || video.codec == 'webp';
 
   /// Teto abaixo de 100% enquanto a sessão do FFmpeg ainda não terminou de
   /// verdade — sobretudo no WebP, o `-f webp` do FFmpeg relata os quadros

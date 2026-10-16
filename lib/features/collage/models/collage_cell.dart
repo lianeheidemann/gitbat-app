@@ -6,6 +6,7 @@ import '../../../core/models/collage_color_adjustment.dart';
 import '../../../core/models/color_adjustments.dart';
 import '../../../core/models/default_colors.dart';
 import '../../../core/models/crop_rect.dart';
+import '../../../core/models/drawing_layer.dart';
 
 // As matrizes de ajuste de cor moram em color_adjustments.dart (as três
 // telas usam), mas continuam saindo daqui para quem já as importava.
@@ -72,7 +73,14 @@ class CollageCellSettings {
     this.saturation = 0.0,
     this.hue = 0.0,
     this.temperature = 0.0,
+    this.drawing = DrawingLayer.empty,
   });
+
+  /// Desenho do Pincel (item "Pincel" do "..." da foto), preso à foto: os
+  /// traços são normalizados a ela inteira, então acompanham o recorte
+  /// manual, o zoom, o deslocamento, o giro, o espelho e o ajuste de cor —
+  /// e vão junto num "Trocar com…". Trocar a foto zera o desenho.
+  final DrawingLayer drawing;
 
   /// `null` representa uma célula ainda sem foto escolhida.
   final String? photoPath;
@@ -445,6 +453,7 @@ class CollageCellSettings {
     double? saturation,
     double? hue,
     double? temperature,
+    DrawingLayer? drawing,
   }) {
     return CollageCellSettings(
       photoPath: clearPhoto ? null : (photoPath ?? this.photoPath),
@@ -471,11 +480,12 @@ class CollageCellSettings {
       saturation: saturation ?? this.saturation,
       hue: hue ?? this.hue,
       temperature: temperature ?? this.temperature,
+      drawing: drawing ?? this.drawing,
     );
   }
 
   /// Reseta enquadramento (deslocamento/zoom/rotação/espelhamento) mantendo
-  /// a foto, o recorte manual e os ajustes de cor/borda — usado no menu
+  /// a foto, o recorte manual, o desenho e os ajustes de cor/borda — usado no menu
   /// "Recentralizar" e ao substituir a foto de uma célula (o enquadramento
   /// antigo não faz sentido para outra foto, mas a cor/borda escolhidas para
   /// aquele espaço sim). [fitMode] e [background] não mudam aqui — são eixos

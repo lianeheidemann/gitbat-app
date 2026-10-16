@@ -5,6 +5,8 @@ import 'package:flutter/gestures.dart'
     show Drag, ImmediateMultiDragGestureRecognizer;
 import 'package:flutter/material.dart';
 
+import '../../../core/models/drawing_layer.dart';
+import '../../../core/ui/drawing/drawn_image.dart';
 import '../models/collage_background.dart';
 import '../models/collage_cell.dart';
 import 'background_image_view.dart';
@@ -634,6 +636,7 @@ class _CellPhoto extends StatelessWidget {
         photoPath: cell.photoPath!,
         photoWidth: cell.photoWidth,
         photoHeight: cell.photoHeight,
+        drawing: cell.drawing,
         src: src,
         destWidth: destWidth,
         destHeight: destHeight,
@@ -664,6 +667,7 @@ class _CellPhoto extends StatelessWidget {
           photoPath: cell.photoPath!,
           photoWidth: cell.photoWidth,
           photoHeight: cell.photoHeight,
+          drawing: cell.drawing,
           src: cell.manualCropSrcRect,
           destWidth: display.width,
           destHeight: display.height,
@@ -716,6 +720,7 @@ class _CroppedCover extends StatelessWidget {
     required this.photoPath,
     required this.photoWidth,
     required this.photoHeight,
+    required this.drawing,
     required this.src,
     required this.destWidth,
     required this.destHeight,
@@ -724,6 +729,11 @@ class _CroppedCover extends StatelessWidget {
   final String photoPath;
   final int photoWidth;
   final int photoHeight;
+
+  /// O desenho do Pincel da foto, pintado nela inteira — o recorte, a
+  /// escala e as transformações daqui em diante o levam junto, como o
+  /// `paintCollageCell` da exportação.
+  final DrawingLayer drawing;
   final Rect src;
   final double destWidth;
   final double destHeight;
@@ -750,7 +760,12 @@ class _CroppedCover extends StatelessWidget {
                 child: SizedBox(
                   width: photoWidth.toDouble(),
                   height: photoHeight.toDouble(),
-                  child: Image.file(File(photoPath), fit: BoxFit.fill),
+                  child: drawing.isEmpty
+                      ? Image.file(File(photoPath), fit: BoxFit.fill)
+                      : DrawnImage(
+                          image: FileImage(File(photoPath)),
+                          layer: drawing,
+                        ),
                 ),
               ),
             ),

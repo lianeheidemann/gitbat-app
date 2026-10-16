@@ -1,3 +1,4 @@
+import '../../app/editor_defaults.dart';
 import '../../app/language_controller.dart';
 import 'dart:async';
 import 'dart:io';
@@ -594,6 +595,9 @@ class _QuickConvertDialogState extends State<_QuickConvertDialog> {
         video: video,
         format: widget.format,
         targetWidth: widget.targetWidth,
+        // Só pesa no MP4 de um GIF/WebP com transparência: a mesma cor de
+        // fundo que as telas de edição usam por padrão.
+        background: EditorDefaults.background,
         onProgress: (value) {
           if (mounted) {
             setState(() => _progress = intermediate ? 0.5 + value / 2 : value);

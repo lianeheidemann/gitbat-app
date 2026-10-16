@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import '../models/crop_rect.dart';
+import '../models/drawing_layer.dart';
+import '../painting/drawing_painting.dart' show bakeDrawing;
 import '../painting/frame_painter.dart' show rasterizeSvgFile;
 
 // A opção "Ajustar" dos recortes (Editar imagem, Editar SVG e o recorte de
@@ -81,12 +83,25 @@ CropRect? opaqueBounds(Uint8List rgba, int width, int height) {
 /// Com [width]/[height], o resultado sai nessa escala em vez da do arquivo
 /// decodificado — para quem guarda o recorte num tamanho de exibição que
 /// não bate pixel a pixel com o arquivo.
+///
+/// Com [drawing], mede a foto já com o desenho do Pincel gravado: o que a
+/// transparência apagou conta como margem, e o que o pincel pintou sobre
+/// uma margem transparente conta como conteúdo.
 Future<CropRect?> detectOpaqueBounds(
   String path, {
   int? width,
   int? height,
+  DrawingLayer drawing = DrawingLayer.empty,
 }) async {
-  final image = await _decode(await File(path).readAsBytes());
+  var image = await _decode(await File(path).readAsBytes());
+  if (drawing.isNotEmpty) {
+    final decoded = image;
+    try {
+      image = await bakeDrawing(decoded, drawing);
+    } finally {
+      decoded.dispose();
+    }
+  }
   return _boundsOf(image, width ?? image.width, height ?? image.height);
 }
 
